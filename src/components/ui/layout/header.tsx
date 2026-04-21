@@ -75,7 +75,7 @@ export default function Header() {
           )}
 
           <Link
-            href="https://github.com/arianneroselina/human-ai-cocreativity#readme"
+            href="https://github.com/arianneroselina/human-ai-cocreativity-evaluation#readme"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden sm:inline-flex items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2 py-1 text-xs hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/30"
@@ -87,7 +87,7 @@ export default function Header() {
           </Link>
 
           <Link
-            href="https://github.com/arianneroselina/human-ai-cocreativity/issues/new"
+            href="https://github.com/arianneroselina/human-ai-cocreativity-evaluation/issues/new"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden sm:inline-flex items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2 py-1 text-xs hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/30"
@@ -99,7 +99,7 @@ export default function Header() {
           </Link>
 
           <Link
-            href="https://github.com/arianneroselina/human-ai-cocreativity"
+            href="https://github.com/arianneroselina/human-ai-cocreativity-evaluation"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-md border border-white/25 bg-white/10 px-2 py-1 text-xs hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/30"
@@ -134,9 +134,9 @@ export default function Header() {
 
           <div className="text-center">
             <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
-              Human-AI Co-Creativity
+              Human-AI Co-Creativity Evaluation
             </h1>
-            <p className="mt-1 text-sm text-white/80">Experimental study interface</p>
+            <p className="mt-1 text-sm text-white/80">User Study Result Evaluation</p>
           </div>
         </div>
       </header>

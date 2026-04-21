@@ -1,4 +1,3 @@
-include .env
 .DEFAULT_GOAL := help
 
 .PHONY: run
@@ -31,10 +30,6 @@ clean:
 
 .PHONY: rebuild
 rebuild: clean reset gen migrate
-
-.PHONY: export-db
-export-db:
-	bash ./scripts/export_db.sh ${PRISMA_DATABASE_URL} "exports"
 
 .PHONY: format
 format:
