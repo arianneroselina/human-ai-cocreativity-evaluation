@@ -1,129 +1,200 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Equal, Trophy } from "lucide-react";
-import { evaluationPairs, evaluationSummary } from "@/data/mockEvaluation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/shadcn_ui/button";
-import ComparisonCard from "@/components/evaluation/comparisonCard";
-import TopicSidebar from "@/components/evaluation/topicSidebar";
+import { Textarea } from "@/components/shadcn_ui/textarea";
+import LikertRow, { type Likert } from "./likertRow";
+import { dummyPoems, type DummyPoem } from "./dummyPoems";
+
+type RatingResult = {
+  poemId: string;
+  clarity: Likert;
+  creativity: Likert;
+  relevance: Likert;
+  overallQuality: Likert;
+  comment: string;
+};
+
+function shuffleArray<T>(array: T[]) {
+  return [...array].sort(() => Math.random() - 0.5);
+}
 
 export default function EvaluationWorkbench() {
-  const [selectedTopicId, setSelectedTopicId] = useState(evaluationPairs[0].topicId);
-  const [selectedPairIndex, setSelectedPairIndex] = useState(0);
+  const [randomizedPoems, setRandomizedPoems] = useState<DummyPoem[]>([]);
+  const [hasStarted, setHasStarted] = useState(false);
 
-  const topicPairs = useMemo(
-    () => evaluationPairs.filter((pair) => pair.topicId === selectedTopicId),
-    [selectedTopicId]
-  );
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [ratings, setRatings] = useState<RatingResult[]>([]);
 
-  const activePair = topicPairs[Math.min(selectedPairIndex, topicPairs.length - 1)] ?? topicPairs[0];
+  const [clarity, setClarity] = useState<Likert | null>(null);
+  const [creativity, setCreativity] = useState<Likert | null>(null);
+  const [relevance, setRelevance] = useState<Likert | null>(null);
+  const [overallQuality, setOverallQuality] = useState<Likert | null>(null);
+  const [comment, setComment] = useState("");
 
-  const goToPreviousPair = () => setSelectedPairIndex((current) => Math.max(current - 1, 0));
-  const goToNextPair = () =>
-    setSelectedPairIndex((current) => Math.min(current + 1, topicPairs.length - 1));
+  useEffect(() => {
+    setRandomizedPoems(shuffleArray(dummyPoems));
+    setHasStarted(true);
+  }, []);
 
-  const chooseTopic = (topicId: string) => {
-    setSelectedTopicId(topicId);
-    setSelectedPairIndex(0);
-  };
+  const currentPoem = randomizedPoems[currentIndex];
+  const isFinished = hasStarted && currentIndex >= randomizedPoems.length;
+  const canSubmit = clarity && creativity && relevance && overallQuality;
+
+  function resetForm() {
+    setClarity(null);
+    setCreativity(null);
+    setRelevance(null);
+    setOverallQuality(null);
+    setComment("");
+  }
+
+  function handleSubmit() {
+    if (!currentPoem) return;
+
+    if (!clarity || !creativity || !relevance || !overallQuality) {
+      alert("Please rate all four metrics before continuing.");
+      return;
+    }
+
+    const newRating: RatingResult = {
+      poemId: currentPoem.id,
+      clarity,
+      creativity,
+      relevance,
+      overallQuality,
+      comment,
+    };
+
+    setRatings((previous) => [...previous, newRating]);
+    setCurrentIndex((previous) => previous + 1);
+    resetForm();
+  }
+
+  if (!hasStarted) {
+    return (
+      <div className="rounded-3xl border border-border bg-card p-8 shadow-sm">
+        <p className="text-muted-foreground">Preparing randomized poems...</p>
+      </div>
+    );
+  }
+
+  if (isFinished) {
+    return (
+      <div className="rounded-3xl border border-border bg-card p-8 shadow-sm">
+        <h2 className="text-2xl font-semibold">Evaluation complete</h2>
+
+        <p className="mt-2 text-muted-foreground">
+          You rated {ratings.length} poems.
+        </p>
+
+        <pre className="mt-6 max-h-96 overflow-auto rounded-2xl bg-muted p-4 text-sm">
+          {JSON.stringify(ratings, null, 2)}
+        </pre>
+      </div>
+    );
+  }
+
+  if (!currentPoem) {
+    return null;
+  }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-      <TopicSidebar selectedTopicId={selectedTopicId} onSelectTopic={chooseTopic} />
-
-      <section className="space-y-6">
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_460px]">
+      <section className="overflow-hidden rounded-3xl border bg-card shadow-sm">
+        <div className="border-b bg-muted/30 px-6 py-5">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                Dummy evaluation workspace
+                Anonymous poem
               </p>
-              <h2 className="mt-2 text-2xl font-semibold">Anonymous poem comparison</h2>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                This first step is UI-only. The platform shows two poems from the same topic side by
-                side, hides who created them, and lets you shape the evaluator experience before any
-                real study logic is added.
-              </p>
+              <h2 className="mt-1 text-2xl font-semibold">
+                Poem {currentIndex + 1}/{randomizedPoems.length}
+              </h2>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-xl border border-border bg-background px-3 py-2">
-                <p className="text-xs text-muted-foreground">Participants</p>
-                <p className="text-lg font-semibold">{evaluationSummary.participants}</p>
-              </div>
-              <div className="rounded-xl border border-border bg-background px-3 py-2">
-                <p className="text-xs text-muted-foreground">Topics</p>
-                <p className="text-lg font-semibold">{evaluationSummary.topics}</p>
-              </div>
-              <div className="rounded-xl border border-border bg-background px-3 py-2">
-                <p className="text-xs text-muted-foreground">Poems</p>
-                <p className="text-lg font-semibold">{evaluationSummary.totalPoems}</p>
-              </div>
-              <div className="rounded-xl border border-border bg-background px-3 py-2">
-                <p className="text-xs text-muted-foreground">Visible pairs</p>
-                <p className="text-lg font-semibold">{evaluationSummary.visiblePairs}</p>
-              </div>
+            <div className="rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground">
+              Source hidden
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Current topic</p>
-              <h3 className="text-xl font-semibold">{activePair?.topicLabel}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Pair {selectedPairIndex + 1} of {topicPairs.length}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" onClick={goToPreviousPair} disabled={selectedPairIndex === 0}>
-                <ChevronLeft className="h-4 w-4" /> Previous
-              </Button>
-              <Button
-                variant="outline"
-                onClick={goToNextPair}
-                disabled={selectedPairIndex >= topicPairs.length - 1}
-              >
-                Next <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+        <div className="space-y-5 p-6">
+          <div className="rounded-2xl border bg-background p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Topic
+            </p>
+            <p className="mt-1 text-lg font-semibold">{currentPoem.topic}</p>
           </div>
 
-          <div className="mt-5 grid gap-4 rounded-xl border border-dashed border-border bg-background/60 p-4 md:grid-cols-3">
-            <button className="rounded-xl border border-border bg-card px-4 py-3 text-left hover:bg-accent">
-              <div className="flex items-center gap-2 font-medium">
-                <Trophy className="h-4 w-4" /> Text A is better
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Placeholder button for later evaluator submission.
-              </p>
-            </button>
-            <button className="rounded-xl border border-border bg-card px-4 py-3 text-left hover:bg-accent">
-              <div className="flex items-center gap-2 font-medium">
-                <Equal className="h-4 w-4" /> Tie / equally strong
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">Useful when both texts feel comparable.</p>
-            </button>
-            <button className="rounded-xl border border-border bg-card px-4 py-3 text-left hover:bg-accent">
-              <div className="flex items-center gap-2 font-medium">
-                <Trophy className="h-4 w-4" /> Text B is better
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Kept symmetrical so the UI stays unbiased.
-              </p>
-            </button>
+          <div className="rounded-2xl border bg-background p-6">
+            <div className="mx-auto max-w-3xl whitespace-pre-line text-lg leading-9">
+              {currentPoem.text}
+            </div>
           </div>
         </div>
-
-        {activePair && (
-          <div className="grid gap-6 xl:grid-cols-2">
-            <ComparisonCard label="Text A" poem={activePair.left} />
-            <ComparisonCard label="Text B" poem={activePair.right} />
-          </div>
-        )}
       </section>
+
+      <aside className="rounded-3xl border bg-card p-6 shadow-sm lg:sticky lg:top-6 lg:self-start">
+        <div className="mb-6">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            Evaluation
+          </p>
+          <h3 className="mt-1 text-2xl font-semibold">Rating</h3>
+        </div>
+
+        <div className="space-y-6">
+          <LikertRow
+            label="How clear and understandable is the poem?"
+            value={clarity}
+            onChange={setClarity}
+            left="Not clear"
+            right="Very clear"
+          />
+
+          <LikertRow
+            label="How creative or original is the poem?"
+            value={creativity}
+            onChange={setCreativity}
+            left="Not creative"
+            right="Very creative"
+          />
+
+          <LikertRow
+            label="How well does the poem fit the given topic?"
+            value={relevance}
+            onChange={setRelevance}
+            left="Not relevant"
+            right="Very relevant"
+          />
+
+          <LikertRow
+            label="Overall, how good is the poem?"
+            value={overallQuality}
+            onChange={setOverallQuality}
+            left="Very poor"
+            right="Excellent"
+          />
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Comment</label>
+            <Textarea
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+              placeholder="Optional"
+              className="min-h-24 resize-none"
+            />
+          </div>
+
+          <Button
+            className="h-11 w-full rounded-xl"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+          >
+            Submit
+          </Button>
+        </div>
+      </aside>
     </div>
   );
 }
