@@ -1,12 +1,32 @@
-import { loadPoems } from "@/data/loadPoems";
 import EvaluationWorkbench from "./evaluation/evaluationWorkbench";
+import { prisma } from "@/lib/prisma";
 
-export default function Page() {
-  const poems = loadPoems();
+export const dynamic = "force-dynamic";
+
+export default async function Page() {
+  const poems = await prisma.poem.findMany({
+    where: {
+      isEmpty: false,
+    },
+    select: {
+      id: true,
+      taskId: true,
+      topic: true,
+      text: true,
+      workflow: true,
+      timeMs: true,
+      wordCount: true,
+      charCount: true,
+      passed: true,
+    },
+    orderBy: {
+      id: "asc",
+    },
+  });
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <EvaluationWorkbench poems={poems}/>
-    </div>
+    <main className="mx-auto max-w-7xl p-6">
+      <EvaluationWorkbench poems={poems} />
+    </main>
   );
 }

@@ -3,18 +3,7 @@ import path from "path";
 import Papa from "papaparse";
 import { getPoemTaskById } from "@/data/tasks";
 import { parseNumber } from "@/lib/utils";
-
-export type Poem = {
-  id: string;
-  taskId: string;
-  topic: string;
-  text: string;
-  workflow: string;
-  timeMs: number | null;
-  wordCount: number | null;
-  charCount: number | null;
-  passed: boolean;
-};
+import { Poem } from "@/types/poem";
 
 export function loadPoems(): Poem[] {
   const inputsDir = path.join(process.cwd(), "inputs");

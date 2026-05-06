@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/shadcn_ui/button";
 import { Textarea } from "@/components/shadcn_ui/textarea";
 import LikertRow, { type Likert } from "@/components/ui/likertRow";
-import { Poem } from "@/data/loadPoems";
 import { delay, shuffleArray } from "@/lib/utils";
+import { Poem } from "@/types/poem";
 
 type RatingResult = {
   poemId: string;
