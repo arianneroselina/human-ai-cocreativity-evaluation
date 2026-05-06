@@ -16,9 +16,18 @@ migrate:
 seed-db:
 	npm run db:seed
 
+.PHONY: setup-db
+setup-db: migrate seed-db
+	@echo "Database migrated and seeded."
+
 .PHONY: reset
 reset:
 	npx prisma migrate reset
+
+.PHONY: reset-seed
+reset-seed:
+	npx prisma migrate reset --force
+	npm run db:seed
 
 .PHONY: deploy
 deploy:
@@ -33,7 +42,7 @@ clean:
 	rm -rf prisma/migrations node_modules/.prisma generated/prisma
 
 .PHONY: rebuild
-rebuild: clean reset gen migrate
+rebuild: clean reset gen migrate seed-db
 
 .PHONY: format
 format:
@@ -44,9 +53,12 @@ help:
 	@echo "Available commands:"
 	@echo "gen        Generate Prisma Client"
 	@echo "migrate    Apply local migrations"
+	@echo "seed-db    Seed database with initial poem data"
+	@echo "setup-db   Run migrations and seed database"
 	@echo "reset      Reset local database"
+	@echo "reset-seed Reset local database and seed it"
 	@echo "deploy     Deploy migrations to production"
 	@echo "studio     Open Prisma Studio"
 	@echo "clean      Clean Prisma directories (migrations, generated)"
-	@echo "rebuild    Clean, generate Prisma Client, and apply migrations"
+	@echo "rebuild    Clean, generate Prisma Client, apply migrations, and seed"
 	@echo "format	  Format files using Prettier"

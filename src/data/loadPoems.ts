@@ -1,8 +1,8 @@
-import "server-only";
 import fs from "fs";
 import path from "path";
 import Papa from "papaparse";
 import { getPoemTaskById } from "@/data/tasks";
+import { parseNumber } from "@/lib/utils";
 
 export type Poem = {
   id: string;
@@ -10,6 +10,10 @@ export type Poem = {
   topic: string;
   text: string;
   workflow: string;
+  timeMs: number | null;
+  wordCount: number | null;
+  charCount: number | null;
+  passed: boolean;
 };
 
 export function loadPoems(): Poem[] {
@@ -28,14 +32,18 @@ export function loadPoems(): Poem[] {
       const csvContent = fs.readFileSync(csvPath, "utf-8");
       const parsed = Papa.parse(csvContent, { header: true, skipEmptyLines: true });
 
-      parsed.data.forEach((row: any, index: number) => {
-        if (row.text && row.workflow && row.taskId) {
+      parsed.data.forEach((row: any) => {
+        if (row.workflow && row.taskId) {
           poems.push({
-            id: `${folder}-poem-${index + 1}`, // Unique ID based on folder and index
+            id: row.id,
             taskId: row.taskId,
             topic: getPoemTaskById(row.taskId).title,
             text: row.text.trim(),
             workflow: row.workflow as "human" | "ai" | "human_ai" | "ai_human",
+            timeMs: parseNumber(row.timeMs),
+            wordCount: parseNumber(row.wordCount),
+            charCount: parseNumber(row.charCount),
+            passed: row.passed === "t" || row.passed === "true",
           });
         }
       });

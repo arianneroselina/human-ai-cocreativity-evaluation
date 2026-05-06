@@ -1,0 +1,81 @@
+datasource db {
+  provider = "postgresql"
+  // In Prisma 7.x the connection URL is configured in prisma.config.ts
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Workflow {
+  human
+  ai
+  human_ai
+  ai_human
+}
+
+model Poem {
+  id String @id @default(cuid())
+
+  // Dataset information
+  taskId   String
+  topic    String
+  text     String
+  workflow Workflow
+
+  // Basic poem metadata
+  isEmpty   Boolean @default(false)
+  timeMs    Int?
+  wordCount Int?
+  charCount Int?
+  passed    Boolean
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ratings Rating[]
+}
+
+model EvaluationSession {
+  id String @id @default(cuid())
+
+  // Keep evaluators anonymous
+  evaluatorCode String?
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  // Optional technical / study metadata
+  userAgent String?
+  metadata  Json?
+
+  ratings Rating[]
+}
+
+model Rating {
+  id String @id @default(cuid())
+
+  poemId String
+  poem   Poem   @relation(fields: [poemId], references: [id], onDelete: Cascade)
+
+  sessionId String
+  session   EvaluationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Rating metrics: 1-10
+  clarity    Int
+  creativity Int
+  relevance  Int
+  quality    Int
+
+  // Optional evaluator feedback
+  comment     String?
+  timeSpentMs Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One evaluator/session should only rate the same poem once
+  @@unique([poemId, sessionId])
+}

@@ -1,31 +1,53 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { loadedPoems } from "@/data/loadPoems";
+import { loadPoems } from "@/data/loadPoems";
 
 const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL!,
+  connectionString: process.env.PRISMA_DATABASE_URL!,
 });
 
 const prisma = new PrismaClient({ adapter });
 
 async function seedPoems() {
   console.log("Seeding poems...");
+  const poems = loadPoems();
 
   try {
-    for (const poem of loadedPoems) {
-      await prisma.poem.create({
-        data: {
+    for (const poem of poems) {
+      await prisma.poem.upsert({
+        where: {
+          id: poem.id,
+        },
+        update: {
+          taskId: poem.taskId,
+          topic: poem.topic,
+          text: poem.text,
+          workflow: poem.workflow,
+
+          isEmpty: poem.text.trim() === "",
+          timeMs: poem.timeMs,
+          wordCount: poem.wordCount,
+          charCount: poem.charCount,
+          passed: poem.passed,
+        },
+        create: {
           id: poem.id,
           taskId: poem.taskId,
           topic: poem.topic,
           text: poem.text,
           workflow: poem.workflow,
+
+          isEmpty: poem.text.trim() === "",
+          timeMs: poem.timeMs,
+          wordCount: poem.wordCount,
+          charCount: poem.charCount,
+          passed: poem.passed,
         },
       });
     }
 
-    console.log(`Successfully seeded ${loadedPoems.length} poems.`);
+    console.log(`Successfully seeded ${poems.length} poems.`);
   } catch (error) {
     console.error("Error seeding poems:", error);
     process.exit(1);

@@ -1,5 +1,5 @@
 import { loadPoems } from "@/data/loadPoems";
-import EvaluationWorkbench from "@/components/evaluation/evaluationWorkbench";
+import EvaluationWorkbench from "./evaluation/evaluationWorkbench";
 
 export default function Page() {
   const poems = loadPoems();
