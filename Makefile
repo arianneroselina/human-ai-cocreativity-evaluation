@@ -12,6 +12,10 @@ gen:
 migrate:
 	npx prisma migrate dev -n init
 
+.PHONY: seed-db
+seed-db:
+	npm run db:seed
+
 .PHONY: reset
 reset:
 	npx prisma migrate reset
@@ -45,5 +49,4 @@ help:
 	@echo "studio     Open Prisma Studio"
 	@echo "clean      Clean Prisma directories (migrations, generated)"
 	@echo "rebuild    Clean, generate Prisma Client, and apply migrations"
-	@echo "export_db  Export Prisma database"
 	@echo "format	  Format files using Prettier"

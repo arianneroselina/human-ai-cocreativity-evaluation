@@ -13,12 +13,12 @@ type LikertRowProps = {
 const values: Likert[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export default function LikertRow({
-                                    label,
-                                    value,
-                                    onChange,
-                                    left = "Low",
-                                    right = "High",
-                                  }: LikertRowProps) {
+  label,
+  value,
+  onChange,
+  left = "Low",
+  right = "High",
+}: LikertRowProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">

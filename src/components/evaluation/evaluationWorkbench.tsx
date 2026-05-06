@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/shadcn_ui/button";
 import { Textarea } from "@/components/shadcn_ui/textarea";
 import LikertRow, { type Likert } from "./likertRow";
-import { dummyPoems, type DummyPoem } from "./dummyPoems";
+import { Poem } from "@/data/loadPoems";
 
 type RatingResult = {
   poemId: string;
@@ -19,8 +19,14 @@ function shuffleArray<T>(array: T[]) {
   return [...array].sort(() => Math.random() - 0.5);
 }
 
-export default function EvaluationWorkbench() {
-  const [randomizedPoems, setRandomizedPoems] = useState<DummyPoem[]>([]);
+type EvaluationWorkbenchProps = {
+  poems: Poem[];
+};
+
+export default function EvaluationWorkbench({
+                                              poems,
+                                            }: EvaluationWorkbenchProps) {
+  const [randomizedPoems, setRandomizedPoems] = useState<Poem[]>([]);
   const [hasStarted, setHasStarted] = useState(false);
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -33,9 +39,9 @@ export default function EvaluationWorkbench() {
   const [comment, setComment] = useState("");
 
   useEffect(() => {
-    setRandomizedPoems(shuffleArray(dummyPoems));
+    setRandomizedPoems(shuffleArray(poems));
     setHasStarted(true);
-  }, []);
+  }, [poems]);
 
   const currentPoem = randomizedPoems[currentIndex];
   const isFinished = hasStarted && currentIndex >= randomizedPoems.length;
@@ -84,9 +90,7 @@ export default function EvaluationWorkbench() {
       <div className="rounded-3xl border border-border bg-card p-8 shadow-sm">
         <h2 className="text-2xl font-semibold">Evaluation complete</h2>
 
-        <p className="mt-2 text-muted-foreground">
-          You rated {ratings.length} poems.
-        </p>
+        <p className="mt-2 text-muted-foreground">You rated {ratings.length} poems.</p>
 
         <pre className="mt-6 max-h-96 overflow-auto rounded-2xl bg-muted p-4 text-sm">
           {JSON.stringify(ratings, null, 2)}
@@ -111,10 +115,6 @@ export default function EvaluationWorkbench() {
               <h2 className="mt-1 text-2xl font-semibold">
                 Poem {currentIndex + 1}/{randomizedPoems.length}
               </h2>
-            </div>
-
-            <div className="rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground">
-              Source hidden
             </div>
           </div>
         </div>
@@ -186,11 +186,7 @@ export default function EvaluationWorkbench() {
             />
           </div>
 
-          <Button
-            className="h-11 w-full rounded-xl"
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-          >
+          <Button className="h-11 w-full rounded-xl" onClick={handleSubmit} disabled={!canSubmit}>
             Submit
           </Button>
         </div>
