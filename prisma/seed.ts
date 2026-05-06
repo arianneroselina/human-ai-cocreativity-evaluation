@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Workflow } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { loadPoems } from "@/data/loadPoems";
 
@@ -8,6 +8,23 @@ const adapter = new PrismaPg({
 });
 
 const prisma = new PrismaClient({ adapter });
+
+function mapWorkflow(workflow: string): Workflow {
+  const normalized = workflow.trim().toLowerCase();
+
+  switch (normalized) {
+    case "human":
+      return Workflow.human;
+    case "ai":
+      return Workflow.ai;
+    case "human_ai":
+      return Workflow.human_ai;
+    case "ai_human":
+      return Workflow.ai_human;
+    default:
+      throw new Error(`Unknown workflow value: ${workflow}`);
+  }
+}
 
 async function seedPoems() {
   console.log("Seeding poems...");
@@ -23,7 +40,7 @@ async function seedPoems() {
           taskId: poem.taskId,
           topic: poem.topic,
           text: poem.text,
-          workflow: poem.workflow,
+          workflow: mapWorkflow(poem.workflow),
 
           isEmpty: poem.text.trim() === "",
           timeMs: poem.timeMs,
@@ -36,7 +53,7 @@ async function seedPoems() {
           taskId: poem.taskId,
           topic: poem.topic,
           text: poem.text,
-          workflow: poem.workflow,
+          workflow: mapWorkflow(poem.workflow),
 
           isEmpty: poem.text.trim() === "",
           timeMs: poem.timeMs,
