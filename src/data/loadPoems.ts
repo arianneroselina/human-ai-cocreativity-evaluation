@@ -3,7 +3,7 @@ import path from "path";
 import Papa from "papaparse";
 import { getPoemTaskById } from "@/data/tasks";
 import { parseNumber } from "@/lib/utils";
-import { Poem } from "@/types/poem";
+import { Poem } from "@/lib/evaluation/types";
 
 function parseDate(value: unknown): Date | null {
   if (!value || typeof value !== "string") return null;

@@ -5,7 +5,7 @@ import { Button } from "@/components/shadcn_ui/button";
 import { Textarea } from "@/components/shadcn_ui/textarea";
 import LikertRow, { type Likert } from "@/components/ui/likertRow";
 import { delay } from "@/lib/utils";
-import { Poem } from "@/types/poem";
+import { Poem } from "@/lib/evaluation/types";
 
 type RatingResult = {
   sessionId: string;

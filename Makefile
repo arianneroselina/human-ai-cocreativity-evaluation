@@ -1,8 +1,28 @@
 .DEFAULT_GOAL := help
 
+# ------------------------------------------------------------
+# Config
+# ------------------------------------------------------------
+
+PYTHON ?= python
+
+
+# ------------------------------------------------------------
+# App
+# ------------------------------------------------------------
+
 .PHONY: run
 run:
 	npm run dev
+
+.PHONY: format
+format:
+	npm run format
+
+
+# ------------------------------------------------------------
+# Prisma / Database
+# ------------------------------------------------------------
 
 .PHONY: gen
 gen:
@@ -48,23 +68,66 @@ clean:
 .PHONY: rebuild
 rebuild: clean gen migrate seed-db
 
-.PHONY: format
-format:
-	npm run format
+
+# ------------------------------------------------------------
+# Evaluation data processing
+# ------------------------------------------------------------
+
+.PHONY: eval-check
+eval-check:
+	$(PYTHON) scripts/check_evaluation_data.py
+
+.PHONY: export-ratings
+export-ratings:
+	$(PYTHON) scripts/export_ratings.py
+
+.PHONY: aggregate-scores
+aggregate-scores:
+	$(PYTHON) scripts/aggregate_poem_scores.py
+
+.PHONY: create-master
+create-master:
+	$(PYTHON) scripts/create_master_dataset.py
+
+.PHONY: generate-figures
+generate-figures:
+	$(PYTHON) scripts/generate_dashboard_figures.py
+
+.PHONY: process-data
+process-data: eval-check export-ratings aggregate-scores create-master generate-figures
+	@echo "Evaluation data exported, master dataset created, and figures generated."
+
+
+# ------------------------------------------------------------
+# Help
+# ------------------------------------------------------------
 
 .PHONY: help
 help:
+	@echo ""
 	@echo "Available commands:"
-	@echo "run                 Run dev server"
-	@echo "gen                 Generate Prisma Client"
-	@echo "migrate             Apply local migrations"
-	@echo "migrate-new name=x  Create a new named migration"
-	@echo "seed-db             Seed database with initial poem data"
-	@echo "setup-db            Run migrations and seed database"
-	@echo "reset               Reset local database"
-	@echo "reset-seed          Reset local database and seed it"
-	@echo "deploy              Deploy migrations to production"
-	@echo "studio              Open Prisma Studio"
-	@echo "clean               Clean generated Prisma client only"
-	@echo "rebuild             Regenerate client, migrate local DB, and seed"
-	@echo "format              Format files using Prettier"
+	@echo ""
+	@echo "App:"
+	@echo "  make run                         Run dev server"
+	@echo "  make format                      Format files using Prettier"
+	@echo ""
+	@echo "Prisma / Database:"
+	@echo "  make gen                         Generate Prisma Client"
+	@echo "  make migrate                     Apply local migrations"
+	@echo "  make migrate-new name=x          Create a new named migration"
+	@echo "  make seed-db                     Seed database with poem data"
+	@echo "  make setup-db                    Run migrations and seed database"
+	@echo "  make reset                       Reset local database"
+	@echo "  make reset-seed                  Reset local database and seed it"
+	@echo "  make deploy                      Deploy migrations to production"
+	@echo "  make studio                      Open Prisma Studio"
+	@echo "  make clean                       Clean generated Prisma client only"
+	@echo "  make rebuild                     Clean, generate client, migrate, and seed"
+	@echo ""
+	@echo "Evaluation data processing:"
+	@echo "  make eval-check                  Check poems, evaluators, and rating completeness"
+	@echo "  make export-ratings              Export raw evaluator ratings to CSV"
+	@echo "  make aggregate-scores            Create poem-level mean rating scores"
+	@echo "  make create-master               Create final master_round_dataset.csv"
+	@echo "  make process-data                Run full evaluation data pipeline"
+	@echo ""

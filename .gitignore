@@ -1,6 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 .idea/*
+.venv/
 
 # dependencies
 /node_modules
@@ -44,5 +45,14 @@ next-env.d.ts
 
 /src/generated/prisma
 
-# input data
-/inputs/
+# Raw study data
+inputs/
+data/raw/
+
+# Generated analysis files
+data/processed/
+public/research-dashboard/
+
+# Optional analysis outputs
+analysis/plots/
+analysis/tables/
