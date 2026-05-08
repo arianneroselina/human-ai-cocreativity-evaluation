@@ -93,7 +93,8 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
     {
       id: "quality-figures",
       title: "Quality and Experience",
-      description: "Quality, satisfaction, frustration, AI ratings, and constraint success.",
+      description:
+        "Quality, satisfaction, frustration, AI ratings, and constraint success.",
       figures: figures.filter((figure) =>
         ["03_", "04_", "05_", "06_", "07_"].some((prefix) =>
           figure.slug.startsWith(prefix),
@@ -101,9 +102,21 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       ),
     },
     {
+      id: "error-exposure-figures",
+      title: "AI Error Exposure",
+      description:
+        "Error exposure overview, post-error behavior, workflow choice after exposure, and subjective reactions over rounds.",
+      figures: figures.filter((figure) =>
+        ["21_", "22_", "23_", "24_", "25_", "26_"].some((prefix) =>
+          figure.slug.startsWith(prefix),
+        ),
+      ),
+    },
+    {
       id: "participant-figures",
       title: "Participant Information",
-      description: "Age, gender, education, language, and AI attitude distributions.",
+      description:
+        "Age, gender, education, language, and AI attitude distributions.",
       figures: figures.filter((figure) =>
         ["10_", "11_", "12_", "13_", "14_", "15_"].some((prefix) =>
           figure.slug.startsWith(prefix),

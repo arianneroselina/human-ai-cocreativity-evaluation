@@ -63,3 +63,8 @@ PARTICIPANT_LIKERT_COLUMNS = {
     "aiFutureUse": "I will use AI in the future",
     "aiHumanity": "AI is positive for humanity",
 }
+
+EXPOSURE_LABELS = {
+    "error_exposed": "Error-exposed",
+    "not_exposed": "Not exposed",
+}

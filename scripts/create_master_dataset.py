@@ -5,6 +5,7 @@ from scripts.config import PROCESSED_DIR, POEM_SCORES_PATH, INPUTS_DIR
 
 OUTPUT_PATH = PROCESSED_DIR / "master_round_dataset.csv"
 
+
 def parse_bool(value):
     if pd.isna(value):
         return None
@@ -108,16 +109,84 @@ def load_participant_folder(folder):
             "comment": "roundComment",
         })
 
-        merge_keys = ["sessionId", "roundIndex"]
-
         rounds = rounds.merge(
             feedback,
-            on=merge_keys,
+            on=["sessionId", "roundIndex"],
             how="left",
             suffixes=("", "_feedback"),
         )
 
     return rounds
+
+
+def add_error_exposure_columns(master):
+    """
+    The AI error happens in the first main round, which is round 5.
+
+    A participant is exposed to the AI error only if the workflow in round 5
+    includes AI support.
+
+    AI-supported workflows:
+    - ai
+    - human_ai
+    - ai_human
+
+    Human-only workflow:
+    - human
+    """
+
+    ERROR_ROUND_INDEX = 5
+    AI_SUPPORTED_WORKFLOWS = ["ai", "human_ai", "ai_human"]
+
+    master["roundIndex"] = pd.to_numeric(master["roundIndex"], errors="coerce")
+    master["participantId"] = pd.to_numeric(master["participantId"], errors="coerce")
+
+    master["isAiSupportedWorkflow"] = master["workflow"].isin(AI_SUPPORTED_WORKFLOWS)
+
+    # Keep old column name for compatibility with existing scripts.
+    master["isAiWorkflow"] = master["isAiSupportedWorkflow"]
+
+    master["isMixedWorkflow"] = master["workflow"].isin(["human_ai", "ai_human"])
+
+    error_round = master[master["roundIndex"] == ERROR_ROUND_INDEX][
+        ["participantId", "isAiSupportedWorkflow"]
+    ].copy()
+
+    error_round = error_round.rename(columns={
+        "isAiSupportedWorkflow": "errorExposed",
+    })
+
+    master = master.merge(
+        error_round,
+        on="participantId",
+        how="left",
+    )
+
+    master["errorExposed"] = master["errorExposed"].fillna(False).astype(bool)
+
+    master["isErrorRound"] = (
+            (master["roundIndex"] == ERROR_ROUND_INDEX)
+            & (master["isAiSupportedWorkflow"])
+    )
+
+    master["isAfterError"] = (
+            (master["errorExposed"])
+            & (master["roundIndex"] > ERROR_ROUND_INDEX)
+    )
+
+    master["errorRoundIndex"] = master["errorExposed"].apply(
+        lambda exposed: ERROR_ROUND_INDEX if exposed else None
+    )
+
+    master["errorExposureGroup"] = master["errorExposed"].map({
+        True: "error_exposed",
+        False: "not_exposed",
+    })
+
+    # Compatibility column for older dashboard/figure code.
+    master["condition"] = master["errorExposureGroup"]
+
+    return master
 
 
 all_rounds = []
@@ -134,13 +203,17 @@ if not all_rounds:
 
 master = pd.concat(all_rounds, ignore_index=True)
 
+master["roundIndex"] = pd.to_numeric(master["roundIndex"], errors="coerce")
+master["timeMs"] = pd.to_numeric(master["timeMs"], errors="coerce")
+master["wordCount"] = pd.to_numeric(master["wordCount"], errors="coerce")
+master["charCount"] = pd.to_numeric(master["charCount"], errors="coerce")
+
 master["phase"] = master["roundIndex"].apply(
-    lambda value: "controlled" if int(value) <= 4 else "choice"
+    lambda value: "practice" if int(value) <= 4 else "main"
 )
 
-master["isChoiceRound"] = master["roundIndex"].astype(int) >= 5
-master["isAiWorkflow"] = master["workflow"] != "human"
-master["isMixedWorkflow"] = master["workflow"].isin(["human_ai", "ai_human"])
+master["isPracticeRound"] = master["roundIndex"] <= 4
+master["isMainRound"] = master["roundIndex"] >= 5
 
 master["workflowGroup"] = master["workflow"].map({
     "human": "human_only",
@@ -148,6 +221,8 @@ master["workflowGroup"] = master["workflow"].map({
     "human_ai": "mixed",
     "ai_human": "mixed",
 })
+
+master = add_error_exposure_columns(master)
 
 master["effectiveTimeMinutes"] = master["timeMs"] / 60000
 master["wordsPerMinute"] = master["wordCount"] / master["effectiveTimeMinutes"]
@@ -185,3 +260,12 @@ print(master.groupby("participantId")["roundId"].count())
 
 print("\nWorkflow counts:")
 print(master["workflow"].value_counts())
+
+print("\nError exposure groups:")
+print(master[["participantId", "errorExposed"]]
+      .drop_duplicates()
+      ["errorExposed"]
+      .value_counts())
+
+print("\nError rounds:")
+print(master["isErrorRound"].value_counts())

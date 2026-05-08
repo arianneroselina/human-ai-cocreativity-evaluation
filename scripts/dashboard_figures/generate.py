@@ -1,6 +1,7 @@
 import matplotlib
 
 from scripts.config import FIGURE_DIR, TABLE_DIR
+from scripts.dashboard_figures.plots_error_exposure import generate_error_exposure_figures
 from scripts.dashboard_figures.plots_summary import generate_workflow_feedback_summaries
 
 matplotlib.use("Agg")
@@ -16,7 +17,7 @@ from .plots_core import (
     plot_ai_performance_over_rounds,
     plot_constraint_rate_by_workflow,
     plot_quality_vs_time,
-    plot_final_workflow_ranking,
+    plot_final_workflow_ranking, plot_total_workflow_usage_counts,
 )
 from .plots_participants import plot_participant_info
 from .utils import MANIFEST, save_manifest
@@ -47,6 +48,7 @@ def main():
     participant_info_df = load_participant_info()
 
     plot_workflow_distribution(df)
+    plot_total_workflow_usage_counts(df)
     plot_workflow_transitions(df)
     plot_mean_quality_by_workflow(df)
     plot_subjective_feedback_by_workflow(df)
@@ -57,6 +59,7 @@ def main():
 
     plot_participant_info(participant_info_df)
     generate_workflow_feedback_summaries(df, feedback_df)
+    generate_error_exposure_figures(df)
 
     save_manifest()
 

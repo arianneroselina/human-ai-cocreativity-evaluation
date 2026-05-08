@@ -3,6 +3,7 @@ import re
 
 import pandas as pd
 from matplotlib import pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 from scripts.config import WORKFLOW_LABELS, TABLE_DIR, WORKFLOW_ORDER
 from scripts.dashboard_figures.utils import save_figure, workflow_label
@@ -84,6 +85,51 @@ def plot_workflow_distribution(df):
         "01_workflow_distribution_choice_rounds",
         "Workflow Distribution in Choice Rounds",
         "Share of selected workflows in rounds 5–7.",
+    )
+
+
+def plot_total_workflow_usage_counts(df):
+    """
+    Shows the total number of times each workflow was used.
+
+    This gives a simple overview of workflow usage across all recorded rounds.
+    """
+
+    if "workflow" not in df.columns:
+        return
+
+    summary = (
+        df["workflow"]
+        .value_counts()
+        .reindex(WORKFLOW_ORDER)
+        .dropna()
+        .astype(int)
+    )
+
+    if summary.empty:
+        return
+
+    summary.rename(index=WORKFLOW_LABELS).to_csv(
+        TABLE_DIR / "total_workflow_usage_counts.csv",
+        header=["count"],
+        )
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    bars = ax.bar(summary.rename(index=WORKFLOW_LABELS).index, summary.values)
+
+    ax.set_title("Total Workflow Usage")
+    ax.set_xlabel("Workflow")
+    ax.set_ylabel("Number of rounds")
+    ax.tick_params(axis="x", rotation=0)
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+    ax.bar_label(bars, padding=3)
+
+    save_figure(
+        fig,
+        "01_total_workflow_usage_counts",
+        "Total Workflow Usage",
+        "Total number of rounds in which each workflow was used.",
     )
 
 

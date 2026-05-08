@@ -129,5 +129,6 @@ help:
 	@echo "  make export-ratings              Export raw evaluator ratings to CSV"
 	@echo "  make aggregate-scores            Create poem-level mean rating scores"
 	@echo "  make create-master               Create final master_round_dataset.csv"
+	@echo "  make generate-figures            Generate the visualization figures"
 	@echo "  make process-data                Run full evaluation data pipeline"
 	@echo ""
