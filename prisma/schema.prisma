@@ -56,13 +56,12 @@ model Poem {
 model EvaluationSession {
   id String @id @default(cuid())
 
-  // Keep evaluators anonymous
-  evaluatorCode String?
+  // One stable evaluator identity
+  evaluatorId String @unique
 
   startedAt   DateTime  @default(now())
   completedAt DateTime?
 
-  // Optional technical / study metadata
   userAgent String?
   metadata  Json?
 

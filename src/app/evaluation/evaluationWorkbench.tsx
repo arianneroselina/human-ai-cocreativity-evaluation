@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/shadcn_ui/button";
 import { Textarea } from "@/components/shadcn_ui/textarea";
 import LikertRow, { type Likert } from "@/components/ui/likertRow";
-import { delay, shuffleArray } from "@/lib/utils";
+import { delay } from "@/lib/utils";
 import { Poem } from "@/types/poem";
 
 type RatingResult = {
+  sessionId: string;
   poemId: string;
   clarity: Likert;
   creativity: Likert;
@@ -23,7 +24,10 @@ type EvaluationWorkbenchProps = {
 export default function EvaluationWorkbench({
                                               poems,
                                             }: EvaluationWorkbenchProps) {
-  const [randomizedPoems, setRandomizedPoems] = useState<Poem[]>([]);
+  const [evaluatorId, setEvaluatorId] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [ratedPoemIds, setRatedPoemIds] = useState<string[]>([]);
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -38,14 +42,55 @@ export default function EvaluationWorkbench({
   const [isChangingPoem, setIsChangingPoem] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    setRandomizedPoems(shuffleArray(poems));
-    setHasStarted(true);
-  }, [poems]);
-
-  const currentPoem = randomizedPoems[currentIndex];
-  const isFinished = hasStarted && currentIndex >= randomizedPoems.length;
+  const currentPoem = poems[currentIndex];
+  const isFinished = hasStarted && currentIndex >= poems.length;
   const canSubmit = clarity && creativity && relevance && quality;
+
+  async function handleStart() {
+    const cleanEvaluatorCode = evaluatorId.trim();
+
+    if (!cleanEvaluatorCode) {
+      alert("Please enter your evaluator ID.");
+      return;
+    }
+
+    try {
+      setIsLoadingSession(true);
+
+      const response = await fetch("/api/evaluation-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          evaluatorId: cleanEvaluatorCode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Could not load evaluation session.");
+      }
+
+      const data: {
+        sessionId: string;
+        ratedPoemIds: string[];
+      } = await response.json();
+
+      const ratedSet = new Set(data.ratedPoemIds);
+
+      const nextIndex = poems.findIndex((poem) => !ratedSet.has(poem.id));
+
+      setSessionId(data.sessionId);
+      setRatedPoemIds(data.ratedPoemIds);
+      setCurrentIndex(nextIndex === -1 ? poems.length : nextIndex);
+      setHasStarted(true);
+    } catch (error) {
+      console.error(error);
+      alert("Could not load your evaluation session.");
+    } finally {
+      setIsLoadingSession(false);
+    }
+  }
 
   function resetForm() {
     setClarity(null);
@@ -56,7 +101,7 @@ export default function EvaluationWorkbench({
   }
 
   async function handleSubmit() {
-    if (!currentPoem) return;
+    if (!currentPoem || !sessionId) return;
 
     if (!clarity || !creativity || !relevance || !quality) {
       alert("Please rate all four metrics before continuing.");
@@ -64,6 +109,7 @@ export default function EvaluationWorkbench({
     }
 
     const newRating: RatingResult = {
+      sessionId,
       poemId: currentPoem.id,
       clarity,
       creativity,
@@ -93,7 +139,16 @@ export default function EvaluationWorkbench({
       setIsChangingPoem(true);
       await delay(300);
 
-      setCurrentIndex((previous) => previous + 1);
+      const newRatedPoemIds = [...ratedPoemIds, currentPoem.id];
+      const newRatedSet = new Set(newRatedPoemIds);
+
+      setRatedPoemIds(newRatedPoemIds);
+
+      const nextIndex = poems.findIndex(
+        (poem, index) => index > currentIndex && !newRatedSet.has(poem.id),
+      );
+
+      setCurrentIndex(nextIndex === -1 ? poems.length : nextIndex);
       resetForm();
 
       window.scrollTo({
@@ -115,8 +170,29 @@ export default function EvaluationWorkbench({
 
   if (!hasStarted) {
     return (
-      <div className="rounded-3xl border border-border bg-card p-8 shadow-sm">
-        <p className="text-muted-foreground">Preparing randomized poems...</p>
+      <div className="mx-auto max-w-xl rounded-3xl border bg-card p-8 shadow-sm">
+        <h1 className="text-2xl font-semibold">Start evaluation</h1>
+
+        <p className="mt-2 text-muted-foreground">
+          Please enter your evaluator ID to continue.
+        </p>
+
+        <div className="mt-6 space-y-4">
+          <input
+            value={evaluatorId}
+            onChange={(event) => setEvaluatorId(event.target.value)}
+            placeholder="Evaluator ID"
+            className="h-11 w-full rounded-xl border bg-background px-4"
+          />
+
+          <Button
+            className="h-11 w-full rounded-xl"
+            onClick={handleStart}
+            disabled={isLoadingSession}
+          >
+            {isLoadingSession ? "Loading..." : "Continue"}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -156,7 +232,7 @@ export default function EvaluationWorkbench({
                 Anonymous poem
               </p>
               <h2 className="mt-1 text-2xl font-semibold">
-                Poem {currentIndex + 1}/{randomizedPoems.length}
+                Poem {currentIndex + 1}/{poems.length}
               </h2>
             </div>
           </div>

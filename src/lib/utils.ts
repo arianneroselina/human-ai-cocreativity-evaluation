@@ -13,10 +13,6 @@ export function parseNumber(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function shuffleArray<T>(array: T[]) {
-  return [...array].sort(() => Math.random() - 0.5);
-}
-
 export function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

@@ -15,6 +15,7 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const {
+      sessionId,
       poemId,
       clarity,
       creativity,
@@ -22,6 +23,13 @@ export async function POST(request: Request) {
       quality,
       comment,
     } = body;
+
+    if (!sessionId || typeof sessionId !== "string") {
+      return NextResponse.json(
+        { error: "Missing sessionId." },
+        { status: 400 },
+      );
+    }
 
     if (!poemId || typeof poemId !== "string") {
       return NextResponse.json(
@@ -42,26 +50,56 @@ export async function POST(request: Request) {
       );
     }
 
-    const session = await prisma.evaluationSession.create({
-      data: {},
+    const session = await prisma.evaluationSession.findUnique({
+      where: {
+        id: sessionId,
+      },
+      select: {
+        id: true,
+      },
     });
 
-    const rating = await prisma.rating.create({
-      data: {
-        poemId,
-        sessionId: session.id,
+    if (!session) {
+      return NextResponse.json(
+        { error: "Evaluation session not found." },
+        { status: 404 },
+      );
+    }
+
+    const cleanComment =
+      typeof comment === "string" && comment.trim() !== ""
+        ? comment.trim()
+        : null;
+
+    const rating = await prisma.rating.upsert({
+      where: {
+        poemId_sessionId: {
+          poemId,
+          sessionId,
+        },
+      },
+      update: {
         clarity,
         creativity,
         relevance,
         quality,
-        comment: comment?.trim() || null,
+        comment: cleanComment,
+      },
+      create: {
+        poemId,
+        sessionId,
+        clarity,
+        creativity,
+        relevance,
+        quality,
+        comment: cleanComment,
       },
     });
 
     return NextResponse.json({
       success: true,
       ratingId: rating.id,
-      sessionId: session.id,
+      sessionId,
     });
   } catch (error) {
     console.error("Failed to save rating:", error);
