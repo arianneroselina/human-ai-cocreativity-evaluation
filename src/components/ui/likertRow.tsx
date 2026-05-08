@@ -1,6 +1,6 @@
 "use client";
 
-export type Likert = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+export type Likert = 1 | 2 | 3 | 4 | 5;
 
 type LikertRowProps = {
   label: string;
@@ -10,7 +10,7 @@ type LikertRowProps = {
   right?: string;
 };
 
-const values: Likert[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const values: Likert[] = [1, 2, 3, 4, 5];
 
 export default function LikertRow({
   label,
@@ -21,13 +21,13 @@ export default function LikertRow({
 }: LikertRowProps) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <span className="text-sm font-medium">{label}</span>
         <span className="text-xs text-muted-foreground">{value ?? "—"}</span>
       </div>
 
       <div className="space-y-1">
-        <div className="grid grid-cols-10 gap-1.5" role="radiogroup" aria-label={label}>
+        <div className="grid grid-cols-5 gap-1.5" role="radiogroup" aria-label={label}>
           {values.map((v) => {
             const active = value === v;
 

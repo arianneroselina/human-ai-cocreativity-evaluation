@@ -77,11 +77,12 @@ model Rating {
   sessionId String
   session   EvaluationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  // Rating metrics: 1-10
-  clarity    Int
-  creativity Int
-  relevance  Int
-  quality    Int
+  // Rating metrics: 1-5
+  fluency        Int
+  themeAlignment Int
+  meaningfulness Int
+  poeticness     Int
+  overallQuality Int
 
   // Optional evaluator feedback
   comment     String?

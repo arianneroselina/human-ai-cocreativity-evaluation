@@ -2,12 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 function isValidScore(value: unknown) {
-  return (
-    typeof value === "number" &&
-    Number.isInteger(value) &&
-    value >= 1 &&
-    value <= 10
-  );
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 10;
 }
 
 export async function POST(request: Request) {
@@ -17,36 +12,32 @@ export async function POST(request: Request) {
     const {
       sessionId,
       poemId,
-      clarity,
-      creativity,
-      relevance,
-      quality,
+      fluency,
+      themeAlignment,
+      meaningfulness,
+      poeticness,
+      overallQuality,
       comment,
     } = body;
 
     if (!sessionId || typeof sessionId !== "string") {
-      return NextResponse.json(
-        { error: "Missing sessionId." },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing sessionId." }, { status: 400 });
     }
 
     if (!poemId || typeof poemId !== "string") {
-      return NextResponse.json(
-        { error: "Missing poemId." },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing poemId." }, { status: 400 });
     }
 
     if (
-      !isValidScore(clarity) ||
-      !isValidScore(creativity) ||
-      !isValidScore(relevance) ||
-      !isValidScore(quality)
+      !isValidScore(fluency) ||
+      !isValidScore(themeAlignment) ||
+      !isValidScore(meaningfulness) ||
+      !isValidScore(poeticness) ||
+      !isValidScore(overallQuality)
     ) {
       return NextResponse.json(
         { error: "All ratings must be integers from 1 to 10." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -60,16 +51,11 @@ export async function POST(request: Request) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Evaluation session not found." },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Evaluation session not found." }, { status: 404 });
     }
 
     const cleanComment =
-      typeof comment === "string" && comment.trim() !== ""
-        ? comment.trim()
-        : null;
+      typeof comment === "string" && comment.trim() !== "" ? comment.trim() : null;
 
     const rating = await prisma.rating.upsert({
       where: {
@@ -79,19 +65,21 @@ export async function POST(request: Request) {
         },
       },
       update: {
-        clarity,
-        creativity,
-        relevance,
-        quality,
+        fluency,
+        themeAlignment,
+        meaningfulness,
+        poeticness,
+        overallQuality,
         comment: cleanComment,
       },
       create: {
         poemId,
         sessionId,
-        clarity,
-        creativity,
-        relevance,
-        quality,
+        fluency,
+        themeAlignment,
+        meaningfulness,
+        poeticness,
+        overallQuality,
         comment: cleanComment,
       },
     });
@@ -104,9 +92,6 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Failed to save rating:", error);
 
-    return NextResponse.json(
-      { error: "Failed to save rating." },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to save rating." }, { status: 500 });
   }
 }

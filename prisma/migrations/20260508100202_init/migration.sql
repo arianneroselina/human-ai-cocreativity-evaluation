@@ -27,7 +27,7 @@ CREATE TABLE "Poem" (
 -- CreateTable
 CREATE TABLE "EvaluationSession" (
     "id" TEXT NOT NULL,
-    "evaluatorCode" TEXT,
+    "evaluatorId" TEXT NOT NULL,
     "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "completedAt" TIMESTAMP(3),
     "userAgent" TEXT,
@@ -41,10 +41,11 @@ CREATE TABLE "Rating" (
     "id" TEXT NOT NULL,
     "poemId" TEXT NOT NULL,
     "sessionId" TEXT NOT NULL,
-    "clarity" INTEGER NOT NULL,
-    "creativity" INTEGER NOT NULL,
-    "relevance" INTEGER NOT NULL,
-    "quality" INTEGER NOT NULL,
+    "fluency" INTEGER NOT NULL,
+    "themeAlignment" INTEGER NOT NULL,
+    "meaningfulness" INTEGER NOT NULL,
+    "poeticness" INTEGER NOT NULL,
+    "overallQuality" INTEGER NOT NULL,
     "comment" TEXT,
     "timeSpentMs" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -67,6 +68,9 @@ CREATE INDEX "Poem_workflow_idx" ON "Poem"("workflow");
 
 -- CreateIndex
 CREATE INDEX "Poem_taskId_idx" ON "Poem"("taskId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EvaluationSession_evaluatorId_key" ON "EvaluationSession"("evaluatorId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Rating_poemId_sessionId_key" ON "Rating"("poemId", "sessionId");

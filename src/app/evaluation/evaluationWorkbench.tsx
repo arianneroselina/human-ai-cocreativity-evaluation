@@ -10,10 +10,11 @@ import { Poem } from "@/types/poem";
 type RatingResult = {
   sessionId: string;
   poemId: string;
-  clarity: Likert;
-  creativity: Likert;
-  relevance: Likert;
-  quality: Likert;
+  fluency: Likert;
+  themeAlignment: Likert;
+  meaningfulness: Likert;
+  poeticness: Likert;
+  overallQuality: Likert;
   comment: string;
 };
 
@@ -21,9 +22,7 @@ type EvaluationWorkbenchProps = {
   poems: Poem[];
 };
 
-export default function EvaluationWorkbench({
-                                              poems,
-                                            }: EvaluationWorkbenchProps) {
+export default function EvaluationWorkbench({ poems }: EvaluationWorkbenchProps) {
   const [evaluatorId, setEvaluatorId] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [ratedPoemIds, setRatedPoemIds] = useState<string[]>([]);
@@ -33,10 +32,11 @@ export default function EvaluationWorkbench({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [ratings, setRatings] = useState<RatingResult[]>([]);
 
-  const [clarity, setClarity] = useState<Likert | null>(null);
-  const [creativity, setCreativity] = useState<Likert | null>(null);
-  const [relevance, setRelevance] = useState<Likert | null>(null);
-  const [quality, setQuality] = useState<Likert | null>(null);
+  const [fluency, setFluency] = useState<Likert | null>(null);
+  const [themeAlignment, setThemeAlignment] = useState<Likert | null>(null);
+  const [meaningfulness, setMeaningfulness] = useState<Likert | null>(null);
+  const [poeticness, setPoeticness] = useState<Likert | null>(null);
+  const [overallQuality, setOverallQuality] = useState<Likert | null>(null);
   const [comment, setComment] = useState("");
 
   const [isChangingPoem, setIsChangingPoem] = useState(false);
@@ -44,7 +44,7 @@ export default function EvaluationWorkbench({
 
   const currentPoem = poems[currentIndex];
   const isFinished = hasStarted && currentIndex >= poems.length;
-  const canSubmit = clarity && creativity && relevance && quality;
+  const canSubmit = fluency && themeAlignment && meaningfulness && poeticness && overallQuality;
 
   async function handleStart() {
     const cleanEvaluatorCode = evaluatorId.trim();
@@ -93,17 +93,18 @@ export default function EvaluationWorkbench({
   }
 
   function resetForm() {
-    setClarity(null);
-    setCreativity(null);
-    setRelevance(null);
-    setQuality(null);
+    setFluency(null);
+    setThemeAlignment(null);
+    setMeaningfulness(null);
+    setPoeticness(null);
+    setOverallQuality(null);
     setComment("");
   }
 
   async function handleSubmit() {
     if (!currentPoem || !sessionId) return;
 
-    if (!clarity || !creativity || !relevance || !quality) {
+    if (!fluency || !themeAlignment || !meaningfulness || !poeticness || !overallQuality) {
       alert("Please rate all four metrics before continuing.");
       return;
     }
@@ -111,10 +112,11 @@ export default function EvaluationWorkbench({
     const newRating: RatingResult = {
       sessionId,
       poemId: currentPoem.id,
-      clarity,
-      creativity,
-      relevance,
-      quality,
+      fluency,
+      themeAlignment,
+      meaningfulness,
+      poeticness,
+      overallQuality,
       comment,
     };
 
@@ -145,7 +147,7 @@ export default function EvaluationWorkbench({
       setRatedPoemIds(newRatedPoemIds);
 
       const nextIndex = poems.findIndex(
-        (poem, index) => index > currentIndex && !newRatedSet.has(poem.id),
+        (poem, index) => index > currentIndex && !newRatedSet.has(poem.id)
       );
 
       setCurrentIndex(nextIndex === -1 ? poems.length : nextIndex);
@@ -167,15 +169,12 @@ export default function EvaluationWorkbench({
     }
   }
 
-
   if (!hasStarted) {
     return (
       <div className="mx-auto max-w-xl rounded-3xl border bg-card p-8 shadow-sm">
         <h1 className="text-2xl font-semibold">Start evaluation</h1>
 
-        <p className="mt-2 text-muted-foreground">
-          Please enter your evaluator ID to continue.
-        </p>
+        <p className="mt-2 text-muted-foreground">Please enter your evaluator ID to continue.</p>
 
         <div className="mt-6 space-y-4">
           <input
@@ -219,9 +218,7 @@ export default function EvaluationWorkbench({
     <div
       key={currentPoem.id}
       className={`grid gap-6 transition-all duration-300 lg:grid-cols-[minmax(0,1fr)_460px] ${
-        isChangingPoem
-          ? "translate-y-3 opacity-0"
-          : "translate-y-0 opacity-100"
+        isChangingPoem ? "translate-y-3 opacity-0" : "translate-y-0 opacity-100"
       }`}
     >
       <section className="overflow-hidden rounded-3xl border bg-card shadow-sm">
@@ -264,33 +261,41 @@ export default function EvaluationWorkbench({
 
         <div className="space-y-6">
           <LikertRow
-            label="How clear and understandable is the poem?"
-            value={clarity}
-            onChange={setClarity}
-            left="Not clear"
-            right="Very clear"
-          />
-
-          <LikertRow
-            label="How creative or original is the poem?"
-            value={creativity}
-            onChange={setCreativity}
-            left="Not creative"
-            right="Very creative"
+            label="How fluent and understandable is the poem?"
+            value={fluency}
+            onChange={setFluency}
+            left="Not fluent"
+            right="Very fluent"
           />
 
           <LikertRow
             label="How well does the poem fit the given topic?"
-            value={relevance}
-            onChange={setRelevance}
-            left="Not relevant"
-            right="Very relevant"
+            value={themeAlignment}
+            onChange={setThemeAlignment}
+            left="Does not fit"
+            right="Fits very well"
+          />
+
+          <LikertRow
+            label="How meaningful is the poem?"
+            value={meaningfulness}
+            onChange={setMeaningfulness}
+            left="Not meaningful"
+            right="Very meaningful"
+          />
+
+          <LikertRow
+            label="How poetic or aesthetically interesting is the poem?"
+            value={poeticness}
+            onChange={setPoeticness}
+            left="Not poetic"
+            right="Very poetic"
           />
 
           <LikertRow
             label="Overall, how good is the poem?"
-            value={quality}
-            onChange={setQuality}
+            value={overallQuality}
+            onChange={setOverallQuality}
             left="Very poor"
             right="Excellent"
           />
@@ -310,11 +315,7 @@ export default function EvaluationWorkbench({
             onClick={handleSubmit}
             disabled={!canSubmit || isSubmitting}
           >
-            {isSubmitting
-              ? isChangingPoem
-                ? "Loading next poem..."
-                : "Submitting..."
-              : "Submit"}
+            {isSubmitting ? (isChangingPoem ? "Loading next poem..." : "Submitting...") : "Submit"}
           </Button>
         </div>
       </aside>

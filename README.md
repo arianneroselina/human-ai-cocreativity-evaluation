@@ -24,10 +24,10 @@ The evaluation is based on a controlled dataset where:
 
 - 24 participants each wrote poems across 7 different topics
 - Each poem was created under one of the following conditions:
-    - **Human-only**
-    - **AI-only**
-    - **Human→AI**
-    - **AI→Human**
+  - **Human-only**
+  - **AI-only**
+  - **Human→AI**
+  - **AI→Human**
 
 The original dataset contains **168 poems**. Since 2 poems are empty, the final evaluation dataset consists of **166 valid poems**.
 

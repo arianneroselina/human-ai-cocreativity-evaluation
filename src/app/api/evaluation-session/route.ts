@@ -6,10 +6,7 @@ export async function POST(request: Request) {
   const evaluatorId = String(body.evaluatorId ?? "").trim();
 
   if (!evaluatorId) {
-    return NextResponse.json(
-      { error: "Evaluator ID is required." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Evaluator ID is required." }, { status: 400 });
   }
 
   const session = await prisma.evaluationSession.upsert({
