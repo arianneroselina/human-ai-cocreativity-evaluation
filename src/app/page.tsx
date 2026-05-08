@@ -10,18 +10,29 @@ export default async function Page() {
     },
     select: {
       id: true,
+      sessionId: true,
+      participantId: true,
+      roundIndex: true,
       taskId: true,
       topic: true,
       text: true,
       workflow: true,
+      isEmpty: true,
       timeMs: true,
       wordCount: true,
       charCount: true,
       passed: true,
+      startedAt: true,
+      submittedAt: true,
     },
-    orderBy: {
-      id: "asc",
-    },
+    orderBy: [
+      {
+        participantId: "asc",
+      },
+      {
+        roundIndex: "asc",
+      },
+    ],
   });
 
   return (
