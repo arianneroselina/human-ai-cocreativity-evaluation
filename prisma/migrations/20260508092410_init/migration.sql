@@ -4,6 +4,9 @@ CREATE TYPE "Workflow" AS ENUM ('human', 'ai', 'human_ai', 'ai_human');
 -- CreateTable
 CREATE TABLE "Poem" (
     "id" TEXT NOT NULL,
+    "sessionId" TEXT,
+    "participantId" INTEGER,
+    "roundIndex" INTEGER,
     "taskId" TEXT NOT NULL,
     "topic" TEXT NOT NULL,
     "text" TEXT NOT NULL,
@@ -13,6 +16,8 @@ CREATE TABLE "Poem" (
     "wordCount" INTEGER,
     "charCount" INTEGER,
     "passed" BOOLEAN NOT NULL,
+    "startedAt" TIMESTAMP(3),
+    "submittedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -47,6 +52,21 @@ CREATE TABLE "Rating" (
 
     CONSTRAINT "Rating_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE INDEX "Poem_sessionId_idx" ON "Poem"("sessionId");
+
+-- CreateIndex
+CREATE INDEX "Poem_participantId_idx" ON "Poem"("participantId");
+
+-- CreateIndex
+CREATE INDEX "Poem_roundIndex_idx" ON "Poem"("roundIndex");
+
+-- CreateIndex
+CREATE INDEX "Poem_workflow_idx" ON "Poem"("workflow");
+
+-- CreateIndex
+CREATE INDEX "Poem_taskId_idx" ON "Poem"("taskId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Rating_poemId_sessionId_key" ON "Rating"("poemId", "sessionId");

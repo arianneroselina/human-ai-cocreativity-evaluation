@@ -37,29 +37,44 @@ async function seedPoems() {
           id: poem.id,
         },
         update: {
+          sessionId: poem.sessionId,
+          participantId: poem.participantId,
+          roundIndex: poem.roundIndex,
+
           taskId: poem.taskId,
           topic: poem.topic,
           text: poem.text,
           workflow: mapWorkflow(poem.workflow),
 
-          isEmpty: poem.text.trim() === "",
+          isEmpty: poem.isEmpty,
           timeMs: poem.timeMs,
           wordCount: poem.wordCount,
           charCount: poem.charCount,
           passed: poem.passed,
+
+          startedAt: poem.startedAt,
+          submittedAt: poem.submittedAt,
         },
         create: {
           id: poem.id,
+
+          sessionId: poem.sessionId,
+          participantId: poem.participantId,
+          roundIndex: poem.roundIndex,
+
           taskId: poem.taskId,
           topic: poem.topic,
           text: poem.text,
           workflow: mapWorkflow(poem.workflow),
 
-          isEmpty: poem.text.trim() === "",
+          isEmpty: poem.isEmpty,
           timeMs: poem.timeMs,
           wordCount: poem.wordCount,
           charCount: poem.charCount,
           passed: poem.passed,
+
+          startedAt: poem.startedAt,
+          submittedAt: poem.submittedAt,
         },
       });
     }

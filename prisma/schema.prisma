@@ -17,6 +17,11 @@ enum Workflow {
 model Poem {
   id String @id @default(cuid())
 
+  // Link back to original study data
+  sessionId     String?
+  participantId Int?
+  roundIndex    Int?
+
   // Dataset information
   taskId   String
   topic    String
@@ -30,12 +35,22 @@ model Poem {
   charCount Int?
   passed    Boolean
 
-  // Timestamps
+  // Timestamps from study round
+  startedAt   DateTime?
+  submittedAt DateTime?
+
+  // Prisma timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
   ratings Rating[]
+
+  @@index([sessionId])
+  @@index([participantId])
+  @@index([roundIndex])
+  @@index([workflow])
+  @@index([taskId])
 }
 
 model EvaluationSession {
