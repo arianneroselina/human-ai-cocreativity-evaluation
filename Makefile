@@ -10,7 +10,11 @@ gen:
 
 .PHONY: migrate
 migrate:
-	npx prisma migrate dev -n init
+	npx prisma migrate dev
+
+.PHONY: migrate-new
+migrate-new:
+	npx prisma migrate dev -n $(name)
 
 .PHONY: seed-db
 seed-db:
@@ -39,10 +43,10 @@ studio:
 
 .PHONY: clean
 clean:
-	rm -rf prisma/migrations node_modules/.prisma generated/prisma
+	rm -rf node_modules/.prisma generated/prisma
 
 .PHONY: rebuild
-rebuild: clean reset gen migrate seed-db
+rebuild: clean gen migrate seed-db
 
 .PHONY: format
 format:
@@ -51,14 +55,16 @@ format:
 .PHONY: help
 help:
 	@echo "Available commands:"
-	@echo "gen        Generate Prisma Client"
-	@echo "migrate    Apply local migrations"
-	@echo "seed-db    Seed database with initial poem data"
-	@echo "setup-db   Run migrations and seed database"
-	@echo "reset      Reset local database"
-	@echo "reset-seed Reset local database and seed it"
-	@echo "deploy     Deploy migrations to production"
-	@echo "studio     Open Prisma Studio"
-	@echo "clean      Clean Prisma directories (migrations, generated)"
-	@echo "rebuild    Clean, generate Prisma Client, apply migrations, and seed"
-	@echo "format	  Format files using Prettier"
+	@echo "run                 Run dev server"
+	@echo "gen                 Generate Prisma Client"
+	@echo "migrate             Apply local migrations"
+	@echo "migrate-new name=x  Create a new named migration"
+	@echo "seed-db             Seed database with initial poem data"
+	@echo "setup-db            Run migrations and seed database"
+	@echo "reset               Reset local database"
+	@echo "reset-seed          Reset local database and seed it"
+	@echo "deploy              Deploy migrations to production"
+	@echo "studio              Open Prisma Studio"
+	@echo "clean               Clean generated Prisma client only"
+	@echo "rebuild             Regenerate client, migrate local DB, and seed"
+	@echo "format              Format files using Prettier"
