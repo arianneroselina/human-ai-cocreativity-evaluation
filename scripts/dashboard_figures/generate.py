@@ -1,7 +1,7 @@
 import matplotlib
 
 from scripts.config import FIGURE_DIR, TABLE_DIR
-from scripts.dashboard_figures.plots_summary import plot_workflow_feedback_summaries
+from scripts.dashboard_figures.plots_summary import generate_workflow_feedback_summaries
 
 matplotlib.use("Agg")
 
@@ -56,7 +56,7 @@ def main():
     plot_final_workflow_ranking(feedback_df)
 
     plot_participant_info(participant_info_df)
-    plot_workflow_feedback_summaries(df, feedback_df)
+    generate_workflow_feedback_summaries(df, feedback_df)
 
     save_manifest()
 
