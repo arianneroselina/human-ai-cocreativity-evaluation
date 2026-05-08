@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 
 export default function Section({
-                                  title,
-                                  description,
-                                  children,
-                                }: {
+  title,
+  description,
+  children,
+}: {
   title: string;
   description?: string;
   children: ReactNode;

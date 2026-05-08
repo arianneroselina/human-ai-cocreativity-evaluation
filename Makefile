@@ -75,23 +75,23 @@ rebuild: clean gen migrate seed-db
 
 .PHONY: eval-check
 eval-check:
-	$(PYTHON) scripts/check_evaluation_data.py
+	$(PYTHON) -m scripts.check_evaluation_data
 
 .PHONY: export-ratings
 export-ratings:
-	$(PYTHON) scripts/export_ratings.py
+	$(PYTHON) -m scripts.export_ratings
 
 .PHONY: aggregate-scores
 aggregate-scores:
-	$(PYTHON) scripts/aggregate_poem_scores.py
+	$(PYTHON) -m scripts.aggregate_poem_scores
 
 .PHONY: create-master
 create-master:
-	$(PYTHON) scripts/create_master_dataset.py
+	$(PYTHON) -m scripts.create_master_dataset
 
 .PHONY: generate-figures
 generate-figures:
-	$(PYTHON) scripts/generate_dashboard_figures.py
+	$(PYTHON) -m scripts.dashboard_figures.generate
 
 .PHONY: process-data
 process-data: eval-check export-ratings aggregate-scores create-master generate-figures

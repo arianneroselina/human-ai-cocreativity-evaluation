@@ -22,7 +22,7 @@ const MASTER_DATASET_PATH = path.join(
   process.cwd(),
   "data",
   "processed",
-  "master_round_dataset.csv",
+  "master_round_dataset.csv"
 );
 
 const INPUTS_DIR = path.join(process.cwd(), "inputs");
@@ -56,70 +56,63 @@ function readAllFinalFeedbackRows() {
 }
 
 export async function getResearchDashboardData(): Promise<ResearchDashboardData> {
-  const [
-    totalPoems,
-    nonEmptyPoems,
-    emptyPoems,
-    totalRatings,
-    evaluatorSessions,
-    poems,
-  ] = await Promise.all([
-    prisma.poem.count(),
-    prisma.poem.count({
-      where: {
-        isEmpty: false,
-      },
-    }),
-    prisma.poem.count({
-      where: {
-        isEmpty: true,
-      },
-    }),
-    prisma.rating.count(),
-    prisma.evaluationSession.findMany({
-      select: {
-        evaluatorId: true,
-        completedAt: true,
-        _count: {
-          select: {
-            ratings: true,
+  const [totalPoems, nonEmptyPoems, emptyPoems, totalRatings, evaluatorSessions, poems] =
+    await Promise.all([
+      prisma.poem.count(),
+      prisma.poem.count({
+        where: {
+          isEmpty: false,
+        },
+      }),
+      prisma.poem.count({
+        where: {
+          isEmpty: true,
+        },
+      }),
+      prisma.rating.count(),
+      prisma.evaluationSession.findMany({
+        select: {
+          evaluatorId: true,
+          completedAt: true,
+          _count: {
+            select: {
+              ratings: true,
+            },
           },
         },
-      },
-      orderBy: {
-        evaluatorId: "asc",
-      },
-    }),
-    prisma.poem.findMany({
-      where: {
-        isEmpty: false,
-      },
-      select: {
-        id: true,
-        participantId: true,
-        roundIndex: true,
-        taskId: true,
-        workflow: true,
-        _count: {
-          select: {
-            ratings: true,
+        orderBy: {
+          evaluatorId: "asc",
+        },
+      }),
+      prisma.poem.findMany({
+        where: {
+          isEmpty: false,
+        },
+        select: {
+          id: true,
+          participantId: true,
+          roundIndex: true,
+          taskId: true,
+          workflow: true,
+          _count: {
+            select: {
+              ratings: true,
+            },
           },
         },
-      },
-      orderBy: [
-        {
-          participantId: "asc",
-        },
-        {
-          roundIndex: "asc",
-        },
-      ],
-    }),
-  ]);
+        orderBy: [
+          {
+            participantId: "asc",
+          },
+          {
+            roundIndex: "asc",
+          },
+        ],
+      }),
+    ]);
 
   const expectedRatings = nonEmptyPoems * EXPECTED_EVALUATORS;
-  const completionPercent =
-    expectedRatings > 0 ? (totalRatings / expectedRatings) * 100 : 0;
+  const completionPercent = expectedRatings > 0 ? (totalRatings / expectedRatings) * 100 : 0;
 
   const incompletePoems = poems
     .filter((poem) => poem._count.ratings !== EXPECTED_EVALUATORS)
@@ -135,8 +128,7 @@ export async function getResearchDashboardData(): Promise<ResearchDashboardData>
   const evaluatorProgress = evaluatorSessions.map((session) => ({
     evaluatorId: session.evaluatorId,
     ratingCount: session._count.ratings,
-    progressPercent:
-      nonEmptyPoems > 0 ? (session._count.ratings / nonEmptyPoems) * 100 : 0,
+    progressPercent: nonEmptyPoems > 0 ? (session._count.ratings / nonEmptyPoems) * 100 : 0,
     completed: Boolean(session.completedAt),
   }));
 

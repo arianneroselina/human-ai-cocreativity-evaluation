@@ -21,7 +21,7 @@ export function toNumber(value: unknown): number | null {
 
 export function mean(values: Array<number | null | undefined>) {
   const clean = values.filter(
-    (value): value is number => typeof value === "number" && Number.isFinite(value),
+    (value): value is number => typeof value === "number" && Number.isFinite(value)
   );
 
   if (clean.length === 0) return null;
@@ -42,7 +42,7 @@ function groupBy<T>(items: T[], getKey: (item: T) => string) {
       acc[key].push(item);
       return acc;
     },
-    {} as Record<string, T[]>,
+    {} as Record<string, T[]>
   );
 }
 
@@ -90,12 +90,7 @@ export function getTransitionRows(rows: AnyRow[]): TransitionRow[] {
       // Focus on transition into and within choice phase: 4→5, 5→6, 6→7
       if (current.roundIndex < 4 || next.roundIndex < 5) continue;
 
-      const key = [
-        current.roundIndex,
-        next.roundIndex,
-        current.workflow,
-        next.workflow,
-      ].join("|");
+      const key = [current.roundIndex, next.roundIndex, current.workflow, next.workflow].join("|");
 
       const existing = transitionCounts.get(key);
 
@@ -114,10 +109,7 @@ export function getTransitionRows(rows: AnyRow[]): TransitionRow[] {
   });
 
   return Array.from(transitionCounts.values()).sort(
-    (a, b) =>
-      a.fromRound - b.fromRound ||
-      a.toRound - b.toRound ||
-      b.count - a.count,
+    (a, b) => a.fromRound - b.fromRound || a.toRound - b.toRound || b.count - a.count
   );
 }
 
@@ -130,19 +122,11 @@ export function getQualityByWorkflow(rows: AnyRow[]): QualityByWorkflowRow[] {
       workflow,
       poems: workflowRows.length,
       meanFluency: mean(workflowRows.map((row) => toNumber(row.meanFluency))),
-      meanThemeAlignment: mean(
-        workflowRows.map((row) => toNumber(row.meanThemeAlignment)),
-      ),
-      meanMeaningfulness: mean(
-        workflowRows.map((row) => toNumber(row.meanMeaningfulness)),
-      ),
+      meanThemeAlignment: mean(workflowRows.map((row) => toNumber(row.meanThemeAlignment))),
+      meanMeaningfulness: mean(workflowRows.map((row) => toNumber(row.meanMeaningfulness))),
       meanPoeticness: mean(workflowRows.map((row) => toNumber(row.meanPoeticness))),
-      meanOverallQuality: mean(
-        workflowRows.map((row) => toNumber(row.meanOverallQuality)),
-      ),
-      qualityComposite: mean(
-        workflowRows.map((row) => toNumber(row.qualityComposite)),
-      ),
+      meanOverallQuality: mean(workflowRows.map((row) => toNumber(row.meanOverallQuality))),
+      qualityComposite: mean(workflowRows.map((row) => toNumber(row.qualityComposite))),
     }))
     .sort((a, b) => a.workflow.localeCompare(b.workflow));
 }
@@ -150,16 +134,14 @@ export function getQualityByWorkflow(rows: AnyRow[]): QualityByWorkflowRow[] {
 export function getSubjectiveByWorkflow(rows: AnyRow[]): SubjectiveByWorkflowRow[] {
   const byWorkflow = groupBy(
     rows.filter((row) => row.workflow),
-    (row) => String(row.workflow),
+    (row) => String(row.workflow)
   );
 
   return Object.entries(byWorkflow)
     .map(([workflow, workflowRows]) => ({
       workflow,
       rounds: workflowRows.length,
-      meanSatisfaction: mean(
-        workflowRows.map((row) => toNumber(row.satisfactionResult)),
-      ),
+      meanSatisfaction: mean(workflowRows.map((row) => toNumber(row.satisfactionResult))),
       meanFrustration: mean(workflowRows.map((row) => toNumber(row.frustration))),
       meanEffort: mean(workflowRows.map((row) => toNumber(row.effort))),
       meanPerformance: mean(workflowRows.map((row) => toNumber(row.performance))),
@@ -186,66 +168,52 @@ export function getAiTrustByRound(rows: AnyRow[]): AiTrustRoundRow[] {
       return {
         condition,
         roundIndex: Number(roundIndex),
-        meanAiPerformance: mean(
-          groupRows.map((row) => toNumber(row.aiPerformanceOverall)),
-        ),
-        meanAiUnderstanding: mean(
-          groupRows.map((row) => toNumber(row.aiUnderstanding)),
-        ),
-        meanAiCollaboration: mean(
-          groupRows.map((row) => toNumber(row.aiCollaboration)),
-        ),
-        meanAiCreativitySupport: mean(
-          groupRows.map((row) => toNumber(row.aiCreativitySupport)),
-        ),
+        meanAiPerformance: mean(groupRows.map((row) => toNumber(row.aiPerformanceOverall))),
+        meanAiUnderstanding: mean(groupRows.map((row) => toNumber(row.aiUnderstanding))),
+        meanAiCollaboration: mean(groupRows.map((row) => toNumber(row.aiCollaboration))),
+        meanAiCreativitySupport: mean(groupRows.map((row) => toNumber(row.aiCreativitySupport))),
         count: groupRows.length,
       };
     })
     .filter((row) => Number.isFinite(row.roundIndex))
-    .sort(
-      (a, b) =>
-        a.condition.localeCompare(b.condition) || a.roundIndex - b.roundIndex,
-    );
+    .sort((a, b) => a.condition.localeCompare(b.condition) || a.roundIndex - b.roundIndex);
 }
 
 export function getConstraintByWorkflow(rows: AnyRow[]): ConstraintByWorkflowRow[] {
   const byWorkflow = groupBy(
     rows.filter((row) => row.workflow),
-    (row) => String(row.workflow),
+    (row) => String(row.workflow)
   );
 
   return Object.entries(byWorkflow)
     .map(([workflow, workflowRows]) => {
       const passedValues = workflowRows
-        .map((row) => {
+        .map((row): 0 | 1 | null => {
           if (row.passed === true || row.passed === "true" || row.passed === "t") {
             return 1;
           }
 
-          if (
-            row.passed === false ||
-            row.passed === "false" ||
-            row.passed === "f"
-          ) {
+          if (row.passed === false || row.passed === "false" || row.passed === "f") {
             return 0;
           }
 
           return null;
         })
-        .filter((value): value is number => value !== null);
+        .filter((value): value is 0 | 1 => value !== null);
+
+      const passedTotal = passedValues.reduce(
+        (sum: number, value) => sum + value,
+        0,
+      );
 
       return {
         workflow,
         rounds: workflowRows.length,
         passedRate:
           passedValues.length > 0
-            ? (passedValues.reduce((sum, value) => sum + value, 0) /
-              passedValues.length) *
-            100
+            ? (passedTotal / passedValues.length) * 100
             : null,
-        meanConstraintScore: mean(
-          workflowRows.map((row) => toNumber(row.constraintScore)),
-        ),
+        meanConstraintScore: mean(workflowRows.map((row) => toNumber(row.constraintScore))),
       };
     })
     .sort((a, b) => a.workflow.localeCompare(b.workflow));
@@ -254,9 +222,7 @@ export function getConstraintByWorkflow(rows: AnyRow[]): ConstraintByWorkflowRow
 export function getQualityTimePoints(rows: AnyRow[]): QualityTimePoint[] {
   return rows
     .map((row) => {
-      const timeMinutes =
-        toNumber(row.effectiveTimeMinutes) ??
-        ((toNumber(row.timeMs) ?? 0) / 60000);
+      const timeMinutes = toNumber(row.effectiveTimeMinutes) ?? (toNumber(row.timeMs) ?? 0) / 60000;
       const qualityComposite = toNumber(row.qualityComposite);
 
       if (!timeMinutes || qualityComposite === null) return null;
@@ -333,8 +299,7 @@ export function getFinalRankingRows(feedbackRows: AnyRow[]): FinalRankingRow[] {
     return {
       workflow,
       firstChoiceCount: firstChoiceCounts.get(workflow) ?? 0,
-      averageRank:
-        rankCount > 0 ? (rankSums.get(workflow) ?? 0) / rankCount : null,
+      averageRank: rankCount > 0 ? (rankSums.get(workflow) ?? 0) / rankCount : null,
     };
   });
 }
@@ -351,12 +316,12 @@ const themeKeywords: Record<string, string[]> = {
   ],
   "Control / ownership": ["control", "ownership", "own", "my text", "edit"],
   "Speed / time": ["time", "fast", "quick", "slow", "deadline"],
-  "Creativity": ["creative", "creativity", "idea", "inspiration"],
-  "Quality": ["quality", "better", "good", "bad", "improve"],
+  Creativity: ["creative", "creativity", "idea", "inspiration"],
+  Quality: ["quality", "better", "good", "bad", "improve"],
   "Rules / constraints": ["rule", "constraint", "requirement", "forbidden", "required"],
-  "Frustration": ["frustrated", "frustrating", "annoying", "stress", "difficult"],
-  "Trust": ["trust", "reliable", "confidence", "depend"],
-  "Helpfulness": ["helpful", "support", "assist", "useful"],
+  Frustration: ["frustrated", "frustrating", "annoying", "stress", "difficult"],
+  Trust: ["trust", "reliable", "confidence", "depend"],
+  Helpfulness: ["helpful", "support", "assist", "useful"],
 };
 
 export function getCommentThemes(rows: AnyRow[], feedbackRows: AnyRow[]): CommentThemeRow[] {

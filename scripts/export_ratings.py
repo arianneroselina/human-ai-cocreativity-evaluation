@@ -1,19 +1,11 @@
-import os
 import csv
 from pathlib import Path
-from dotenv import load_dotenv
 import psycopg
 from psycopg.rows import dict_row
 
-load_dotenv()
+from scripts.config import PRISMA_DATABASE_URL
 
-DATABASE_URL = os.getenv("PRISMA_DATABASE_URL") or os.getenv("DATABASE_URL")
 OUTPUT_PATH = Path("data/processed/ratings_export.csv")
-
-if not DATABASE_URL:
-    raise RuntimeError("Missing PRISMA_DATABASE_URL or DATABASE_URL in .env")
-
-OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 query = """
     SELECT
@@ -49,7 +41,7 @@ query = """
     ORDER BY p."participantId", p."roundIndex", s."evaluatorId";
 """
 
-with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
+with psycopg.connect(PRISMA_DATABASE_URL, row_factory=dict_row) as conn:
     with conn.cursor() as cur:
         cur.execute(query)
         rows = cur.fetchall()

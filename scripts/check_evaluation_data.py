@@ -1,15 +1,7 @@
-import os
-from dotenv import load_dotenv
 import psycopg
 from psycopg.rows import dict_row
 
-load_dotenv()
-
-DATABASE_URL = os.getenv("PRISMA_DATABASE_URL")
-EXPECTED_EVALUATORS = 3
-
-if not DATABASE_URL:
-    raise RuntimeError("Missing PRISMA_DATABASE_URL in .env")
+from scripts.config import PRISMA_DATABASE_URL, EXPECTED_EVALUATORS
 
 
 def print_table(title, rows):
@@ -26,7 +18,7 @@ def print_table(title, rows):
         print(" | ".join(str(row[h]) for h in headers))
 
 
-with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
+with psycopg.connect(PRISMA_DATABASE_URL, row_factory=dict_row) as conn:
     with conn.cursor() as cur:
         cur.execute('SELECT COUNT(*) AS count FROM "Poem";')
         total_poems = cur.fetchone()["count"]

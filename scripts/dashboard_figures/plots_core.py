@@ -1,145 +1,11 @@
 import json
 import re
-from pathlib import Path
 
-import matplotlib
-matplotlib.use("Agg")
-
-import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib import pyplot as plt
 
-
-MASTER_DATASET_PATH = Path("data/processed/master_round_dataset.csv")
-INPUTS_DIR = Path("inputs")
-
-FIGURE_DIR = Path("public/research-dashboard/figures")
-TABLE_DIR = Path("data/processed/dashboard_tables")
-
-FIGURE_DIR.mkdir(parents=True, exist_ok=True)
-TABLE_DIR.mkdir(parents=True, exist_ok=True)
-
-WORKFLOW_ORDER = ["human", "ai", "human_ai", "ai_human"]
-
-WORKFLOW_LABELS = {
-    "human": "Human only",
-    "ai": "AI only",
-    "human_ai": "Human → AI",
-    "ai_human": "AI → Human",
-}
-
-MANIFEST = []
-
-
-plt.rcParams.update({
-    "figure.dpi": 120,
-    "savefig.dpi": 300,
-    "font.size": 10,
-    "axes.labelsize": 10,
-    "axes.titlesize": 11,
-    "legend.fontsize": 9,
-    "xtick.labelsize": 9,
-    "ytick.labelsize": 9,
-    "axes.spines.top": False,
-    "axes.spines.right": False,
-    "axes.grid": True,
-    "grid.alpha": 0.3,
-})
-
-
-def workflow_label(value):
-    return WORKFLOW_LABELS.get(str(value), str(value))
-
-
-def save_figure(fig, slug, title, description):
-    png_path = FIGURE_DIR / f"{slug}.png"
-    pdf_path = FIGURE_DIR / f"{slug}.pdf"
-    svg_path = FIGURE_DIR / f"{slug}.svg"
-
-    fig.savefig(png_path, bbox_inches="tight")
-    fig.savefig(pdf_path, bbox_inches="tight")
-    fig.savefig(svg_path, bbox_inches="tight")
-    plt.close(fig)
-
-    MANIFEST.append({
-        "slug": slug,
-        "title": title,
-        "description": description,
-        "pngUrl": f"/research-dashboard/figures/{slug}.png",
-        "pdfUrl": f"/research-dashboard/figures/{slug}.pdf",
-        "svgUrl": f"/research-dashboard/figures/{slug}.svg",
-    })
-
-
-def save_manifest():
-    manifest_path = FIGURE_DIR / "manifest.json"
-
-    with manifest_path.open("w", encoding="utf-8") as file:
-        json.dump(MANIFEST, file, indent=2)
-
-
-def ensure_numeric(df, columns):
-    for column in columns:
-        if column in df.columns:
-            df[column] = pd.to_numeric(df[column], errors="coerce")
-
-
-def load_master_dataset():
-    if not MASTER_DATASET_PATH.exists():
-        raise FileNotFoundError(
-            f"{MASTER_DATASET_PATH} not found. Run make process-data first."
-        )
-
-    df = pd.read_csv(MASTER_DATASET_PATH)
-
-    ensure_numeric(df, [
-        "roundIndex",
-        "participantId",
-        "timeMs",
-        "wordCount",
-        "charCount",
-        "effectiveTimeMinutes",
-        "qualityComposite",
-        "meanOverallQuality",
-        "satisfactionResult",
-        "frustration",
-        "effort",
-        "performance",
-        "aiPerformanceOverall",
-        "aiUnderstanding",
-        "aiCollaboration",
-        "aiCreativitySupport",
-        "constraintScore",
-    ])
-
-    if "workflow" in df.columns:
-        df["workflowLabel"] = df["workflow"].map(WORKFLOW_LABELS).fillna(df["workflow"])
-
-    if "condition" not in df.columns:
-        df["condition"] = "All participants"
-    else:
-        df["condition"] = df["condition"].fillna("All participants")
-
-    return df
-
-
-def load_final_feedback():
-    rows = []
-
-    if not INPUTS_DIR.exists():
-        return pd.DataFrame()
-
-    for folder in INPUTS_DIR.iterdir():
-        feedback_path = folder / "Feedback.csv"
-
-        if folder.is_dir() and feedback_path.exists():
-            feedback = pd.read_csv(feedback_path)
-            feedback["sourceFolder"] = folder.name
-            rows.append(feedback)
-
-    if not rows:
-        return pd.DataFrame()
-
-    return pd.concat(rows, ignore_index=True)
+from scripts.config import WORKFLOW_LABELS, TABLE_DIR, WORKFLOW_ORDER
+from scripts.dashboard_figures.utils import save_figure, workflow_label
 
 
 def parse_workflow_ranking(value):
@@ -263,13 +129,13 @@ def plot_workflow_transitions(df):
     )
 
     summary["from"] = (
-        "R" + summary["fromRound"].astype(str) + " " +
-        summary["fromWorkflow"].map(WORKFLOW_LABELS)
+            "R" + summary["fromRound"].astype(str) + " " +
+            summary["fromWorkflow"].map(WORKFLOW_LABELS)
     )
 
     summary["to"] = (
-        "R" + summary["toRound"].astype(str) + " " +
-        summary["toWorkflow"].map(WORKFLOW_LABELS)
+            "R" + summary["toRound"].astype(str) + " " +
+            summary["toWorkflow"].map(WORKFLOW_LABELS)
     )
 
     table_df = summary[["from", "to", "count"]]
@@ -325,7 +191,7 @@ def plot_mean_quality_by_workflow(df):
     summary.rename(index=WORKFLOW_LABELS).to_csv(
         TABLE_DIR / "mean_quality_by_workflow.csv",
         header=["meanQuality"],
-    )
+        )
 
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
     summary.rename(index=WORKFLOW_LABELS).plot(kind="bar", ax=ax)
@@ -394,7 +260,7 @@ def plot_ai_performance_over_rounds(df):
     ai_df = df[
         (df["workflow"] != "human") &
         (df["aiPerformanceOverall"].notna())
-    ].copy()
+        ].copy()
 
     if ai_df.empty:
         return
@@ -450,11 +316,11 @@ def plot_constraint_rate_by_workflow(df):
     })
 
     summary = (
-        constraint_df
-        .groupby("workflow")["passedNumeric"]
-        .mean()
-        .reindex(WORKFLOW_ORDER)
-        .dropna() * 100
+            constraint_df
+            .groupby("workflow")["passedNumeric"]
+            .mean()
+            .reindex(WORKFLOW_ORDER)
+            .dropna() * 100
     )
 
     if summary.empty:
@@ -463,7 +329,7 @@ def plot_constraint_rate_by_workflow(df):
     summary.rename(index=WORKFLOW_LABELS).to_csv(
         TABLE_DIR / "passed_constraint_rate_by_workflow.csv",
         header=["passedRatePercent"],
-    )
+        )
 
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
     summary.rename(index=WORKFLOW_LABELS).plot(kind="bar", ax=ax)
@@ -609,114 +475,3 @@ def plot_final_workflow_ranking(feedback_df):
         "Average Final Workflow Rank",
         "Average rank of each workflow in the final feedback.",
     )
-
-
-THEME_KEYWORDS = {
-    "AI error / misunderstanding": [
-        "error", "mistake", "wrong", "incorrect", "misunderstood",
-        "not understand", "didn't understand",
-    ],
-    "Control / ownership": [
-        "control", "ownership", "own", "my text", "edit",
-    ],
-    "Speed / time": [
-        "time", "fast", "quick", "slow", "deadline",
-    ],
-    "Creativity": [
-        "creative", "creativity", "idea", "inspiration",
-    ],
-    "Quality": [
-        "quality", "better", "good", "bad", "improve",
-    ],
-    "Rules / constraints": [
-        "rule", "constraint", "requirement", "forbidden", "required",
-    ],
-    "Frustration": [
-        "frustrated", "frustrating", "annoying", "stress", "difficult",
-    ],
-    "Trust": [
-        "trust", "reliable", "confidence", "depend",
-    ],
-    "Helpfulness": [
-        "helpful", "support", "assist", "useful",
-    ],
-}
-
-
-def plot_comment_theme_frequency(df, feedback_df):
-    comments = []
-
-    for column in ["roundComment", "comment"]:
-        if column in df.columns:
-            comments.extend(df[column].dropna().astype(str).tolist())
-
-    for column in ["comments", "rankingReason", "comment"]:
-        if column in feedback_df.columns:
-            comments.extend(feedback_df[column].dropna().astype(str).tolist())
-
-    comments = [comment.strip() for comment in comments if comment.strip()]
-
-    if not comments:
-        return
-
-    theme_counts = []
-
-    for theme, keywords in THEME_KEYWORDS.items():
-        count = 0
-
-        for comment in comments:
-            lower_comment = comment.lower()
-
-            if any(keyword in lower_comment for keyword in keywords):
-                count += 1
-
-        if count > 0:
-            theme_counts.append({
-                "theme": theme,
-                "count": count,
-            })
-
-    if not theme_counts:
-        return
-
-    theme_df = pd.DataFrame(theme_counts).sort_values("count", ascending=True)
-    theme_df.to_csv(TABLE_DIR / "comment_theme_frequency.csv", index=False)
-
-    fig, ax = plt.subplots(figsize=(7.2, 4.8))
-    ax.barh(theme_df["theme"], theme_df["count"])
-
-    ax.set_title("Comment Theme Frequency")
-    ax.set_xlabel("Number of comments")
-    ax.set_ylabel("Theme")
-
-    save_figure(
-        fig,
-        "09_comment_theme_frequency",
-        "Comment Theme Frequency",
-        "Keyword-based overview of recurring themes in open-text feedback.",
-    )
-
-
-def main():
-    df = load_master_dataset()
-    feedback_df = load_final_feedback()
-
-    plot_workflow_distribution(df)
-    plot_workflow_transitions(df)
-    plot_mean_quality_by_workflow(df)
-    plot_subjective_feedback_by_workflow(df)
-    plot_ai_performance_over_rounds(df)
-    plot_constraint_rate_by_workflow(df)
-    plot_quality_vs_time(df)
-    plot_final_workflow_ranking(feedback_df)
-    plot_comment_theme_frequency(df, feedback_df)
-
-    save_manifest()
-
-    print(f"Generated {len(MANIFEST)} figures.")
-    print(f"Figures: {FIGURE_DIR}")
-    print(f"Tables:  {TABLE_DIR}")
-
-
-if __name__ == "__main__":
-    main()

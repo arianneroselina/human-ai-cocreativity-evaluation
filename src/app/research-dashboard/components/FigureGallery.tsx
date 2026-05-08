@@ -56,4 +56,3 @@ export default function FigureGallery({ figures }: { figures: DashboardFigure[] 
     </div>
   );
 }
-

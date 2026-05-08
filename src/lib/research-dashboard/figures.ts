@@ -28,4 +28,3 @@ export function getDashboardFigures(): DashboardFigure[] {
   const content = fs.readFileSync(MANIFEST_PATH, "utf-8");
   return JSON.parse(content) as DashboardFigure[];
 }
-

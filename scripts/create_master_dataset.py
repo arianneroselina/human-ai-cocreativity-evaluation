@@ -1,14 +1,9 @@
 import json
-from pathlib import Path
 import pandas as pd
 
-INPUTS_DIR = Path("inputs")
-PROCESSED_DIR = Path("data/processed")
-POEM_SCORES_PATH = PROCESSED_DIR / "poem_scores.csv"
+from scripts.config import PROCESSED_DIR, POEM_SCORES_PATH, INPUTS_DIR
+
 OUTPUT_PATH = PROCESSED_DIR / "master_round_dataset.csv"
-
-PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-
 
 def parse_bool(value):
     if pd.isna(value):

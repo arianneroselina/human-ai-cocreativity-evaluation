@@ -1,8 +1,8 @@
 export default function StatCard({
-                                   title,
-                                   value,
-                                   subtitle,
-                                 }: {
+  title,
+  value,
+  subtitle,
+}: {
   title: string;
   value: string | number;
   subtitle?: string;

@@ -16,13 +16,13 @@ function formatPercent(value: number | null | undefined, digits = 1) {
 }
 
 function FoldableSection({
-                           id,
-                           title,
-                           description,
-                           badge,
-                           defaultOpen = false,
-                           children,
-                         }: {
+  id,
+  title,
+  description,
+  badge,
+  defaultOpen = false,
+  children,
+}: {
   id: string;
   title: string;
   description?: string;
