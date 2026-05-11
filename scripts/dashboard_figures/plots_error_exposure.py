@@ -1,21 +1,18 @@
+import json
+
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.ticker import MaxNLocator
 
-from scripts.config import TABLE_DIR, WORKFLOW_LABELS, EXPOSURE_LABELS, WORKFLOW_ORDER
-from .utils import save_figure
+from scripts.config import TABLE_DIR, EXPOSURE_LABELS, WORKFLOW_ORDER
+from .utils import save_figure, workflow_label
 
 
 ERROR_ROUND_INDEX = 5
-POST_ERROR_ROUNDS = [6, 7]
 
 
 def exposure_label(value):
     return EXPOSURE_LABELS.get(str(value), str(value))
-
-
-def workflow_label(value):
-    return WORKFLOW_LABELS.get(str(value), str(value))
 
 
 def order_workflow_labels(labels):
@@ -33,54 +30,10 @@ def order_workflow_labels(labels):
     return ordered_labels + remaining_labels
 
 
-def plot_error_exposure_overview(df: pd.DataFrame):
-    """
-    Shows how many participants were actually exposed to the AI error.
-
-    A participant is error-exposed if they selected an AI-supported workflow
-    in round 5.
-    """
-
-    participant_df = df[["participantId", "errorExposureGroup"]].drop_duplicates()
-
-    if participant_df.empty:
-        return
-
-    summary = (
-        participant_df["errorExposureGroup"]
-        .value_counts()
-        .rename_axis("errorExposureGroup")
-        .reset_index(name="count")
-    )
-
-    summary["groupLabel"] = summary["errorExposureGroup"].map(exposure_label)
-
-    summary.to_csv(TABLE_DIR / "error_exposure_overview.csv", index=False)
-
-    fig, ax = plt.subplots(figsize=(6.8, 4.0))
-    bars = ax.bar(summary["groupLabel"], summary["count"])
-
-    ax.set_title("Participant Error Exposure Overview")
-    ax.set_xlabel("Exposure group")
-    ax.set_ylabel("Number of participants")
-    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.set_ylim(0, summary["count"].max() + 1)
-    ax.bar_label(bars, padding=3)
-
-    save_figure(
-        fig,
-        "21_error_exposure_overview",
-        "Participant Error Exposure Overview",
-        "Number of participants who were or were not exposed to the AI error in round 5.",
-    )
-
-
 def plot_round5_workflow_exposure(df: pd.DataFrame):
     """
     Shows which workflow participants selected in round 5 and whether that
     resulted in actual AI-error exposure.
-
-    Round 5 is the first main round and the possible AI-error round.
     """
 
     round5_df = df[df["roundIndex"] == ERROR_ROUND_INDEX].copy()
@@ -121,18 +74,101 @@ def plot_round5_workflow_exposure(df: pd.DataFrame):
 
     save_figure(
         fig,
-        "22_round5_workflow_exposure",
+        "31_round5_workflow_exposure",
         "Round-5 Workflow and Error Exposure",
         "Participants were exposed to the AI error only if their round-5 workflow used AI support.",
+    )
+
+
+def extract_line_count_error(requirement_results):
+    if pd.isna(requirement_results):
+        return None
+
+    try:
+        results = json.loads(requirement_results)
+    except json.JSONDecodeError:
+        return None
+
+    for item in results:
+        rule_id = str(item.get("id", ""))
+
+        if rule_id.startswith("lines-"):
+            return not bool(item.get("passed"))
+
+    return None
+
+
+def plot_line_count_error_by_round_ai_workflows(df):
+    """
+    Shows whether the line-count constraint error increases in round 5.
+    """
+
+    if "requirementResults" not in df.columns:
+        return
+
+    ai_workflows = ["ai", "human_ai", "ai_human"]
+
+    plot_df = df[df["workflow"].isin(ai_workflows)].copy()
+    plot_df["lineCountError"] = plot_df["requirementResults"].apply(
+        extract_line_count_error
+    )
+
+    plot_df = plot_df.dropna(subset=["lineCountError", "roundIndex", "workflow"])
+
+    if plot_df.empty:
+        return
+
+    summary = (
+        plot_df
+        .groupby(["roundIndex", "workflow"])["lineCountError"]
+        .mean()
+        .mul(100)
+        .reset_index(name="lineCountErrorRatePercent")
+    )
+
+    summary.to_csv(TABLE_DIR / "line_count_error_by_round_ai_workflows.csv", index=False)
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+
+    for workflow in ai_workflows:
+        workflow_df = summary[summary["workflow"] == workflow]
+
+        if workflow_df.empty:
+            continue
+
+        ax.plot(
+            workflow_df["roundIndex"],
+            workflow_df["lineCountErrorRatePercent"],
+            marker="o",
+            label=workflow_label(workflow),
+        )
+
+    ax.axvline(ERROR_ROUND_INDEX, linestyle="--", linewidth=1)
+    ax.text(
+        ERROR_ROUND_INDEX + 0.05,
+        90,
+        "Injected AI line-count error",
+        fontsize=9,
+        )
+
+    ax.set_title("Line-Count Error Rate over Rounds")
+    ax.set_xlabel("Round")
+    ax.set_ylabel("Line-count error rate (%)")
+    ax.set_ylim(0, 100)
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.legend(title="AI-supported workflow")
+
+    save_figure(
+        fig,
+        "32_line_count_error_by_round_ai_workflows",
+        "Line-Count Error by Round",
+        "Line-count constraint error rate across rounds for AI-supported workflows.",
     )
 
 
 def plot_post_error_workflow_choices_by_exposure(df: pd.DataFrame):
     """
     Shows exact workflow choices after the possible AI-error round.
-
-    Error round = round 5.
-    Post-error rounds = rounds 6–7.
     """
 
     choice_df = df[df["roundIndex"] > ERROR_ROUND_INDEX].copy()
@@ -178,63 +214,9 @@ def plot_post_error_workflow_choices_by_exposure(df: pd.DataFrame):
 
     save_figure(
         fig,
-        "23_post_error_workflow_choices_by_exposure",
+        "33_post_error_workflow_choices_by_exposure",
         "Post-Error Workflow Choices by Error Exposure",
         "Distribution of workflow choices in rounds 6–7, split by whether participants were exposed to the AI error in round 5.",
-    )
-
-
-def plot_main_round_workflow_distribution_by_exposure(df: pd.DataFrame):
-    """
-    Shows workflow distribution across the full main phase.
-
-    Main rounds = rounds 5–7.
-    This includes the possible error round itself.
-    """
-
-    main_df = df[df["roundIndex"] >= ERROR_ROUND_INDEX].copy()
-
-    if main_df.empty:
-        return
-
-    summary = (
-        main_df.groupby(["errorExposureGroup", "workflow"])
-        .size()
-        .reset_index(name="count")
-    )
-
-    total_per_group = summary.groupby("errorExposureGroup")["count"].transform("sum")
-    summary["percent"] = summary["count"] / total_per_group * 100
-    summary["workflowLabel"] = summary["workflow"].map(workflow_label)
-    summary["groupLabel"] = summary["errorExposureGroup"].map(exposure_label)
-
-    summary.to_csv(
-        TABLE_DIR / "main_round_workflow_distribution_by_exposure.csv",
-        index=False,
-        )
-
-    pivot = (
-        summary.pivot(index="groupLabel", columns="workflowLabel", values="percent")
-        .fillna(0)
-    )
-
-    pivot = pivot[order_workflow_labels(pivot.columns)]
-
-    fig, ax = plt.subplots(figsize=(8.0, 4.6))
-    pivot.plot(kind="bar", stacked=True, ax=ax)
-
-    ax.set_title("Workflow Distribution in Main Rounds by Error Exposure")
-    ax.set_xlabel("Exposure group")
-    ax.set_ylabel("Share of workflow choices in rounds 5–7 (%)")
-    ax.tick_params(axis="x", rotation=0)
-    ax.legend(title="Workflow", bbox_to_anchor=(1.02, 1), loc="upper left")
-    ax.set_ylim(0, 100)
-
-    save_figure(
-        fig,
-        "24_main_round_workflow_distribution_by_error_exposure",
-        "Workflow Distribution by Error Exposure",
-        "Distribution of selected workflows in rounds 5–7, split by error exposure group.",
     )
 
 
@@ -251,113 +233,61 @@ def plot_experience_over_main_rounds_by_exposure(df: pd.DataFrame):
         return
 
     metrics = {
-        "frustration": "Frustration",
         "satisfactionResult": "Satisfaction",
+        "frustration": "Frustration",
         "aiPerformanceOverall": "AI performance",
     }
 
-    for column, label in metrics.items():
-        if column not in main_df.columns:
-            continue
+    available_metrics = [
+        column for column in metrics
+        if column in main_df.columns and not main_df[column].dropna().empty
+    ]
 
-        plot_df = main_df.dropna(subset=[column]).copy()
+    if not available_metrics:
+        return
 
-        if plot_df.empty:
-            continue
+    summary = (
+        main_df
+        .groupby(["errorExposureGroup", "roundIndex"])[available_metrics]
+        .mean()
+        .reset_index()
+        .sort_values(["errorExposureGroup", "roundIndex"])
+    )
 
-        summary = (
-            plot_df.groupby(["errorExposureGroup", "roundIndex"])[column]
-            .mean()
-            .reset_index()
-            .sort_values(["errorExposureGroup", "roundIndex"])
+    summary.to_csv(
+        TABLE_DIR / "experience_by_exposure_and_main_round.csv",
+        index=False,
         )
 
-        summary.to_csv(
-            TABLE_DIR / f"{column}_by_exposure_and_main_round.csv",
-            index=False,
-            )
+    fig, ax = plt.subplots(figsize=(8.2, 4.8))
 
-        fig, ax = plt.subplots(figsize=(7.4, 4.4))
+    for group, group_df in summary.groupby("errorExposureGroup"):
+        group_label = exposure_label(group)
 
-        for group, group_df in summary.groupby("errorExposureGroup"):
+        for column in available_metrics:
             ax.plot(
                 group_df["roundIndex"],
                 group_df[column],
                 marker="o",
-                label=exposure_label(group),
+                label=f"{group_label} - {metrics[column]}",
             )
 
-        ax.set_title(f"{label} over Main Rounds by Error Exposure")
-        ax.set_xlabel("Round")
-        ax.set_ylabel(f"Mean {label.lower()} rating")
-        ax.set_xticks(sorted(summary["roundIndex"].dropna().unique()))
-        ax.legend(title="Exposure group")
-
-        save_figure(
-            fig,
-            f"25_{column}_over_main_rounds_by_error_exposure",
-            f"{label} over Main Rounds by Error Exposure",
-            f"Mean {label.lower()} rating over rounds 5–7 for exposed and non-exposed participants.",
-        )
-
-
-def plot_post_error_experience_summary_by_exposure(df: pd.DataFrame):
-    """
-    Summarizes participant experience after the possible AI-error round.
-
-    Error round = round 5.
-    Post-error rounds = rounds 6–7.
-    """
-
-    post_df = df[df["roundIndex"] > ERROR_ROUND_INDEX].copy()
-
-    if post_df.empty:
-        return
-
-    summary = (
-        post_df.groupby("errorExposureGroup")
-        .agg(
-            meanFrustration=("frustration", "mean"),
-            meanSatisfaction=("satisfactionResult", "mean"),
-            meanAiPerformance=("aiPerformanceOverall", "mean"),
-        )
-        .reset_index()
-    )
-
-    summary["groupLabel"] = summary["errorExposureGroup"].map(exposure_label)
-    summary.to_csv(TABLE_DIR / "post_error_experience_summary_by_exposure.csv", index=False)
-
-    plot_df = summary.set_index("groupLabel")[
-        ["meanFrustration", "meanSatisfaction", "meanAiPerformance"]
-    ]
-
-    plot_df = plot_df.rename(columns={
-        "meanFrustration": "Frustration",
-        "meanSatisfaction": "Satisfaction",
-        "meanAiPerformance": "AI performance",
-    })
-
-    fig, ax = plt.subplots(figsize=(8.0, 4.6))
-    plot_df.plot(kind="bar", ax=ax)
-
-    ax.set_title("Post-Error Experience by Error Exposure")
-    ax.set_xlabel("Exposure group")
-    ax.set_ylabel("Mean rating in rounds 6–7")
-    ax.tick_params(axis="x", rotation=0)
-    ax.legend(title="Measure")
+    ax.set_title("Experience over Main Rounds by Error Exposure")
+    ax.set_xlabel("Round")
+    ax.set_ylabel("Mean rating")
+    ax.set_xticks(sorted(summary["roundIndex"].dropna().unique()))
+    ax.legend(title="Group and measure", bbox_to_anchor=(1.02, 1), loc="upper left")
 
     save_figure(
         fig,
-        "26_post_error_experience_by_error_exposure",
-        "Post-Error Experience by Error Exposure",
-        "Mean frustration, satisfaction, and AI performance in rounds 6–7 by error exposure group.",
+        "34_experience_over_main_rounds_by_error_exposure",
+        "Experience over Main Rounds by Error Exposure",
+        "Mean satisfaction, frustration, and AI performance over rounds 5–7, split by error exposure group.",
     )
 
 
-def generate_error_exposure_figures(df: pd.DataFrame):
-    plot_error_exposure_overview(df)
+def plot_error_exposure(df: pd.DataFrame):
     plot_round5_workflow_exposure(df)
+    plot_line_count_error_by_round_ai_workflows(df)
     plot_post_error_workflow_choices_by_exposure(df)
-    plot_main_round_workflow_distribution_by_exposure(df)
     plot_experience_over_main_rounds_by_exposure(df)
-    plot_post_error_experience_summary_by_exposure(df)

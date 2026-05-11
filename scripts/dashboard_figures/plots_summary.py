@@ -167,7 +167,7 @@ def _summarize_comments(client, workflow_label, comments):
     return summary.strip() if summary else "Summary unavailable."
 
 
-def generate_workflow_feedback_summaries(df, feedback_df):
+def generate_feedback_summaries(df, feedback_df):
     TABLE_DIR.mkdir(parents=True, exist_ok=True)
 
     comment_rows = [

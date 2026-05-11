@@ -85,18 +85,29 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       title: "Workflow Behavior",
       description: "Workflow choices, transitions, and final preferences.",
       figures: figures.filter((figure) =>
-        ["01_", "02_", "08_", "08b_"].some((prefix) =>
+        ["01_", "02_", "03_", "04_"].some((prefix) =>
           figure.slug.startsWith(prefix),
         ),
       ),
     },
     {
       id: "quality-figures",
-      title: "Quality and Experience",
+      title: "Output Quality and Constraints",
       description:
-        "Quality, satisfaction, frustration, AI ratings, and constraint success.",
+        "Evaluator-rated quality, quality dimensions, constraint success, and quality efficiency.",
       figures: figures.filter((figure) =>
-        ["03_", "04_", "05_", "06_", "07_"].some((prefix) =>
+        ["11_", "12_", "13_", "14_", "15_", "16_", "17_"].some((prefix) =>
+          figure.slug.startsWith(prefix),
+        ),
+      ),
+    },
+    {
+      id: "experience-figures",
+      title: "Participant Experience",
+      description:
+        "Satisfaction, frustration, AI performance ratings, and perceived task load.",
+      figures: figures.filter((figure) =>
+        ["21_", "22_", "23_"].some((prefix) =>
           figure.slug.startsWith(prefix),
         ),
       ),
@@ -105,9 +116,9 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       id: "error-exposure-figures",
       title: "AI Error Exposure",
       description:
-        "Error exposure overview, post-error behavior, workflow choice after exposure, and subjective reactions over rounds.",
+        "Round-5 error exposure, line-count error, post-error behavior, and subjective reactions.",
       figures: figures.filter((figure) =>
-        ["21_", "22_", "23_", "24_", "25_", "26_"].some((prefix) =>
+        ["31_", "32_", "33_", "34_"].some((prefix) =>
           figure.slug.startsWith(prefix),
         ),
       ),
@@ -118,11 +129,11 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       description:
         "Age, gender, education, language, and AI attitude distributions.",
       figures: figures.filter((figure) =>
-        ["10_", "11_", "12_", "13_", "14_", "15_"].some((prefix) =>
+        ["41_", "42_", "43_", "44_", "45_", "46_"].some((prefix) =>
           figure.slug.startsWith(prefix),
         ),
       ),
-    },
+    }
   ].filter((group) => group.figures.length > 0);
 }
 

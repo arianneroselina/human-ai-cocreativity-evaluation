@@ -1,26 +1,18 @@
 import matplotlib
 
 from scripts.config import FIGURE_DIR, TABLE_DIR
-from scripts.dashboard_figures.plots_error_exposure import generate_error_exposure_figures
-from scripts.dashboard_figures.plots_summary import generate_workflow_feedback_summaries
+from scripts.dashboard_figures.loaders import load_participant_info, load_final_feedback, load_master_dataset
+from scripts.dashboard_figures.plots_error_exposure import plot_error_exposure
+from scripts.dashboard_figures.plots_experience import plot_experience
+from scripts.dashboard_figures.plots_participants import plot_participant_info
+from scripts.dashboard_figures.plots_quality import plot_quality
+from scripts.dashboard_figures.plots_summary import generate_feedback_summaries
+from scripts.dashboard_figures.plots_workflow import plot_workflow
+from scripts.dashboard_figures.utils import save_manifest, MANIFEST
 
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
-
-from .loaders import load_master_dataset, load_final_feedback, load_participant_info
-from .plots_core import (
-    plot_workflow_distribution,
-    plot_workflow_transitions,
-    plot_mean_quality_by_workflow,
-    plot_subjective_feedback_by_workflow,
-    plot_ai_performance_over_rounds,
-    plot_constraint_rate_by_workflow,
-    plot_quality_vs_time,
-    plot_final_workflow_ranking, plot_total_workflow_usage_counts,
-)
-from .plots_participants import plot_participant_info
-from .utils import MANIFEST, save_manifest
 
 
 plt.rcParams.update({
@@ -47,19 +39,12 @@ def main():
     feedback_df = load_final_feedback()
     participant_info_df = load_participant_info()
 
-    plot_workflow_distribution(df)
-    plot_total_workflow_usage_counts(df)
-    plot_workflow_transitions(df)
-    plot_mean_quality_by_workflow(df)
-    plot_subjective_feedback_by_workflow(df)
-    plot_ai_performance_over_rounds(df)
-    plot_constraint_rate_by_workflow(df)
-    plot_quality_vs_time(df)
-    plot_final_workflow_ranking(feedback_df)
-
+    plot_workflow(df, feedback_df)
+    plot_experience(df)
+    plot_quality(df)
+    plot_error_exposure(df)
     plot_participant_info(participant_info_df)
-    generate_workflow_feedback_summaries(df, feedback_df)
-    generate_error_exposure_figures(df)
+    generate_feedback_summaries(df, feedback_df)
 
     save_manifest()
 

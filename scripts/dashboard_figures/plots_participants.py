@@ -20,10 +20,10 @@ def plot_participant_age_distribution(participant_df):
 
     age_counts = age.value_counts().sort_index()
 
-    fig_width = max(7.2, 0.55 * len(age_counts))
-    fig, ax = plt.subplots(figsize=(fig_width, 4.2))
+    fig_height = max(4.2, 0.35 * len(age_counts))
+    fig, ax = plt.subplots(figsize=(7.2, fig_height))
 
-    bars = ax.bar(age_counts.index.astype(str), age_counts.values)
+    bars = ax.barh(age_counts.index.astype(str), age_counts.values)
 
     ax.bar_label(bars, padding=3, fontsize=9)
 
@@ -31,12 +31,12 @@ def plot_participant_age_distribution(participant_df):
     median_age = age.median()
 
     ax.set_title("Participant Age Distribution")
-    ax.set_xlabel("Age")
-    ax.set_ylabel("Number of participants")
+    ax.set_xlabel("Number of participants")
+    ax.set_ylabel("Age")
 
-    ax.set_ylim(0, max(age_counts.values) + 1)
-    ax.grid(axis="x", visible=False)
-    ax.grid(axis="y", alpha=0.3)
+    ax.set_xlim(0, max(age_counts.values) + 1)
+    ax.grid(axis="y", visible=False)
+    ax.grid(axis="x", alpha=0.3)
 
     summary_text = f"n = {len(age)}\nMean = {mean_age:.1f}\nMedian = {median_age:.1f}"
     ax.text(
@@ -57,7 +57,7 @@ def plot_participant_age_distribution(participant_df):
 
     save_figure(
         fig,
-        "10_participant_age_distribution",
+        "41_participant_age_distribution",
         "Participant Age Distribution",
         "Frequency distribution of participant ages.",
     )
@@ -130,7 +130,7 @@ def plot_participant_likert_means(participant_df):
 
     save_figure(
         fig,
-        "15_participant_ai_attitude_means",
+        "46_participant_ai_attitude_means",
         "Participant Writing Confidence and AI Attitudes",
         "Mean ratings for writing confidence and attitudes toward AI.",
     )
@@ -146,29 +146,28 @@ def plot_participant_info(participant_df):
         participant_df,
         "gender",
         "Participant Gender Distribution",
-        "11_participant_gender_distribution",
+        "42_participant_gender_distribution",
     )
 
     plot_participant_category_distribution(
         participant_df,
         "education",
         "Participant Education Distribution",
-        "12_participant_education_distribution",
+        "43_participant_education_distribution",
     )
 
     plot_participant_category_distribution(
         participant_df,
         "nativeLanguage",
         "Participant Native Language Distribution",
-        "13_participant_native_language_distribution",
+        "44_participant_native_language_distribution",
     )
 
     plot_participant_category_distribution(
         participant_df,
         "englishLevel",
         "Participant English Level Distribution",
-        "14_participant_english_level_distribution",
+        "45_participant_english_level_distribution",
     )
 
     plot_participant_likert_means(participant_df)
-
