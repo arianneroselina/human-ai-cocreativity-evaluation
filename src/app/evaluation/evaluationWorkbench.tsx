@@ -47,10 +47,9 @@ export default function EvaluationWorkbench({ poems }: EvaluationWorkbenchProps)
   const canSubmit = fluency && themeAlignment && meaningfulness && poeticness && overallQuality;
 
   async function handleStart() {
-    const cleanEvaluatorCode = evaluatorId.trim();
-
-    if (!cleanEvaluatorCode) {
-      alert("Please enter your evaluator ID.");
+    let cleanEvaluatorCode = evaluatorId.trim()
+    if (!cleanEvaluatorCode || !["1", "2"].includes(cleanEvaluatorCode)) {
+      alert("Please choose your evaluator ID.");
       return;
     }
 
@@ -174,20 +173,23 @@ export default function EvaluationWorkbench({ poems }: EvaluationWorkbenchProps)
       <div className="mx-auto max-w-xl rounded-3xl border bg-card p-8 shadow-sm">
         <h1 className="text-2xl font-semibold">Start evaluation</h1>
 
-        <p className="mt-2 text-muted-foreground">Please enter your evaluator ID to continue.</p>
+        <p className="mt-2 text-muted-foreground">Please choose your evaluator ID to continue.</p>
 
         <div className="mt-6 space-y-4">
-          <input
+          <select
             value={evaluatorId}
             onChange={(event) => setEvaluatorId(event.target.value)}
-            placeholder="Evaluator ID"
             className="h-11 w-full rounded-xl border bg-background px-4"
-          />
+          >
+            <option value="">Select evaluator ID</option>
+            <option value="1">Evaluator 1</option>
+            <option value="2">Evaluator 2</option>
+          </select>
 
           <Button
             className="h-11 w-full rounded-xl"
             onClick={handleStart}
-            disabled={isLoadingSession}
+            disabled={isLoadingSession || !evaluatorId.trim()}
           >
             {isLoadingSession ? "Loading..." : "Continue"}
           </Button>

@@ -11,7 +11,8 @@
     "format:check": "prettier --check .",
     "vercel-build": "prisma generate && prisma migrate deploy && next build",
     "postinstall": "prisma generate",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "rate:ai": "npx tsx src/scripts/ai-evaluator.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

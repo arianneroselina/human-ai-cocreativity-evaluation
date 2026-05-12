@@ -97,6 +97,13 @@ generate-figures:
 process-data: eval-check export-ratings aggregate-scores create-master generate-figures
 	@echo "Evaluation data exported, master dataset created, and figures generated."
 
+# ------------------------------------------------------------
+# AI Evaluator
+# ------------------------------------------------------------
+
+.PHONY: run-ai-evaluator
+run-ai-evaluator:
+	npm run rate:ai
 
 # ------------------------------------------------------------
 # Help
