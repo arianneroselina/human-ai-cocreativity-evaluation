@@ -1,3 +1,4 @@
+import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
@@ -192,6 +193,180 @@ def plot_quality_efficiency_by_workflow(df):
     )
 
 
+def _wrap_poem_text(text, max_line_length=80):
+    lines = []
+
+    for original_line in str(text).splitlines():
+        line = original_line.strip()
+
+        if not line:
+            lines.append("")
+            continue
+
+        while len(line) > max_line_length:
+            split_index = line.rfind(" ", 0, max_line_length)
+
+            if split_index == -1:
+                split_index = max_line_length
+
+            lines.append(line[:split_index].strip())
+            line = line[split_index:].strip()
+
+        lines.append(line)
+
+    return "\n".join(lines)
+
+
+def _plot_poem_text_figure(poem_df, slug, title, description, metric):
+    if poem_df.empty:
+        return
+
+    poem_df = poem_df.copy()
+    poem_df["workflowLabel"] = poem_df["workflow"].map(workflow_label)
+
+    fig_height = max(4.8, 3.2 * len(poem_df))
+    fig, ax = plt.subplots(figsize=(11.5, fig_height))
+    ax.axis("off")
+
+    ax.set_title(title, fontsize=15, fontweight="bold", pad=18)
+
+    y_position = 0.95
+    card_height = 0.86 / len(poem_df)
+
+    for index, row in poem_df.reset_index(drop=True).iterrows():
+        topic = row["topic"] if "topic" in row and not pd.isna(row["topic"]) else "Unknown topic"
+
+        header = (
+            f"Poem {index + 1}   |   "
+            f"Round {int(row['roundIndex'])}   |   "
+            f"{row['workflowLabel']}   |   "
+            f"Mean quality: {row[metric]:.2f}"
+        )
+
+        wrapped_poem = _wrap_poem_text(row["text"], max_line_length=72)
+
+        card_top = y_position
+        card_bottom = y_position - card_height + 0.03
+
+        ax.text(
+            0.03,
+            card_top,
+            header,
+            transform=ax.transAxes,
+            ha="left",
+            va="top",
+            fontsize=10,
+            fontweight="bold",
+            bbox={
+                "boxstyle": "round,pad=0.45",
+                "facecolor": "#f2f2f2",
+                "edgecolor": "#d0d0d0",
+                "linewidth": 1,
+            },
+        )
+
+        ax.text(
+            0.03,
+            card_top - 0.075,
+            f"Topic: {topic}",
+            transform=ax.transAxes,
+            ha="left",
+            va="top",
+            fontsize=9,
+            style="italic",
+            )
+
+        ax.text(
+            0.03,
+            card_top - 0.14,
+            wrapped_poem,
+            transform=ax.transAxes,
+            ha="left",
+            va="top",
+            fontsize=9,
+            family="monospace",
+            linespacing=1.35,
+            bbox={
+                "boxstyle": "round,pad=0.65",
+                "facecolor": "#ffffff",
+                "edgecolor": "#d9d9d9",
+                "linewidth": 1,
+            },
+            )
+
+        y_position = card_bottom
+
+    save_figure(
+        fig,
+        slug,
+        title,
+        description,
+    )
+
+
+def plot_best_and_worst_poems_by_quality(df):
+    metric = "qualityComposite"
+
+    if metric not in df.columns or df[metric].dropna().empty:
+        metric = "meanOverallQuality"
+
+    required_columns = [metric, "text", "workflow", "roundIndex"]
+
+    if any(column not in df.columns for column in required_columns):
+        return
+
+    plot_df = df.dropna(subset=[metric, "text"]).copy()
+
+    if plot_df.empty:
+        return
+
+    max_quality = plot_df[metric].max()
+    min_quality = plot_df[metric].min()
+
+    best_poems = plot_df[plot_df[metric] == max_quality].copy()
+    worst_poems = plot_df[plot_df[metric] == min_quality].copy()
+
+    export_columns = [
+        "roundId",
+        "roundIndex",
+        "workflow",
+        "topic",
+        "text",
+        metric,
+    ]
+
+    available_columns = [
+        column for column in export_columns
+        if column in plot_df.columns
+    ]
+
+    best_poems[available_columns].to_csv(
+        TABLE_DIR / "best_poems_by_quality.csv",
+        index=False,
+        )
+
+    worst_poems[available_columns].to_csv(
+        TABLE_DIR / "worst_poems_by_quality.csv",
+        index=False,
+        )
+
+    _plot_poem_text_figure(
+        best_poems,
+        "15_best_poems_by_quality",
+        "Best Rated Poem(s)",
+        "Poem text for all outputs with the highest mean quality score.",
+        metric,
+    )
+
+    _plot_poem_text_figure(
+        worst_poems,
+        "15b_worst_poems_by_quality",
+        "Worst Rated Poem(s)",
+        "Poem text for all outputs with the lowest mean quality score.",
+        metric,
+    )
+
+
 def plot_constraint_fulfillment_over_rounds(df):
     if "constraintScore" in df.columns and not df["constraintScore"].dropna().empty:
         plot_df = df.dropna(subset=["constraintScore", "roundIndex"]).copy()
@@ -252,7 +427,7 @@ def plot_constraint_fulfillment_over_rounds(df):
 
     save_figure(
         fig,
-        "15_constraint_fulfillment_over_rounds",
+        "16_constraint_fulfillment_over_rounds",
         "Constraint Fulfillment over Rounds",
         "Mean constraint fulfillment per round, with round 5 marked as the injected-error round.",
     )
@@ -302,7 +477,7 @@ def plot_constraint_rate_by_workflow(df):
 
     save_figure(
         fig,
-        "16_passed_constraint_rate_by_workflow",
+        "17_passed_constraint_rate_by_workflow",
         "Passed Constraint Rate by Workflow",
         "Percentage of rounds that passed the task constraints.",
     )
@@ -313,5 +488,6 @@ def plot_quality(df):
     plot_quality_dimensions_by_workflow(df)
     plot_quality_vs_time(df)
     plot_quality_efficiency_by_workflow(df)
+    plot_best_and_worst_poems_by_quality(df)
     plot_constraint_fulfillment_over_rounds(df)
     plot_constraint_rate_by_workflow(df)
