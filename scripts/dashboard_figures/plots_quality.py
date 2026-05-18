@@ -6,7 +6,7 @@ from scripts.config import WORKFLOW_ORDER, TABLE_DIR, WORKFLOW_LABELS
 from scripts.dashboard_figures.utils import save_figure, workflow_label
 
 
-def plot_quality_over_rounds(df):
+def plot_composite_quality_over_rounds(df):
     metric = "qualityComposite"
 
     if metric not in df.columns or df[metric].dropna().empty:
@@ -37,17 +37,17 @@ def plot_quality_over_rounds(df):
         marker="o",
     )
 
-    ax.set_title("Output Quality over Rounds")
+    ax.set_title("Composite Poem Quality over Rounds")
     ax.set_xlabel("Round")
-    ax.set_ylabel("Mean quality score")
+    ax.set_ylabel("Mean composite quality score (1–5)")
     ax.set_xticks(sorted(summary["roundIndex"].dropna().unique()))
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
     save_figure(
         fig,
-        "11_quality_over_rounds",
-        "Output Quality over Rounds",
-        "Mean externally rated output quality per round, based on available evaluator ratings.",
+        "11_composite_quality_over_rounds",
+        "Composite Quality over Rounds",
+        "Mean externally rated composite poem quality score per round on a 1–5 scale, aggregated from Fluency, Theme Alignment, Meaningfulness, Poeticness, and Overall Quality scores.",
     )
 
 
@@ -85,21 +85,21 @@ def plot_quality_dimensions_by_workflow(df):
     fig, ax = plt.subplots(figsize=(9.2, 4.8))
     summary.plot(kind="bar", ax=ax)
 
-    ax.set_title("Evaluator Rating Dimensions by Workflow")
+    ax.set_title("Poem Evaluation Dimensions by Workflow")
     ax.set_xlabel("Workflow")
-    ax.set_ylabel("Mean evaluator rating")
+    ax.set_ylabel("Mean rating score (1–5)")
     ax.tick_params(axis="x", rotation=0)
-    ax.legend(title="Rating dimension", bbox_to_anchor=(1.02, 1), loc="upper left")
+    ax.legend(title="Evaluation dimension", bbox_to_anchor=(1.02, 1), loc="upper left")
 
     save_figure(
         fig,
         "12_quality_dimensions_by_workflow",
-        "Evaluator Rating Dimensions by Workflow",
-        "Mean evaluator ratings by workflow, based on available evaluator-rated outputs.",
+        "Poem Evaluation Dimensions by Workflow",
+        "Mean poem evaluation scores by workflow on a 1–5 scale, across the dimensions Fluency, Theme Alignment, Meaningfulness, Poeticness, and Overall Quality.",
     )
 
 
-def plot_quality_vs_time(df):
+def plot_composite_quality_vs_time(df):
     metric = "qualityComposite"
 
     if metric not in df.columns or df[metric].dropna().empty:
@@ -139,20 +139,20 @@ def plot_quality_vs_time(df):
             alpha=0.75,
         )
 
-    ax.set_title("Output Quality vs. Completion Time")
+    ax.set_title("Output Composite Quality vs. Completion Time")
     ax.set_xlabel("Time used (minutes)")
-    ax.set_ylabel("Quality composite")
+    ax.set_ylabel("Mean composite quality score (1-5)")
     ax.legend(title="Workflow")
 
     save_figure(
         fig,
-        "13_quality_vs_time_scatterplot",
-        "Quality vs Time Scatterplot",
-        "Relationship between completion time and externally rated output quality.",
+        "13_composite_quality_vs_time_scatterplot",
+        "Composite Quality vs Time Scatterplot",
+        "Relationship between completion time and composite poem quality score on a 1–5 scale. Reported completion times include pauses recorded during the writing process.",
     )
 
 
-def plot_quality_efficiency_by_workflow(df):
+def plot_composite_quality_efficiency_by_workflow(df):
     metric = "qualityPerMinute"
 
     if metric not in df.columns or df[metric].dropna().empty:
@@ -180,16 +180,16 @@ def plot_quality_efficiency_by_workflow(df):
 
     ax.bar_label(bars, padding=3, fmt="%.2f")
 
-    ax.set_title("Quality Efficiency by Workflow")
+    ax.set_title("Composite Quality Efficiency by Workflow")
     ax.set_xlabel("Workflow")
-    ax.set_ylabel("Mean quality per minute")
+    ax.set_ylabel("Mean composite quality score per minute")
     ax.tick_params(axis="x", rotation=0)
 
     save_figure(
         fig,
-        "14_quality_efficiency_by_workflow",
-        "Quality Efficiency by Workflow",
-        "Mean externally rated quality per minute by workflow.",
+        "14_composite_quality_efficiency_by_workflow",
+        "Composite Quality Efficiency by Workflow",
+        "Mean externally rated composite poem quality score on a 1-5 scale per minute by workflow.",
     )
 
 
@@ -368,53 +368,32 @@ def plot_best_and_worst_poems_by_quality(df):
 
 
 def plot_constraint_fulfillment_over_rounds(df):
-    if "constraintScore" in df.columns and not df["constraintScore"].dropna().empty:
-        plot_df = df.dropna(subset=["constraintScore", "roundIndex"]).copy()
-
-        summary = (
-            plot_df
-            .groupby("roundIndex")["constraintScore"]
-            .mean()
-            .reset_index(name="meanConstraintScore")
-            .sort_values("roundIndex")
-        )
-
-        y_column = "meanConstraintScore"
-        y_label = "Mean constraint score"
-    elif {"constraintPassedCount", "constraintCount"}.issubset(df.columns):
-        plot_df = df.dropna(subset=["constraintPassedCount", "constraintCount", "roundIndex"]).copy()
-        plot_df = plot_df[plot_df["constraintCount"] > 0]
-
-        if plot_df.empty:
-            return
-
-        plot_df["constraintRate"] = (
-                plot_df["constraintPassedCount"] / plot_df["constraintCount"] * 100
-        )
-
-        summary = (
-            plot_df
-            .groupby("roundIndex")["constraintRate"]
-            .mean()
-            .reset_index(name="meanConstraintRate")
-            .sort_values("roundIndex")
-        )
-
-        y_column = "meanConstraintRate"
-        y_label = "Mean fulfilled constraints (%)"
-    else:
+    if "constraintScore" not in df.columns or df["constraintScore"].dropna().empty:
         return
+
+    plot_df = df.dropna(subset=["constraintScore", "roundIndex"]).copy()
+
+    summary = (
+        plot_df
+        .groupby("roundIndex")["constraintScore"]
+        .mean()
+        .reset_index(name="meanConstraintScore")
+        .sort_values("roundIndex")
+    )
 
     if summary.empty:
         return
 
-    summary.to_csv(TABLE_DIR / "constraint_fulfillment_over_rounds.csv", index=False)
+    summary.to_csv(
+        TABLE_DIR / "constraint_fulfillment_over_rounds.csv",
+        index=False,
+        )
 
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
 
     ax.plot(
         summary["roundIndex"],
-        summary[y_column],
+        summary["meanConstraintScore"],
         marker="o",
     )
 
@@ -422,14 +401,15 @@ def plot_constraint_fulfillment_over_rounds(df):
 
     ax.set_title("Constraint Fulfillment over Rounds")
     ax.set_xlabel("Round")
-    ax.set_ylabel(y_label)
+    ax.set_ylabel("Mean constraint fulfillment (%)")
     ax.set_xticks(sorted(summary["roundIndex"].dropna().unique()))
+    ax.set_ylim(0, 100)
 
     save_figure(
         fig,
         "16_constraint_fulfillment_over_rounds",
         "Constraint Fulfillment over Rounds",
-        "Mean constraint fulfillment per round, with round 5 marked as the injected-error round.",
+        "Mean constraint fulfillment percentage per round, with round 5 marked as the injected-error round.",
     )
 
 
@@ -484,10 +464,10 @@ def plot_constraint_rate_by_workflow(df):
 
 
 def plot_quality(df):
-    plot_quality_over_rounds(df)
+    plot_composite_quality_over_rounds(df)
     plot_quality_dimensions_by_workflow(df)
-    plot_quality_vs_time(df)
-    plot_quality_efficiency_by_workflow(df)
+    plot_composite_quality_vs_time(df)
+    plot_composite_quality_efficiency_by_workflow(df)
     plot_best_and_worst_poems_by_quality(df)
     plot_constraint_fulfillment_over_rounds(df)
     plot_constraint_rate_by_workflow(df)

@@ -14,31 +14,31 @@ def plot_participant_age_distribution(participant_df):
     if age.empty:
         return
 
-    age = age.round().astype(int)
-
     age.describe().to_csv(TABLE_DIR / "participant_age_summary.csv")
 
-    age_counts = age.value_counts().sort_index()
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
 
-    fig_height = max(4.2, 0.35 * len(age_counts))
-    fig, ax = plt.subplots(figsize=(7.2, fig_height))
+    bins = range(
+        int(age.min()) - 1,
+        int(age.max()) + 2,
+        2,
+        )
 
-    bars = ax.barh(age_counts.index.astype(str), age_counts.values)
-
-    ax.bar_label(bars, padding=3, fontsize=9)
+    ax.hist(age, bins=bins)
 
     mean_age = age.mean()
     median_age = age.median()
 
     ax.set_title("Participant Age Distribution")
-    ax.set_xlabel("Number of participants")
-    ax.set_ylabel("Age")
+    ax.set_xlabel("Age")
+    ax.set_ylabel("Number of participants")
 
-    ax.set_xlim(0, max(age_counts.values) + 1)
-    ax.grid(axis="y", visible=False)
-    ax.grid(axis="x", alpha=0.3)
+    summary_text = (
+        f"n = {len(age)}\n"
+        f"Mean = {mean_age:.1f}\n"
+        f"Median = {median_age:.1f}"
+    )
 
-    summary_text = f"n = {len(age)}\nMean = {mean_age:.1f}\nMedian = {median_age:.1f}"
     ax.text(
         0.98,
         0.95,
@@ -59,7 +59,7 @@ def plot_participant_age_distribution(participant_df):
         fig,
         "41_participant_age_distribution",
         "Participant Age Distribution",
-        "Frequency distribution of participant ages.",
+        "Age distribution of study participants grouped into age intervals.",
     )
 
 
@@ -72,22 +72,43 @@ def plot_participant_category_distribution(participant_df, column, label, slug):
     if counts.empty:
         return
 
-    counts.to_csv(TABLE_DIR / f"{slug}.csv", header=["count"])
+    percentages = (counts / counts.sum()) * 100
+
+    export_df = pd.DataFrame({
+        "count": counts,
+        "percentage": percentages,
+    })
+
+    export_df.to_csv(TABLE_DIR / f"{slug}.csv")
 
     fig_height = max(4.2, 0.35 * len(counts) + 1.5)
     fig, ax = plt.subplots(figsize=(7.2, fig_height))
 
-    counts.sort_values().plot(kind="barh", ax=ax)
+    percentages.sort_values().plot(kind="barh", ax=ax)
 
     ax.set_title(label)
-    ax.set_xlabel("Number of participants")
+    ax.set_xlabel("Participants (%)")
     ax.set_ylabel("")
+    ax.set_xlim(0, 100)
+
+    for container in ax.containers:
+        labels = [
+            f"{value:.1f}%"
+            for value in container.datavalues
+        ]
+
+        ax.bar_label(
+            container,
+            labels=labels,
+            padding=3,
+            fontsize=9,
+        )
 
     save_figure(
         fig,
         slug,
         label,
-        f"Participant distribution by {label.lower()}.",
+        f"Participant distribution by {label.lower()} shown as percentages.",
     )
 
 
@@ -124,7 +145,7 @@ def plot_participant_likert_means(participant_df):
     ax.barh(plot_df["measure"], plot_df["mean"])
 
     ax.set_title("Participant Writing Confidence and AI Attitudes")
-    ax.set_xlabel("Mean rating")
+    ax.set_xlabel("Mean rating (1-5)")
     ax.set_ylabel("")
     ax.set_xlim(1, 5)
 

@@ -51,7 +51,7 @@ def extract_constraint_stats(value):
     return pd.Series({
         "constraintCount": total,
         "constraintPassedCount": passed,
-        "constraintScore": passed / total if total > 0 else None,
+        "constraintScore": (passed / total) * 100 if total > 0 else None,
     })
 
 

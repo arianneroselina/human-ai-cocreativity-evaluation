@@ -70,7 +70,17 @@ def plot_round5_workflow_exposure(df: pd.DataFrame):
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
     for container in ax.containers:
-        ax.bar_label(container, padding=3, fontsize=8)
+        labels = [
+            f"{int(bar.get_height())}" if bar.get_height() > 0 else ""
+            for bar in container
+        ]
+
+        ax.bar_label(
+            container,
+            labels=labels,
+            padding=3,
+            fontsize=8,
+        )
 
     save_figure(
         fig,
@@ -220,34 +230,34 @@ def plot_post_error_workflow_choices_by_exposure(df: pd.DataFrame):
     )
 
 
-def plot_experience_over_main_rounds_by_exposure(df: pd.DataFrame):
+def plot_tlx_over_rounds_by_exposure(df: pd.DataFrame):
     """
-    Shows participant experience over the main rounds, split by exposure group.
-
-    Main rounds = rounds 5–7.
+    Shows NASA-TLX subscale ratings over rounds
+    separately for exposed and non-exposed participants.
     """
 
-    main_df = df[df["roundIndex"] >= ERROR_ROUND_INDEX].copy()
-
-    if main_df.empty:
+    if df.empty:
         return
 
-    metrics = {
-        "satisfactionResult": "Satisfaction",
+    tlx_metrics = {
+        "mentalDemand": "Mental demand",
+        "physicalDemand": "Physical demand",
+        "temporalDemand": "Temporal demand",
+        "performance": "Performance (lower = better)",
+        "effort": "Effort",
         "frustration": "Frustration",
-        "aiPerformanceOverall": "AI performance",
     }
 
     available_metrics = [
-        column for column in metrics
-        if column in main_df.columns and not main_df[column].dropna().empty
+        column for column in tlx_metrics
+        if column in df.columns and not df[column].dropna().empty
     ]
 
     if not available_metrics:
         return
 
     summary = (
-        main_df
+        df
         .groupby(["errorExposureGroup", "roundIndex"])[available_metrics]
         .mean()
         .reset_index()
@@ -255,39 +265,59 @@ def plot_experience_over_main_rounds_by_exposure(df: pd.DataFrame):
     )
 
     summary.to_csv(
-        TABLE_DIR / "experience_by_exposure_and_main_round.csv",
+        TABLE_DIR / "tlx_over_rounds_by_exposure.csv",
         index=False,
         )
-
-    fig, ax = plt.subplots(figsize=(8.2, 4.8))
 
     for group, group_df in summary.groupby("errorExposureGroup"):
         group_label = exposure_label(group)
 
-        for column in available_metrics:
+        fig, axes = plt.subplots(
+            2,
+            3,
+            figsize=(12, 6.8),
+            sharex=True,
+            sharey=True,
+        )
+
+        axes = axes.flatten()
+
+        for ax, metric in zip(axes, available_metrics):
             ax.plot(
                 group_df["roundIndex"],
-                group_df[column],
+                group_df[metric],
                 marker="o",
-                label=f"{group_label} - {metrics[column]}",
             )
 
-    ax.set_title("Experience over Main Rounds by Error Exposure")
-    ax.set_xlabel("Round")
-    ax.set_ylabel("Mean rating")
-    ax.set_xticks(sorted(summary["roundIndex"].dropna().unique()))
-    ax.legend(title="Group and measure", bbox_to_anchor=(1.02, 1), loc="upper left")
+            ax.set_title(tlx_metrics[metric], fontsize=10)
+            ax.set_xlabel("Round")
+            ax.set_ylabel("Rating (1–21)")
+            ax.set_ylim(0, 21)
+            ax.set_xticks(sorted(group_df["roundIndex"].dropna().unique()))
 
-    save_figure(
-        fig,
-        "34_experience_over_main_rounds_by_error_exposure",
-        "Experience over Main Rounds by Error Exposure",
-        "Mean satisfaction, frustration, and AI performance over rounds 5–7, split by error exposure group.",
-    )
+        fig.suptitle(
+            f"NASA-TLX Ratings over Rounds ({group_label})",
+            fontsize=14,
+        )
+
+        fig.tight_layout(rect=[0, 0, 1, 0.94])
+
+        slug = (
+            "34_tlx_over_rounds_exposed"
+            if group == "error_exposed"
+            else "34b_tlx_over_rounds_not_exposed"
+        )
+
+        save_figure(
+            fig,
+            slug,
+            f"NASA-TLX Ratings over Rounds ({group_label})",
+            f"Mean NASA-TLX subscale ratings on a 1–21 scale over rounds for the {group_label.lower()} group.",
+        )
 
 
 def plot_error_exposure(df: pd.DataFrame):
     plot_round5_workflow_exposure(df)
     plot_line_count_error_by_round_ai_workflows(df)
     plot_post_error_workflow_choices_by_exposure(df)
-    plot_experience_over_main_rounds_by_exposure(df)
+    plot_tlx_over_rounds_by_exposure(df)

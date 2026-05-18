@@ -118,7 +118,7 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       description:
         "Round-5 error exposure, line-count error, post-error behavior, and subjective reactions.",
       figures: figures.filter((figure) =>
-        ["31_", "32_", "33_", "34_"].some((prefix) =>
+        ["31_", "32_", "33_", "34_", "34b_"].some((prefix) =>
           figure.slug.startsWith(prefix),
         ),
       ),
