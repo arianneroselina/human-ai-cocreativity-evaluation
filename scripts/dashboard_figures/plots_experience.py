@@ -92,6 +92,8 @@ def plot_ai_experience_over_rounds(df):
             label=metric_label,
         )
 
+    ax.axvline(5, linestyle="--", linewidth=1)
+
     ax.set_title("AI Collaboration Experience over Rounds")
     ax.set_xlabel("Round")
     ax.set_ylabel("Mean rating (1–5)")

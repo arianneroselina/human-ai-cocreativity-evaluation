@@ -289,6 +289,8 @@ def plot_tlx_over_rounds_by_exposure(df: pd.DataFrame):
                 marker="o",
             )
 
+            ax.axvline(5, linestyle="--", linewidth=1)
+
             ax.set_title(tlx_metrics[metric], fontsize=10)
             ax.set_xlabel("Round")
             ax.set_ylabel("Rating (1–21)")
