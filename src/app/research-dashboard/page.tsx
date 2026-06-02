@@ -190,9 +190,9 @@ export default async function ResearchDashboardPage() {
             </div>
           </div>
 
-          {!data.hasMasterDataset && (
+          {!data.hasDashboardDataset && (
             <div className="mt-5 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900">
-              <strong>Missing master dataset.</strong> Run{" "}
+              <strong>Missing dataset.</strong> Run{" "}
               <code className="font-mono">make process-data</code> to generate the processed
               dataset and research figures.
             </div>

@@ -18,9 +18,9 @@ import {
 import type { ResearchDashboardData } from "./types";
 
 const EXPECTED_EVALUATORS = 3;
-const MASTER_DATASET_PATH = path.join(
+const DASHBOARD_DATASET_PATH = path.join(
   process.cwd(),
-  "data", "work", "master_round_dataset.csv"
+  "data", "runtime", "dashboard_dataset.csv"
 );
 
 const INPUTS_DIR = path.join(process.cwd(), "inputs");
@@ -130,8 +130,8 @@ export async function getResearchDashboardData(): Promise<ResearchDashboardData>
     completed: Boolean(session.completedAt),
   }));
 
-  const hasMasterDataset = fs.existsSync(MASTER_DATASET_PATH);
-  const masterRows = readCsvFile(MASTER_DATASET_PATH);
+  const hasDashboardDataset = fs.existsSync(DASHBOARD_DATASET_PATH);
+  const masterRows = readCsvFile(DASHBOARD_DATASET_PATH);
   const finalFeedbackRows = readAllFinalFeedbackRows();
 
   return {
@@ -156,6 +156,6 @@ export async function getResearchDashboardData(): Promise<ResearchDashboardData>
     finalRanking: getFinalRankingRows(finalFeedbackRows),
     commentThemes: getCommentThemes(masterRows, finalFeedbackRows),
 
-    hasMasterDataset,
+    hasDashboardDataset,
   };
 }

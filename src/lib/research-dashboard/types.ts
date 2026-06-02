@@ -122,5 +122,5 @@ export type ResearchDashboardData = {
   finalRanking: FinalRankingRow[];
   commentThemes: CommentThemeRow[];
 
-  hasMasterDataset: boolean;
+  hasDashboardDataset: boolean;
 };
