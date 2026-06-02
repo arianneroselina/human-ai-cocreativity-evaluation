@@ -75,27 +75,35 @@ rebuild: clean gen migrate seed-db
 
 .PHONY: eval-check
 eval-check:
-	$(PYTHON) -m scripts.check_evaluation_data
+	$(PYTHON) -m scripts.evaluation.check_evaluation_data
 
 .PHONY: export-ratings
 export-ratings:
-	$(PYTHON) -m scripts.export_ratings
+	$(PYTHON) -m scripts.evaluation.export_ratings
 
 .PHONY: aggregate-scores
 aggregate-scores:
-	$(PYTHON) -m scripts.aggregate_poem_scores
+	$(PYTHON) -m scripts.evaluation.aggregate_poem_scores
 
 .PHONY: create-master
 create-master:
 	$(PYTHON) -m scripts.create_master_dataset
+
+.PHONY: create-dashboard-dataset
+create-dashboard-dataset:
+	$(PYTHON) -m scripts.dashboard.create_dashboard_dataset
+
+.PHONY: create-dashboard-tables
+create-dashboard-tables:
+	$(PYTHON) -m scripts.dashboard.create_dashboard_tables
 
 .PHONY: generate-figures
 generate-figures:
 	$(PYTHON) -m scripts.dashboard_figures.generate
 
 .PHONY: process-data
-process-data: eval-check export-ratings aggregate-scores create-master generate-figures
-	@echo "Evaluation data exported, master dataset created, and figures generated."
+process-data: eval-check export-ratings aggregate-scores create-master create-dashboard-dataset create-dashboard-tables generate-figures
+	@echo "Evaluation data exported, dashboard dataset created, and figures generated."
 
 # ------------------------------------------------------------
 # AI Evaluator
@@ -136,6 +144,8 @@ help:
 	@echo "  make export-ratings              Export raw evaluator ratings to CSV"
 	@echo "  make aggregate-scores            Create poem-level mean rating scores"
 	@echo "  make create-master               Create final master_round_dataset.csv"
+	@echo "  make create-dashboard-dataset    Create deployable dashboard runtime dataset"
+	@echo "  make create-dashboard-tables     Create deployable dashboard CSV tables"
 	@echo "  make generate-figures            Generate the visualization figures"
 	@echo "  make process-data                Run full evaluation data pipeline"
 	@echo ""

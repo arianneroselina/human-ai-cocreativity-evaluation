@@ -1,4 +1,4 @@
-import type { WorkflowFeedbackSummary } from "@/lib/research-dashboard/feedbackSummaries";
+import type { WorkflowFeedbackSummary } from "@/lib/research-dashboard/feedbackSummary";
 
 export default function FeedbackSummaryCards({
                                                summaries,

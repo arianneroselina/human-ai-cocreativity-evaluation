@@ -47,12 +47,8 @@ next-env.d.ts
 
 # Raw study data
 inputs/
-data/raw/
+data/work/
 
-# Generated analysis files
-data/processed/
-public/research-dashboard/
-
-# Optional analysis outputs
-analysis/plots/
-analysis/tables/
+# Don't ignore generated dashboard data
+!data/runtime/
+!public/research-dashboard/

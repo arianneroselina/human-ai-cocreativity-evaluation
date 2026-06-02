@@ -1,4 +1,4 @@
-import EvaluationWorkbench from "./evaluationWorkbench";
+import EvaluationWorkbench from "./components/EvaluationWorkbench";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";

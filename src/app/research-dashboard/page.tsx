@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { getDashboardFigures } from "@/lib/research-dashboard/figures";
 import { getResearchDashboardData } from "@/lib/research-dashboard/data";
-import { getWorkflowFeedbackSummaries } from "@/lib/research-dashboard/feedbackSummaries";
+import { getWorkflowFeedbackSummaries } from "@/lib/research-dashboard/feedbackSummary";
 import DataTable from "./components/DataTable";
 import FigureGallery from "./components/FigureGallery";
 import StatCard from "./components/StatCard";

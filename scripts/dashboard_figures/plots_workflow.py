@@ -61,6 +61,7 @@ def plot_total_workflow_usage_counts(df):
 
     This gives a simple overview of workflow usage across all recorded rounds.
     """
+    slug = "01_total_workflow_usage_counts"
 
     if "workflow" not in df.columns:
         return
@@ -77,7 +78,7 @@ def plot_total_workflow_usage_counts(df):
         return
 
     summary.rename(index=WORKFLOW_LABELS).to_csv(
-        TABLE_DIR / "total_workflow_usage_counts.csv",
+        TABLE_DIR / f"{slug}.csv",
         header=["count"],
         )
 
@@ -94,13 +95,15 @@ def plot_total_workflow_usage_counts(df):
 
     save_figure(
         fig,
-        "01_total_workflow_usage_counts",
+        slug,
         "Total Workflow Usage",
         "Total number of rounds in which each workflow was used.",
     )
 
 
 def plot_workflow_distribution(df):
+    slug = "02_workflow_distribution_main_rounds"
+
     choice_df = df[df["roundIndex"] >= 5].copy()
 
     if choice_df.empty:
@@ -117,7 +120,7 @@ def plot_workflow_distribution(df):
     percentages = counts.div(counts.sum(axis=1), axis=0) * 100
     percentages = percentages.rename(columns=WORKFLOW_LABELS)
 
-    percentages.to_csv(TABLE_DIR / "workflow_distribution_main_rounds.csv")
+    percentages.to_csv(TABLE_DIR / f"{slug}.csv")
 
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
     percentages.plot(kind="bar", ax=ax)
@@ -130,7 +133,7 @@ def plot_workflow_distribution(df):
 
     save_figure(
         fig,
-        "02_workflow_distribution_main_rounds",
+        slug,
         "Workflow Distribution in Main Rounds",
         "Share of selected workflows in rounds 5–7.",
     )
@@ -170,6 +173,8 @@ def plot_workflow_transitions(df):
     transition_df = pd.DataFrame(transition_rows)
 
     for (from_round, to_round), step_df in transition_df.groupby(["fromRound", "toRound"]):
+        slug = f"03_workflow_transition_r{from_round}_to_r{to_round}"
+
         matrix = (
             step_df
             .groupby(["fromWorkflow", "toWorkflow"])
@@ -180,7 +185,7 @@ def plot_workflow_transitions(df):
 
         matrix = matrix.rename(index=WORKFLOW_LABELS, columns=WORKFLOW_LABELS)
 
-        matrix.to_csv(TABLE_DIR / f"workflow_transitions_r{from_round}_to_r{to_round}.csv")
+        matrix.to_csv(TABLE_DIR / f"{slug}.csv")
 
         fig, ax = plt.subplots(figsize=(6.8, 5.4))
 
@@ -211,13 +216,15 @@ def plot_workflow_transitions(df):
 
         save_figure(
             fig,
-            f"03_workflow_transition_r{from_round}_to_r{to_round}",
+            slug,
             f"Workflow Transitions R{from_round} to R{to_round}",
             f"Workflow transition counts from round {from_round} to round {to_round}.",
         )
 
 
 def plot_final_workflow_ranking(feedback_df):
+    slug = "04_final_workflow_ranking_overview"
+
     if feedback_df.empty or "workflowRanking" not in feedback_df.columns:
         return
 
@@ -258,7 +265,7 @@ def plot_final_workflow_ranking(feedback_df):
 
     rank_counts["Average rank"] = average_rank.round(2)
 
-    rank_counts.to_csv(TABLE_DIR / "final_workflow_ranking.csv")
+    rank_counts.to_csv(TABLE_DIR / f"{slug}.csv")
 
     fig, ax = plt.subplots(figsize=(8.2, 3.8))
     ax.axis("off")
@@ -280,7 +287,7 @@ def plot_final_workflow_ranking(feedback_df):
 
     save_figure(
         fig,
-        "04_final_workflow_ranking_overview",
+        slug,
         "Final Workflow Ranking Overview",
         "Distribution of final workflow rankings and average rank per workflow.",
     )

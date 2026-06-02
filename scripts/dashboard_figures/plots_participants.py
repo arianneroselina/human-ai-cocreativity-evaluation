@@ -6,6 +6,8 @@ from scripts.dashboard_figures.utils import save_figure
 
 
 def plot_participant_age_distribution(participant_df):
+    slug = "41_participant_age_distribution"
+
     if participant_df.empty or "age" not in participant_df.columns:
         return
 
@@ -14,7 +16,7 @@ def plot_participant_age_distribution(participant_df):
     if age.empty:
         return
 
-    age.describe().to_csv(TABLE_DIR / "participant_age_summary.csv")
+    age.describe().to_csv(TABLE_DIR / f"{slug}.csv")
 
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
 
@@ -57,7 +59,7 @@ def plot_participant_age_distribution(participant_df):
 
     save_figure(
         fig,
-        "41_participant_age_distribution",
+        slug,
         "Participant Age Distribution",
         "Age distribution of study participants grouped into age intervals.",
     )
@@ -113,6 +115,8 @@ def plot_participant_category_distribution(participant_df, column, label, slug):
 
 
 def plot_participant_likert_means(participant_df):
+    slug = "46_participant_ai_attitude_means"
+
     if participant_df.empty:
         return
 
@@ -137,7 +141,7 @@ def plot_participant_likert_means(participant_df):
         return
 
     summary_df = pd.DataFrame(rows)
-    summary_df.to_csv(TABLE_DIR / "participant_ai_attitude_means.csv", index=False)
+    summary_df.to_csv(TABLE_DIR / f"{slug}.csv", index=False)
 
     plot_df = summary_df.sort_values("mean", ascending=True)
 
@@ -151,7 +155,7 @@ def plot_participant_likert_means(participant_df):
 
     save_figure(
         fig,
-        "46_participant_ai_attitude_means",
+        slug,
         "Participant Writing Confidence and AI Attitudes",
         "Mean ratings for writing confidence and attitudes toward AI.",
     )

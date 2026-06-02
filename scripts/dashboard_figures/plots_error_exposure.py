@@ -35,6 +35,7 @@ def plot_round5_workflow_exposure(df: pd.DataFrame):
     Shows which workflow participants selected in round 5 and whether that
     resulted in actual AI-error exposure.
     """
+    slug = "31_round5_workflow_exposure"
 
     round5_df = df[df["roundIndex"] == ERROR_ROUND_INDEX].copy()
 
@@ -50,7 +51,7 @@ def plot_round5_workflow_exposure(df: pd.DataFrame):
     summary["workflowLabel"] = summary["workflow"].map(workflow_label)
     summary["groupLabel"] = summary["errorExposureGroup"].map(exposure_label)
 
-    summary.to_csv(TABLE_DIR / "round5_workflow_exposure.csv", index=False)
+    summary.to_csv(TABLE_DIR / f"{slug}.csv", index=False)
 
     pivot = (
         summary.pivot(index="workflowLabel", columns="groupLabel", values="count")
@@ -84,7 +85,7 @@ def plot_round5_workflow_exposure(df: pd.DataFrame):
 
     save_figure(
         fig,
-        "31_round5_workflow_exposure",
+        slug,
         "Round-5 Workflow and Error Exposure",
         "Participants were exposed to the AI error only if their round-5 workflow used AI support.",
     )
@@ -112,6 +113,7 @@ def plot_line_count_error_by_round_ai_workflows(df):
     """
     Shows whether the line-count constraint error increases in round 5.
     """
+    slug = "32_line_count_error_by_round_ai_workflows"
 
     if "requirementResults" not in df.columns:
         return
@@ -136,7 +138,7 @@ def plot_line_count_error_by_round_ai_workflows(df):
         .reset_index(name="lineCountErrorRatePercent")
     )
 
-    summary.to_csv(TABLE_DIR / "line_count_error_by_round_ai_workflows.csv", index=False)
+    summary.to_csv(TABLE_DIR / f"{slug}.csv", index=False)
 
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
 
@@ -170,7 +172,7 @@ def plot_line_count_error_by_round_ai_workflows(df):
 
     save_figure(
         fig,
-        "32_line_count_error_by_round_ai_workflows",
+        slug,
         "Line-Count Error by Round",
         "Line-count constraint error rate across rounds for AI-supported workflows.",
     )
@@ -180,6 +182,7 @@ def plot_post_error_workflow_choices_by_exposure(df: pd.DataFrame):
     """
     Shows exact workflow choices after the possible AI-error round.
     """
+    slug = "33_post_error_workflow_choices_by_exposure"
 
     choice_df = df[df["roundIndex"] > ERROR_ROUND_INDEX].copy()
 
@@ -199,7 +202,7 @@ def plot_post_error_workflow_choices_by_exposure(df: pd.DataFrame):
     summary["groupLabel"] = summary["errorExposureGroup"].map(exposure_label)
     summary["workflowLabel"] = summary["workflow"].map(workflow_label)
 
-    summary.to_csv(TABLE_DIR / "post_error_workflow_choices_by_exposure.csv", index=False)
+    summary.to_csv(TABLE_DIR / f"{slug}.csv", index=False)
 
     pivot = (
         summary
@@ -224,7 +227,7 @@ def plot_post_error_workflow_choices_by_exposure(df: pd.DataFrame):
 
     save_figure(
         fig,
-        "33_post_error_workflow_choices_by_exposure",
+        slug,
         "Post-Error Workflow Choices by Error Exposure",
         "Distribution of workflow choices in rounds 6–7, split by whether participants were exposed to the AI error in round 5.",
     )
@@ -235,6 +238,7 @@ def plot_tlx_over_rounds_by_exposure(df: pd.DataFrame):
     Shows NASA-TLX subscale ratings over rounds
     separately for exposed and non-exposed participants.
     """
+    summary_slug = "34_tlx_over_rounds_by_exposure"
 
     if df.empty:
         return
@@ -264,10 +268,7 @@ def plot_tlx_over_rounds_by_exposure(df: pd.DataFrame):
         .sort_values(["errorExposureGroup", "roundIndex"])
     )
 
-    summary.to_csv(
-        TABLE_DIR / "tlx_over_rounds_by_exposure.csv",
-        index=False,
-        )
+    summary.to_csv(TABLE_DIR / f"{summary_slug}.csv", index=False)
 
     for group, group_df in summary.groupby("errorExposureGroup"):
         group_label = exposure_label(group)
@@ -289,7 +290,7 @@ def plot_tlx_over_rounds_by_exposure(df: pd.DataFrame):
                 marker="o",
             )
 
-            ax.axvline(5, linestyle="--", linewidth=1)
+            ax.axvline(ERROR_ROUND_INDEX, linestyle="--", linewidth=1)
 
             ax.set_title(tlx_metrics[metric], fontsize=10)
             ax.set_xlabel("Round")

@@ -1,11 +1,8 @@
 import csv
-from pathlib import Path
 import psycopg
 from psycopg.rows import dict_row
 
-from scripts.config import PRISMA_DATABASE_URL, EXPECTED_EVALUATORS
-
-OUTPUT_PATH = Path("data/processed/poem_scores.csv")
+from scripts.config import PRISMA_DATABASE_URL, EXPECTED_EVALUATORS, POEM_SCORES_PATH
 
 query = """
         SELECT
@@ -84,9 +81,9 @@ if not processed_rows:
     print("No poem scores found. CSV was not created.")
     raise SystemExit(0)
 
-with OUTPUT_PATH.open("w", newline="", encoding="utf-8") as f:
+with POEM_SCORES_PATH.open("w", newline="", encoding="utf-8") as f:
     writer = csv.DictWriter(f, fieldnames=list(processed_rows[0].keys()))
     writer.writeheader()
     writer.writerows(processed_rows)
 
-print(f"Exported {len(processed_rows)} poem scores to {OUTPUT_PATH}")
+print(f"Exported {len(processed_rows)} poem scores to {POEM_SCORES_PATH}")

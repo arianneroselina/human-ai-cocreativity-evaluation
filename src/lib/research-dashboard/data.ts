@@ -20,9 +20,7 @@ import type { ResearchDashboardData } from "./types";
 const EXPECTED_EVALUATORS = 3;
 const MASTER_DATASET_PATH = path.join(
   process.cwd(),
-  "data",
-  "processed",
-  "master_round_dataset.csv"
+  "data", "work", "master_round_dataset.csv"
 );
 
 const INPUTS_DIR = path.join(process.cwd(), "inputs");

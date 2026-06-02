@@ -7,6 +7,7 @@ from scripts.dashboard_figures.utils import save_figure, workflow_label
 
 
 def plot_composite_quality_over_rounds(df):
+    slug = "11_composite_quality_over_rounds"
     metric = "qualityComposite"
 
     if metric not in df.columns or df[metric].dropna().empty:
@@ -27,7 +28,7 @@ def plot_composite_quality_over_rounds(df):
     if summary.empty:
         return
 
-    summary.to_csv(TABLE_DIR / "quality_over_rounds.csv", index=False)
+    summary.to_csv(TABLE_DIR / f"{slug}.csv", index=False)
 
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
 
@@ -45,13 +46,15 @@ def plot_composite_quality_over_rounds(df):
 
     save_figure(
         fig,
-        "11_composite_quality_over_rounds",
+        slug,
         "Composite Quality over Rounds",
         "Mean externally rated composite poem quality score per round on a 1–5 scale, aggregated from Fluency, Theme Alignment, Meaningfulness, Poeticness, and Overall Quality scores.",
     )
 
 
 def plot_quality_dimensions_by_workflow(df):
+    slug = "12_quality_dimensions_by_workflow"
+
     dimension_columns = {
         "meanFluency": "Fluency",
         "meanThemeAlignment": "Theme alignment",
@@ -80,7 +83,7 @@ def plot_quality_dimensions_by_workflow(df):
     if summary.empty:
         return
 
-    summary.to_csv(TABLE_DIR / "quality_dimensions_by_workflow.csv")
+    summary.to_csv(TABLE_DIR / f"{slug}.csv")
 
     fig, ax = plt.subplots(figsize=(9.2, 4.8))
     summary.plot(kind="bar", ax=ax)
@@ -93,13 +96,14 @@ def plot_quality_dimensions_by_workflow(df):
 
     save_figure(
         fig,
-        "12_quality_dimensions_by_workflow",
+        slug,
         "Poem Evaluation Dimensions by Workflow",
         "Mean poem evaluation scores by workflow on a 1–5 scale, across the dimensions Fluency, Theme Alignment, Meaningfulness, Poeticness, and Overall Quality.",
     )
 
 
 def plot_composite_quality_vs_time(df):
+    slug = "13_composite_quality_vs_time_scatterplot"
     metric = "qualityComposite"
 
     if metric not in df.columns or df[metric].dropna().empty:
@@ -122,7 +126,7 @@ def plot_composite_quality_vs_time(df):
         "workflow",
         time_column,
         metric,
-    ]].to_csv(TABLE_DIR / "quality_vs_time_points.csv", index=False)
+    ]].to_csv(TABLE_DIR / f"{slug}.csv", index=False)
 
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
 
@@ -146,13 +150,14 @@ def plot_composite_quality_vs_time(df):
 
     save_figure(
         fig,
-        "13_composite_quality_vs_time_scatterplot",
+        slug,
         "Composite Quality vs Time Scatterplot",
         "Relationship between completion time and composite poem quality score on a 1–5 scale. Reported completion times include pauses recorded during the writing process.",
     )
 
 
 def plot_composite_quality_efficiency_by_workflow(df):
+    slug = "14_composite_quality_efficiency_by_workflow"
     metric = "qualityPerMinute"
 
     if metric not in df.columns or df[metric].dropna().empty:
@@ -171,7 +176,7 @@ def plot_composite_quality_efficiency_by_workflow(df):
         return
 
     summary.rename(index=WORKFLOW_LABELS).to_csv(
-        TABLE_DIR / "quality_efficiency_by_workflow.csv",
+        TABLE_DIR / f"{slug}.csv",
         header=["meanQualityPerMinute"],
         )
 
@@ -187,7 +192,7 @@ def plot_composite_quality_efficiency_by_workflow(df):
 
     save_figure(
         fig,
-        "14_composite_quality_efficiency_by_workflow",
+        slug,
         "Composite Quality Efficiency by Workflow",
         "Mean externally rated composite poem quality score on a 1-5 scale per minute by workflow.",
     )
@@ -305,6 +310,9 @@ def _plot_poem_text_figure(poem_df, slug, title, description, metric):
 
 
 def plot_best_and_worst_poems_by_quality(df):
+    best_slug = "15_best_poems_by_quality"
+    worst_slug = "15b_worst_poems_by_quality"
+
     metric = "qualityComposite"
 
     if metric not in df.columns or df[metric].dropna().empty:
@@ -341,18 +349,18 @@ def plot_best_and_worst_poems_by_quality(df):
     ]
 
     best_poems[available_columns].to_csv(
-        TABLE_DIR / "best_poems_by_quality.csv",
+        TABLE_DIR / f"{best_slug}.csv",
         index=False,
         )
 
     worst_poems[available_columns].to_csv(
-        TABLE_DIR / "worst_poems_by_quality.csv",
+        TABLE_DIR / f"{worst_slug}.csv",
         index=False,
         )
 
     _plot_poem_text_figure(
         best_poems,
-        "15_best_poems_by_quality",
+        best_slug,
         "Best Rated Poem(s)",
         "Poem text for all outputs with the highest mean quality score.",
         metric,
@@ -360,7 +368,7 @@ def plot_best_and_worst_poems_by_quality(df):
 
     _plot_poem_text_figure(
         worst_poems,
-        "15b_worst_poems_by_quality",
+        worst_slug,
         "Worst Rated Poem(s)",
         "Poem text for all outputs with the lowest mean quality score.",
         metric,
@@ -368,6 +376,8 @@ def plot_best_and_worst_poems_by_quality(df):
 
 
 def plot_constraint_fulfillment_over_rounds(df):
+    slug = "16_constraint_fulfillment_over_rounds"
+
     if "constraintScore" not in df.columns or df["constraintScore"].dropna().empty:
         return
 
@@ -385,7 +395,7 @@ def plot_constraint_fulfillment_over_rounds(df):
         return
 
     summary.to_csv(
-        TABLE_DIR / "constraint_fulfillment_over_rounds.csv",
+        TABLE_DIR / f"{slug}.csv",
         index=False,
         )
 
@@ -407,13 +417,15 @@ def plot_constraint_fulfillment_over_rounds(df):
 
     save_figure(
         fig,
-        "16_constraint_fulfillment_over_rounds",
+        slug,
         "Constraint Fulfillment over Rounds",
         "Mean constraint fulfillment percentage per round, with round 5 marked as the injected-error round.",
     )
 
 
 def plot_constraint_rate_by_workflow(df):
+    slug = "17_passed_constraint_rate_by_workflow"
+
     if "passed" not in df.columns:
         return
 
@@ -442,7 +454,7 @@ def plot_constraint_rate_by_workflow(df):
         return
 
     summary.rename(index=WORKFLOW_LABELS).to_csv(
-        TABLE_DIR / "passed_constraint_rate_by_workflow.csv",
+        TABLE_DIR / f"{slug}.csv",
         header=["passedRatePercent"],
         )
 
@@ -457,7 +469,7 @@ def plot_constraint_rate_by_workflow(df):
 
     save_figure(
         fig,
-        "17_passed_constraint_rate_by_workflow",
+        slug,
         "Passed Constraint Rate by Workflow",
         "Percentage of rounds that passed the task constraints.",
     )

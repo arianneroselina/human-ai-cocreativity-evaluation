@@ -1,9 +1,7 @@
 import json
 import pandas as pd
 
-from scripts.config import PROCESSED_DIR, POEM_SCORES_PATH, INPUTS_DIR
-
-OUTPUT_PATH = PROCESSED_DIR / "master_round_dataset.csv"
+from scripts.config import MASTER_DATASET_PATH, POEM_SCORES_PATH, INPUTS_DIR, ERROR_ROUND_INDEX, AI_SUPPORTED_WORKFLOWS
 
 
 def parse_bool(value):
@@ -135,9 +133,6 @@ def add_error_exposure_columns(master):
     - human
     """
 
-    ERROR_ROUND_INDEX = 5
-    AI_SUPPORTED_WORKFLOWS = ["ai", "human_ai", "ai_human"]
-
     master["roundIndex"] = pd.to_numeric(master["roundIndex"], errors="coerce")
     master["participantId"] = pd.to_numeric(master["participantId"], errors="coerce")
 
@@ -248,9 +243,9 @@ else:
 
 master = master.sort_values(["participantId", "roundIndex"])
 
-master.to_csv(OUTPUT_PATH, index=False)
+master.to_csv(MASTER_DATASET_PATH, index=False)
 
-print(f"Created {OUTPUT_PATH}")
+print(f"Created {MASTER_DATASET_PATH}")
 print(f"Rows: {len(master)}")
 print(f"Participants: {master['participantId'].nunique()}")
 print(f"Expected rows for 24 participants: {24 * 7}")

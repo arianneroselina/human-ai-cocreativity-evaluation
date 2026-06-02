@@ -5,6 +5,7 @@ from scripts.dashboard_figures.utils import save_figure
 
 
 def plot_satisfaction_by_workflow(df):
+    slug = "21_satisfaction_by_workflow"
     column = "satisfactionResult"
 
     if column not in df.columns:
@@ -24,7 +25,7 @@ def plot_satisfaction_by_workflow(df):
         return
 
     summary.to_csv(
-        TABLE_DIR / "satisfaction_by_workflow.csv",
+        TABLE_DIR / f"{slug}.csv",
         header=["meanSatisfaction"],
         )
 
@@ -41,13 +42,15 @@ def plot_satisfaction_by_workflow(df):
 
     save_figure(
         fig,
-        "21_satisfaction_by_workflow",
+        slug,
         "Participant Satisfaction by Workflow",
         "Mean participant-reported satisfaction ratings on a 1–5 scale after each writing round by workflow.",
     )
 
 
 def plot_ai_experience_over_rounds(df):
+    slug = "22_ai_experience_over_rounds"
+
     ai_metrics = {
         "aiUnderstanding": "AI understanding",
         "aiCollaboration": "AI collaboration",
@@ -77,7 +80,7 @@ def plot_ai_experience_over_rounds(df):
     )
 
     summary = summary.rename(columns=ai_metrics)
-    summary.to_csv(TABLE_DIR / "ai_experience_over_rounds.csv", index=False)
+    summary.to_csv(TABLE_DIR / f"{slug}.csv", index=False)
 
     fig, ax = plt.subplots(figsize=(7.4, 4.4))
 
@@ -103,13 +106,15 @@ def plot_ai_experience_over_rounds(df):
 
     save_figure(
         fig,
-        "22_ai_experience_over_rounds",
+        slug,
         "AI Collaboration Experience over Rounds",
         "Mean participant ratings on a 1–5 scale for AI understanding, collaboration quality, creativity support, and overall AI performance across AI-supported rounds.",
     )
 
 
 def plot_tlx_subscale_ratings_by_workflow(df):
+    slug = "23_tlx_subscale_ratings_by_workflow"
+
     load_columns = {
         "mentalDemand": "Mental demand",
         "physicalDemand": "Physical demand",
@@ -139,7 +144,7 @@ def plot_tlx_subscale_ratings_by_workflow(df):
     if summary.empty:
         return
 
-    summary.to_csv(TABLE_DIR / "task_load_by_workflow.csv")
+    summary.to_csv(TABLE_DIR / f"{slug}.csv")
 
     fig, ax = plt.subplots(figsize=(9.2, 4.8))
     summary.plot(kind="bar", ax=ax)
@@ -158,7 +163,7 @@ def plot_tlx_subscale_ratings_by_workflow(df):
 
     save_figure(
         fig,
-        "23_tlx_subscale_ratings_by_workflow",
+        slug,
         "NASA-TLX Subscale Ratings by Workflow",
         "Mean NASA-TLX subscale ratings on a 1–21 scale across workflows.",
     )

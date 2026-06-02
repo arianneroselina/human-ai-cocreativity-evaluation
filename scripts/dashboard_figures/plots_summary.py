@@ -5,8 +5,7 @@ from collections import defaultdict
 import pandas as pd
 from openai import OpenAI
 
-from scripts.config import TABLE_DIR, WORKFLOW_LABELS
-
+from scripts.config import TABLE_DIR, WORKFLOW_LABELS, WORKFLOW_FEEDBACK_SUMMARY_PATH
 
 OPENAI_SUMMARY_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_COMMENT_CHAR_LIMIT = 12000
@@ -207,12 +206,5 @@ def generate_feedback_summaries(df, feedback_df):
         ascending=[True, False],
     )
 
-    csv_path = TABLE_DIR / "workflow_feedback_summaries.csv"
-    json_path = TABLE_DIR / "workflow_feedback_summaries.json"
-
-    summary_df.to_csv(csv_path, index=False)
-
-    with json_path.open("w", encoding="utf-8") as file:
-        json.dump(summary_rows, file, indent=2, ensure_ascii=False)
-
-    print(f"Generated feedback summaries: {csv_path}")
+    summary_df.to_csv(WORKFLOW_FEEDBACK_SUMMARY_PATH, index=False)
+    print(f"Generated feedback summaries: {WORKFLOW_FEEDBACK_SUMMARY_PATH}")

@@ -11,17 +11,27 @@ if not PRISMA_DATABASE_URL:
     raise RuntimeError("Missing PRISMA_DATABASE_URL in .env")
 
 EXPECTED_EVALUATORS = 3
+ERROR_ROUND_INDEX = 5
 
-MASTER_DATASET_PATH = Path("data/processed/master_round_dataset.csv")
 INPUTS_DIR = Path("inputs")
 
-PROCESSED_DIR = Path("data/processed")
-PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+WORK_DIR = Path("data/work")
+WORK_DIR.mkdir(parents=True, exist_ok=True)
 
-POEM_SCORES_PATH = PROCESSED_DIR / "poem_scores.csv"
+MASTER_DATASET_PATH = WORK_DIR / "master_round_dataset.csv"
+POEM_SCORES_PATH = WORK_DIR / "poem_scores.csv"
+RATINGS_EXPORT_PATH = WORK_DIR / "ratings_export.csv"
+TABLE_DIR = WORK_DIR / "dashboard_tables"
+
+RUNTIME_DIR = Path("data/runtime")
+RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+
+DASHBOARD_DATASET_PATH = RUNTIME_DIR / "dashboard_dataset.csv"
+DASHBOARD_FINAL_RANKING_PATH = RUNTIME_DIR / "dashboard_final_ranking.csv"
+DASHBOARD_COMMENT_THEMES_PATH = RUNTIME_DIR / "dashboard_comment_themes.csv"
+WORKFLOW_FEEDBACK_SUMMARY_PATH = RUNTIME_DIR / "workflow_feedback_summaries.csv"
 
 FIGURE_DIR = Path("public/research-dashboard/figures")
-TABLE_DIR = Path("data/processed/dashboard_tables")
 
 WORKFLOW_ORDER = ["human", "ai", "human_ai", "ai_human"]
 
@@ -31,6 +41,8 @@ WORKFLOW_LABELS = {
     "human_ai": "Human → AI",
     "ai_human": "AI → Human",
 }
+
+AI_SUPPORTED_WORKFLOWS = ["ai", "human_ai", "ai_human"]
 
 PARTICIPANT_COLUMN_ALIASES = {
     "participantId": ["whatisyourparticipantid", "participantid"],
