@@ -1,0 +1,226 @@
+[
+  {
+    "slug": "01_total_workflow_usage_counts",
+    "title": "Total Workflow Usage",
+    "description": "Total number of rounds in which each workflow was used.",
+    "pngUrl": "/research-dashboard/figures/01_total_workflow_usage_counts.png",
+    "pdfUrl": "/research-dashboard/figures/01_total_workflow_usage_counts.pdf",
+    "svgUrl": "/research-dashboard/figures/01_total_workflow_usage_counts.svg"
+  },
+  {
+    "slug": "02_workflow_distribution_main_rounds",
+    "title": "Workflow Distribution in Main Rounds",
+    "description": "Share of selected workflows in rounds 5\u20137.",
+    "pngUrl": "/research-dashboard/figures/02_workflow_distribution_main_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/02_workflow_distribution_main_rounds.pdf",
+    "svgUrl": "/research-dashboard/figures/02_workflow_distribution_main_rounds.svg"
+  },
+  {
+    "slug": "03_workflow_transition_r4_to_r5",
+    "title": "Workflow Transitions R4 to R5",
+    "description": "Workflow transition counts from round 4 to round 5.",
+    "pngUrl": "/research-dashboard/figures/03_workflow_transition_r4_to_r5.png",
+    "pdfUrl": "/research-dashboard/figures/03_workflow_transition_r4_to_r5.pdf",
+    "svgUrl": "/research-dashboard/figures/03_workflow_transition_r4_to_r5.svg"
+  },
+  {
+    "slug": "03_workflow_transition_r5_to_r6",
+    "title": "Workflow Transitions R5 to R6",
+    "description": "Workflow transition counts from round 5 to round 6.",
+    "pngUrl": "/research-dashboard/figures/03_workflow_transition_r5_to_r6.png",
+    "pdfUrl": "/research-dashboard/figures/03_workflow_transition_r5_to_r6.pdf",
+    "svgUrl": "/research-dashboard/figures/03_workflow_transition_r5_to_r6.svg"
+  },
+  {
+    "slug": "03_workflow_transition_r6_to_r7",
+    "title": "Workflow Transitions R6 to R7",
+    "description": "Workflow transition counts from round 6 to round 7.",
+    "pngUrl": "/research-dashboard/figures/03_workflow_transition_r6_to_r7.png",
+    "pdfUrl": "/research-dashboard/figures/03_workflow_transition_r6_to_r7.pdf",
+    "svgUrl": "/research-dashboard/figures/03_workflow_transition_r6_to_r7.svg"
+  },
+  {
+    "slug": "04_final_workflow_ranking_overview",
+    "title": "Final Workflow Ranking Overview",
+    "description": "Distribution of final workflow rankings and average rank per workflow.",
+    "pngUrl": "/research-dashboard/figures/04_final_workflow_ranking_overview.png",
+    "pdfUrl": "/research-dashboard/figures/04_final_workflow_ranking_overview.pdf",
+    "svgUrl": "/research-dashboard/figures/04_final_workflow_ranking_overview.svg"
+  },
+  {
+    "slug": "21_satisfaction_by_workflow",
+    "title": "Participant Satisfaction by Workflow",
+    "description": "Mean participant-reported satisfaction ratings on a 1\u20135 scale after each writing round by workflow.",
+    "pngUrl": "/research-dashboard/figures/21_satisfaction_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/21_satisfaction_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/21_satisfaction_by_workflow.svg"
+  },
+  {
+    "slug": "22_ai_experience_over_rounds",
+    "title": "AI Collaboration Experience over Rounds",
+    "description": "Mean participant ratings on a 1\u20135 scale for AI understanding, collaboration quality, creativity support, and overall AI performance across AI-supported rounds.",
+    "pngUrl": "/research-dashboard/figures/22_ai_experience_over_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/22_ai_experience_over_rounds.pdf",
+    "svgUrl": "/research-dashboard/figures/22_ai_experience_over_rounds.svg"
+  },
+  {
+    "slug": "23_tlx_subscale_ratings_by_workflow",
+    "title": "NASA-TLX Subscale Ratings by Workflow",
+    "description": "Mean NASA-TLX subscale ratings on a 1\u201321 scale across workflows.",
+    "pngUrl": "/research-dashboard/figures/23_tlx_subscale_ratings_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/23_tlx_subscale_ratings_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/23_tlx_subscale_ratings_by_workflow.svg"
+  },
+  {
+    "slug": "11_composite_quality_over_rounds",
+    "title": "Composite Quality over Rounds",
+    "description": "Mean externally rated composite poem quality score per round on a 1\u20135 scale, aggregated from Fluency, Theme Alignment, Meaningfulness, Poeticness, and Overall Quality scores.",
+    "pngUrl": "/research-dashboard/figures/11_composite_quality_over_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/11_composite_quality_over_rounds.pdf",
+    "svgUrl": "/research-dashboard/figures/11_composite_quality_over_rounds.svg"
+  },
+  {
+    "slug": "12_quality_dimensions_by_workflow",
+    "title": "Poem Evaluation Dimensions by Workflow",
+    "description": "Mean poem evaluation scores by workflow on a 1\u20135 scale, across the dimensions Fluency, Theme Alignment, Meaningfulness, Poeticness, and Overall Quality.",
+    "pngUrl": "/research-dashboard/figures/12_quality_dimensions_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/12_quality_dimensions_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/12_quality_dimensions_by_workflow.svg"
+  },
+  {
+    "slug": "13_composite_quality_vs_time_scatterplot",
+    "title": "Composite Quality vs Time Scatterplot",
+    "description": "Relationship between completion time and composite poem quality score on a 1\u20135 scale. Reported completion times include pauses recorded during the writing process.",
+    "pngUrl": "/research-dashboard/figures/13_composite_quality_vs_time_scatterplot.png",
+    "pdfUrl": "/research-dashboard/figures/13_composite_quality_vs_time_scatterplot.pdf",
+    "svgUrl": "/research-dashboard/figures/13_composite_quality_vs_time_scatterplot.svg"
+  },
+  {
+    "slug": "14_composite_quality_efficiency_by_workflow",
+    "title": "Composite Quality Efficiency by Workflow",
+    "description": "Mean externally rated composite poem quality score on a 1-5 scale per minute by workflow.",
+    "pngUrl": "/research-dashboard/figures/14_composite_quality_efficiency_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/14_composite_quality_efficiency_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/14_composite_quality_efficiency_by_workflow.svg"
+  },
+  {
+    "slug": "15_best_poems_by_quality",
+    "title": "Best Rated Poem(s)",
+    "description": "Poem text for all outputs with the highest mean quality score.",
+    "pngUrl": "/research-dashboard/figures/15_best_poems_by_quality.png",
+    "pdfUrl": "/research-dashboard/figures/15_best_poems_by_quality.pdf",
+    "svgUrl": "/research-dashboard/figures/15_best_poems_by_quality.svg"
+  },
+  {
+    "slug": "15b_worst_poems_by_quality",
+    "title": "Worst Rated Poem(s)",
+    "description": "Poem text for all outputs with the lowest mean quality score.",
+    "pngUrl": "/research-dashboard/figures/15b_worst_poems_by_quality.png",
+    "pdfUrl": "/research-dashboard/figures/15b_worst_poems_by_quality.pdf",
+    "svgUrl": "/research-dashboard/figures/15b_worst_poems_by_quality.svg"
+  },
+  {
+    "slug": "16_constraint_fulfillment_over_rounds",
+    "title": "Constraint Fulfillment over Rounds",
+    "description": "Mean constraint fulfillment percentage per round, with round 5 marked as the injected-error round.",
+    "pngUrl": "/research-dashboard/figures/16_constraint_fulfillment_over_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/16_constraint_fulfillment_over_rounds.pdf",
+    "svgUrl": "/research-dashboard/figures/16_constraint_fulfillment_over_rounds.svg"
+  },
+  {
+    "slug": "17_passed_constraint_rate_by_workflow",
+    "title": "Passed Constraint Rate by Workflow",
+    "description": "Percentage of rounds that passed the task constraints.",
+    "pngUrl": "/research-dashboard/figures/17_passed_constraint_rate_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/17_passed_constraint_rate_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/17_passed_constraint_rate_by_workflow.svg"
+  },
+  {
+    "slug": "31_round5_workflow_exposure",
+    "title": "Round-5 Workflow and Error Exposure",
+    "description": "Participants were exposed to the AI error only if their round-5 workflow used AI support.",
+    "pngUrl": "/research-dashboard/figures/31_round5_workflow_exposure.png",
+    "pdfUrl": "/research-dashboard/figures/31_round5_workflow_exposure.pdf",
+    "svgUrl": "/research-dashboard/figures/31_round5_workflow_exposure.svg"
+  },
+  {
+    "slug": "32_line_count_error_by_round_ai_workflows",
+    "title": "Line-Count Error by Round",
+    "description": "Line-count constraint error rate across rounds for AI-supported workflows.",
+    "pngUrl": "/research-dashboard/figures/32_line_count_error_by_round_ai_workflows.png",
+    "pdfUrl": "/research-dashboard/figures/32_line_count_error_by_round_ai_workflows.pdf",
+    "svgUrl": "/research-dashboard/figures/32_line_count_error_by_round_ai_workflows.svg"
+  },
+  {
+    "slug": "33_post_error_workflow_choices_by_exposure",
+    "title": "Post-Error Workflow Choices by Error Exposure",
+    "description": "Distribution of workflow choices in rounds 6\u20137, split by whether participants were exposed to the AI error in round 5.",
+    "pngUrl": "/research-dashboard/figures/33_post_error_workflow_choices_by_exposure.png",
+    "pdfUrl": "/research-dashboard/figures/33_post_error_workflow_choices_by_exposure.pdf",
+    "svgUrl": "/research-dashboard/figures/33_post_error_workflow_choices_by_exposure.svg"
+  },
+  {
+    "slug": "34_tlx_over_rounds_exposed",
+    "title": "NASA-TLX Ratings over Rounds (Error-exposed)",
+    "description": "Mean NASA-TLX subscale ratings on a 1\u201321 scale over rounds for the error-exposed group.",
+    "pngUrl": "/research-dashboard/figures/34_tlx_over_rounds_exposed.png",
+    "pdfUrl": "/research-dashboard/figures/34_tlx_over_rounds_exposed.pdf",
+    "svgUrl": "/research-dashboard/figures/34_tlx_over_rounds_exposed.svg"
+  },
+  {
+    "slug": "34b_tlx_over_rounds_not_exposed",
+    "title": "NASA-TLX Ratings over Rounds (Not exposed)",
+    "description": "Mean NASA-TLX subscale ratings on a 1\u201321 scale over rounds for the not exposed group.",
+    "pngUrl": "/research-dashboard/figures/34b_tlx_over_rounds_not_exposed.png",
+    "pdfUrl": "/research-dashboard/figures/34b_tlx_over_rounds_not_exposed.pdf",
+    "svgUrl": "/research-dashboard/figures/34b_tlx_over_rounds_not_exposed.svg"
+  },
+  {
+    "slug": "41_participant_age_distribution",
+    "title": "Participant Age Distribution",
+    "description": "Age distribution of study participants grouped into age intervals.",
+    "pngUrl": "/research-dashboard/figures/41_participant_age_distribution.png",
+    "pdfUrl": "/research-dashboard/figures/41_participant_age_distribution.pdf",
+    "svgUrl": "/research-dashboard/figures/41_participant_age_distribution.svg"
+  },
+  {
+    "slug": "42_participant_gender_distribution",
+    "title": "Participant Gender Distribution",
+    "description": "Participant distribution by participant gender distribution shown as percentages.",
+    "pngUrl": "/research-dashboard/figures/42_participant_gender_distribution.png",
+    "pdfUrl": "/research-dashboard/figures/42_participant_gender_distribution.pdf",
+    "svgUrl": "/research-dashboard/figures/42_participant_gender_distribution.svg"
+  },
+  {
+    "slug": "43_participant_education_distribution",
+    "title": "Participant Education Distribution",
+    "description": "Participant distribution by participant education distribution shown as percentages.",
+    "pngUrl": "/research-dashboard/figures/43_participant_education_distribution.png",
+    "pdfUrl": "/research-dashboard/figures/43_participant_education_distribution.pdf",
+    "svgUrl": "/research-dashboard/figures/43_participant_education_distribution.svg"
+  },
+  {
+    "slug": "44_participant_native_language_distribution",
+    "title": "Participant Native Language Distribution",
+    "description": "Participant distribution by participant native language distribution shown as percentages.",
+    "pngUrl": "/research-dashboard/figures/44_participant_native_language_distribution.png",
+    "pdfUrl": "/research-dashboard/figures/44_participant_native_language_distribution.pdf",
+    "svgUrl": "/research-dashboard/figures/44_participant_native_language_distribution.svg"
+  },
+  {
+    "slug": "45_participant_english_level_distribution",
+    "title": "Participant English Level Distribution",
+    "description": "Participant distribution by participant english level distribution shown as percentages.",
+    "pngUrl": "/research-dashboard/figures/45_participant_english_level_distribution.png",
+    "pdfUrl": "/research-dashboard/figures/45_participant_english_level_distribution.pdf",
+    "svgUrl": "/research-dashboard/figures/45_participant_english_level_distribution.svg"
+  },
+  {
+    "slug": "46_participant_ai_attitude_means",
+    "title": "Participant Writing Confidence and AI Attitudes",
+    "description": "Mean ratings for writing confidence and attitudes toward AI.",
+    "pngUrl": "/research-dashboard/figures/46_participant_ai_attitude_means.png",
+    "pdfUrl": "/research-dashboard/figures/46_participant_ai_attitude_means.pdf",
+    "svgUrl": "/research-dashboard/figures/46_participant_ai_attitude_means.svg"
+  }
+]

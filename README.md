@@ -12,8 +12,8 @@ After starting the development server, the app has two main routes:
 
 | Route | Purpose |
 | --- | --- |
-| [`/evaluation`](http://localhost:3000/evaluation) | Blind poem evaluation interface. Evaluators rate one poem at a time without seeing authorship or workflow condition. |
-| [`/research-dashboard`](http://localhost:3000/research-dashboard) | Research dashboard for evaluator progress, processed results, generated figures, and feedback summaries. |
+| [`/evaluation`](https://human-ai-cocreativity-evaluation.vercel.app/evaluation) | Blind poem evaluation interface. Evaluators rate one poem at a time without seeing authorship or workflow condition. |
+| [`/research-dashboard`](https://human-ai-cocreativity-evaluation.vercel.app/research-dashboard) | Research dashboard for evaluator progress, processed results, generated figures, and feedback summaries. |
 
 The root route `/` redirects to `/evaluation`.
 
@@ -47,8 +47,6 @@ The processing pipeline creates:
 - local full analysis files
 - deploy-safe dashboard dataset files
 - generated figures for `/research-dashboard`
-
-See [`docs/DATA_AND_DEPLOYMENT.md`](docs/DATA_AND_DEPLOYMENT.md) for the commit policy.
 
 ---
 
@@ -96,8 +94,6 @@ data/runtime/                    Generated dashboard data
 data/work/                       Generated local processing data
 public/research-dashboard/       Generated dashboard figures for deployment
 ```
-
-More detail: [`docs/PROJECT_STRUCTURE.md`](docs/PROJECT_STRUCTURE.md)
 
 ---
 
