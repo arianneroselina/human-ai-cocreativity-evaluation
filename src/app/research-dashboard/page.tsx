@@ -96,7 +96,7 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       description:
         "Evaluator-rated quality, quality dimensions, constraint success, and quality efficiency.",
       figures: figures.filter((figure) =>
-        ["11_", "12_", "13_", "14_", "15_", "15b_", "16_", "17_"].some((prefix) =>
+        ["11_", "12_", "13_", "14_", "15_", "16_", "16b_", "17_", "18_"].some((prefix) =>
           figure.slug.startsWith(prefix),
         ),
       ),

@@ -52,8 +52,61 @@ def plot_composite_quality_over_rounds(df):
     )
 
 
+def plot_composite_quality_by_workflow(df):
+    slug = "12_composite_quality_by_workflow"
+    metric = "qualityComposite"
+
+    if metric not in df.columns or df[metric].dropna().empty:
+        metric = "meanOverallQuality"
+
+    if metric not in df.columns or df[metric].dropna().empty:
+        return
+
+    summary = (
+        df
+        .dropna(subset=[metric, "workflow"])
+        .groupby("workflow")[metric]
+        .mean()
+        .reindex(WORKFLOW_ORDER)
+        .dropna()
+    )
+
+    if summary.empty:
+        return
+
+    labeled_summary = summary.rename(index=WORKFLOW_LABELS)
+
+    labeled_summary.to_csv(
+        TABLE_DIR / f"{slug}.csv",
+        header=["meanCompositeQuality"],
+        )
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+
+    bars = ax.bar(
+        labeled_summary.index,
+        labeled_summary.values,
+    )
+
+    ax.bar_label(bars, padding=3, fmt="%.2f")
+
+    ax.set_title("Composite Quality by Workflow")
+    ax.set_xlabel("Workflow")
+    ax.set_ylabel("Mean composite quality score (1–5)")
+    ax.set_ylim(0, 5)
+    ax.tick_params(axis="x", rotation=0)
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+    save_figure(
+        fig,
+        slug,
+        "Composite Quality by Workflow",
+        "Mean externally rated composite poem quality score by workflow on a 1–5 scale, aggregated from Fluency, Theme Alignment, Meaningfulness, Poeticness, and Overall Quality scores.",
+    )
+
+
 def plot_quality_dimensions_by_workflow(df):
-    slug = "12_quality_dimensions_by_workflow"
+    slug = "13_quality_dimensions_by_workflow"
 
     dimension_columns = {
         "meanFluency": "Fluency",
@@ -103,7 +156,7 @@ def plot_quality_dimensions_by_workflow(df):
 
 
 def plot_composite_quality_vs_time(df):
-    slug = "13_composite_quality_vs_time_scatterplot"
+    slug = "14_composite_quality_vs_time_scatterplot"
     metric = "qualityComposite"
 
     if metric not in df.columns or df[metric].dropna().empty:
@@ -157,7 +210,7 @@ def plot_composite_quality_vs_time(df):
 
 
 def plot_composite_quality_efficiency_by_workflow(df):
-    slug = "14_composite_quality_efficiency_by_workflow"
+    slug = "15_composite_quality_efficiency_by_workflow"
     metric = "qualityPerMinute"
 
     if metric not in df.columns or df[metric].dropna().empty:
@@ -310,8 +363,8 @@ def _plot_poem_text_figure(poem_df, slug, title, description, metric):
 
 
 def plot_best_and_worst_poems_by_quality(df):
-    best_slug = "15_best_poems_by_quality"
-    worst_slug = "15b_worst_poems_by_quality"
+    best_slug = "16_best_poems_by_quality"
+    worst_slug = "16b_worst_poems_by_quality"
 
     metric = "qualityComposite"
 
@@ -376,7 +429,7 @@ def plot_best_and_worst_poems_by_quality(df):
 
 
 def plot_constraint_fulfillment_over_rounds(df):
-    slug = "16_constraint_fulfillment_over_rounds"
+    slug = "17_constraint_fulfillment_over_rounds"
 
     if "constraintScore" not in df.columns or df["constraintScore"].dropna().empty:
         return
@@ -424,7 +477,7 @@ def plot_constraint_fulfillment_over_rounds(df):
 
 
 def plot_constraint_rate_by_workflow(df):
-    slug = "17_passed_constraint_rate_by_workflow"
+    slug = "18_passed_constraint_rate_by_workflow"
 
     if "passed" not in df.columns:
         return
@@ -477,6 +530,7 @@ def plot_constraint_rate_by_workflow(df):
 
 def plot_quality(df):
     plot_composite_quality_over_rounds(df)
+    plot_composite_quality_by_workflow(df)
     plot_quality_dimensions_by_workflow(df)
     plot_composite_quality_vs_time(df)
     plot_composite_quality_efficiency_by_workflow(df)

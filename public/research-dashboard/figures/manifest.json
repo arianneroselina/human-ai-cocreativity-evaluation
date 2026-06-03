@@ -80,60 +80,68 @@
     "svgUrl": "/research-dashboard/figures/11_composite_quality_over_rounds.svg"
   },
   {
-    "slug": "12_quality_dimensions_by_workflow",
+    "slug": "12_composite_quality_by_workflow",
+    "title": "Composite Quality by Workflow",
+    "description": "Mean externally rated composite poem quality score by workflow on a 1\u20135 scale, aggregated from Fluency, Theme Alignment, Meaningfulness, Poeticness, and Overall Quality scores.",
+    "pngUrl": "/research-dashboard/figures/12_composite_quality_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/12_composite_quality_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/12_composite_quality_by_workflow.svg"
+  },
+  {
+    "slug": "13_quality_dimensions_by_workflow",
     "title": "Poem Evaluation Dimensions by Workflow",
     "description": "Mean poem evaluation scores by workflow on a 1\u20135 scale, across the dimensions Fluency, Theme Alignment, Meaningfulness, Poeticness, and Overall Quality.",
-    "pngUrl": "/research-dashboard/figures/12_quality_dimensions_by_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/12_quality_dimensions_by_workflow.pdf",
-    "svgUrl": "/research-dashboard/figures/12_quality_dimensions_by_workflow.svg"
+    "pngUrl": "/research-dashboard/figures/13_quality_dimensions_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/13_quality_dimensions_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/13_quality_dimensions_by_workflow.svg"
   },
   {
-    "slug": "13_composite_quality_vs_time_scatterplot",
+    "slug": "14_composite_quality_vs_time_scatterplot",
     "title": "Composite Quality vs Time Scatterplot",
     "description": "Relationship between completion time and composite poem quality score on a 1\u20135 scale. Reported completion times include pauses recorded during the writing process.",
-    "pngUrl": "/research-dashboard/figures/13_composite_quality_vs_time_scatterplot.png",
-    "pdfUrl": "/research-dashboard/figures/13_composite_quality_vs_time_scatterplot.pdf",
-    "svgUrl": "/research-dashboard/figures/13_composite_quality_vs_time_scatterplot.svg"
+    "pngUrl": "/research-dashboard/figures/14_composite_quality_vs_time_scatterplot.png",
+    "pdfUrl": "/research-dashboard/figures/14_composite_quality_vs_time_scatterplot.pdf",
+    "svgUrl": "/research-dashboard/figures/14_composite_quality_vs_time_scatterplot.svg"
   },
   {
-    "slug": "14_composite_quality_efficiency_by_workflow",
+    "slug": "15_composite_quality_efficiency_by_workflow",
     "title": "Composite Quality Efficiency by Workflow",
     "description": "Mean externally rated composite poem quality score on a 1-5 scale per minute by workflow.",
-    "pngUrl": "/research-dashboard/figures/14_composite_quality_efficiency_by_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/14_composite_quality_efficiency_by_workflow.pdf",
-    "svgUrl": "/research-dashboard/figures/14_composite_quality_efficiency_by_workflow.svg"
+    "pngUrl": "/research-dashboard/figures/15_composite_quality_efficiency_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/15_composite_quality_efficiency_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/15_composite_quality_efficiency_by_workflow.svg"
   },
   {
-    "slug": "15_best_poems_by_quality",
+    "slug": "16_best_poems_by_quality",
     "title": "Best Rated Poem(s)",
     "description": "Poem text for all outputs with the highest mean quality score.",
-    "pngUrl": "/research-dashboard/figures/15_best_poems_by_quality.png",
-    "pdfUrl": "/research-dashboard/figures/15_best_poems_by_quality.pdf",
-    "svgUrl": "/research-dashboard/figures/15_best_poems_by_quality.svg"
+    "pngUrl": "/research-dashboard/figures/16_best_poems_by_quality.png",
+    "pdfUrl": "/research-dashboard/figures/16_best_poems_by_quality.pdf",
+    "svgUrl": "/research-dashboard/figures/16_best_poems_by_quality.svg"
   },
   {
-    "slug": "15b_worst_poems_by_quality",
+    "slug": "16b_worst_poems_by_quality",
     "title": "Worst Rated Poem(s)",
     "description": "Poem text for all outputs with the lowest mean quality score.",
-    "pngUrl": "/research-dashboard/figures/15b_worst_poems_by_quality.png",
-    "pdfUrl": "/research-dashboard/figures/15b_worst_poems_by_quality.pdf",
-    "svgUrl": "/research-dashboard/figures/15b_worst_poems_by_quality.svg"
+    "pngUrl": "/research-dashboard/figures/16b_worst_poems_by_quality.png",
+    "pdfUrl": "/research-dashboard/figures/16b_worst_poems_by_quality.pdf",
+    "svgUrl": "/research-dashboard/figures/16b_worst_poems_by_quality.svg"
   },
   {
-    "slug": "16_constraint_fulfillment_over_rounds",
+    "slug": "17_constraint_fulfillment_over_rounds",
     "title": "Constraint Fulfillment over Rounds",
     "description": "Mean constraint fulfillment percentage per round, with round 5 marked as the injected-error round.",
-    "pngUrl": "/research-dashboard/figures/16_constraint_fulfillment_over_rounds.png",
-    "pdfUrl": "/research-dashboard/figures/16_constraint_fulfillment_over_rounds.pdf",
-    "svgUrl": "/research-dashboard/figures/16_constraint_fulfillment_over_rounds.svg"
+    "pngUrl": "/research-dashboard/figures/17_constraint_fulfillment_over_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/17_constraint_fulfillment_over_rounds.pdf",
+    "svgUrl": "/research-dashboard/figures/17_constraint_fulfillment_over_rounds.svg"
   },
   {
-    "slug": "17_passed_constraint_rate_by_workflow",
+    "slug": "18_passed_constraint_rate_by_workflow",
     "title": "Passed Constraint Rate by Workflow",
     "description": "Percentage of rounds that passed the task constraints.",
-    "pngUrl": "/research-dashboard/figures/17_passed_constraint_rate_by_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/17_passed_constraint_rate_by_workflow.pdf",
-    "svgUrl": "/research-dashboard/figures/17_passed_constraint_rate_by_workflow.svg"
+    "pngUrl": "/research-dashboard/figures/18_passed_constraint_rate_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/18_passed_constraint_rate_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/18_passed_constraint_rate_by_workflow.svg"
   },
   {
     "slug": "31_round5_workflow_exposure",
