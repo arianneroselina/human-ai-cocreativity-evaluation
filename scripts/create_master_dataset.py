@@ -1,56 +1,58 @@
 import json
 import pandas as pd
 
-from scripts.config import MASTER_DATASET_PATH, POEM_SCORES_PATH, INPUTS_DIR, ERROR_ROUND_INDEX, AI_SUPPORTED_WORKFLOWS
-
-
-def parse_bool(value):
-    if pd.isna(value):
-        return None
-
-    value = str(value).strip().lower()
-
-    if value in ["true", "t", "1", "yes"]:
-        return True
-
-    if value in ["false", "f", "0", "no"]:
-        return False
-
-    return None
+from scripts.config import (
+    MASTER_DATASET_PATH,
+    POEM_SCORES_PATH,
+    INPUTS_DIR,
+    ERROR_ROUND_INDEX,
+    AI_SUPPORTED_WORKFLOWS,
+)
+from scripts.utils import parse_bool, parse_bool_or_none
 
 
 def extract_constraint_stats(value):
     if pd.isna(value) or not str(value).strip():
-        return pd.Series({
-            "constraintCount": None,
-            "constraintPassedCount": None,
-            "constraintScore": None,
-        })
+        return pd.Series(
+            {
+                "constraintCount": None,
+                "constraintPassedCount": None,
+                "constraintScore": None,
+            }
+        )
 
     try:
         requirements = json.loads(value)
     except json.JSONDecodeError:
-        return pd.Series({
-            "constraintCount": None,
-            "constraintPassedCount": None,
-            "constraintScore": None,
-        })
+        return pd.Series(
+            {
+                "constraintCount": None,
+                "constraintPassedCount": None,
+                "constraintScore": None,
+            }
+        )
 
     if not isinstance(requirements, list):
-        return pd.Series({
-            "constraintCount": None,
-            "constraintPassedCount": None,
-            "constraintScore": None,
-        })
+        return pd.Series(
+            {
+                "constraintCount": None,
+                "constraintPassedCount": None,
+                "constraintScore": None,
+            }
+        )
 
     total = len(requirements)
-    passed = sum(1 for item in requirements if item.get("passed") is True)
+    passed = sum(
+        1 for item in requirements if parse_bool_or_none(item.get("passed")) is True
+    )
 
-    return pd.Series({
-        "constraintCount": total,
-        "constraintPassedCount": passed,
-        "constraintScore": (passed / total) * 100 if total > 0 else None,
-    })
+    return pd.Series(
+        {
+            "constraintCount": total,
+            "constraintPassedCount": passed,
+            "constraintScore": (passed / total) * 100 if total > 0 else None,
+        }
+    )
 
 
 def read_first_row(csv_path):
@@ -81,10 +83,12 @@ def load_participant_folder(folder):
         print(f"Skipping {folder.name}: Round.csv is empty")
         return None
 
-    rounds = rounds.rename(columns={
-        "id": "roundId",
-        "index": "roundIndex",
-    })
+    rounds = rounds.rename(
+        columns={
+            "id": "roundId",
+            "index": "roundIndex",
+        }
+    )
 
     rounds["participantId"] = session_row.get("participantId")
     rounds["studySessionId"] = session_row.get("id")
@@ -102,10 +106,12 @@ def load_participant_folder(folder):
     if feedback_path.exists():
         feedback = pd.read_csv(feedback_path)
 
-        feedback = feedback.rename(columns={
-            "id": "roundFeedbackId",
-            "comment": "roundComment",
-        })
+        feedback = feedback.rename(
+            columns={
+                "id": "roundFeedbackId",
+                "comment": "roundComment",
+            }
+        )
 
         rounds = rounds.merge(
             feedback,
@@ -147,9 +153,11 @@ def add_error_exposure_columns(master):
         ["participantId", "isAiSupportedWorkflow"]
     ].copy()
 
-    error_round = error_round.rename(columns={
-        "isAiSupportedWorkflow": "errorExposed",
-    })
+    error_round = error_round.rename(
+        columns={
+            "isAiSupportedWorkflow": "errorExposed",
+        }
+    )
 
     master = master.merge(
         error_round,
@@ -159,24 +167,24 @@ def add_error_exposure_columns(master):
 
     master["errorExposed"] = master["errorExposed"].fillna(False).astype(bool)
 
-    master["isErrorRound"] = (
-            (master["roundIndex"] == ERROR_ROUND_INDEX)
-            & (master["isAiSupportedWorkflow"])
+    master["isErrorRound"] = (master["roundIndex"] == ERROR_ROUND_INDEX) & (
+        master["isAiSupportedWorkflow"]
     )
 
-    master["isAfterError"] = (
-            (master["errorExposed"])
-            & (master["roundIndex"] > ERROR_ROUND_INDEX)
+    master["isAfterError"] = (master["errorExposed"]) & (
+        master["roundIndex"] > ERROR_ROUND_INDEX
     )
 
     master["errorRoundIndex"] = master["errorExposed"].apply(
         lambda exposed: ERROR_ROUND_INDEX if exposed else None
     )
 
-    master["errorExposureGroup"] = master["errorExposed"].map({
-        True: "error_exposed",
-        False: "not_exposed",
-    })
+    master["errorExposureGroup"] = master["errorExposed"].map(
+        {
+            True: "error_exposed",
+            False: "not_exposed",
+        }
+    )
 
     # Compatibility column for older dashboard/figure code.
     master["condition"] = master["errorExposureGroup"]
@@ -210,12 +218,14 @@ master["phase"] = master["roundIndex"].apply(
 master["isPracticeRound"] = master["roundIndex"] <= 4
 master["isMainRound"] = master["roundIndex"] >= 5
 
-master["workflowGroup"] = master["workflow"].map({
-    "human": "human_only",
-    "ai": "ai_only",
-    "human_ai": "mixed",
-    "ai_human": "mixed",
-})
+master["workflowGroup"] = master["workflow"].map(
+    {
+        "human": "human_only",
+        "ai": "ai_only",
+        "human_ai": "mixed",
+        "ai_human": "mixed",
+    }
+)
 
 master = add_error_exposure_columns(master)
 
@@ -236,7 +246,7 @@ if POEM_SCORES_PATH.exists():
 
     if "qualityComposite" in master.columns:
         master["qualityPerMinute"] = (
-                master["qualityComposite"] / master["effectiveTimeMinutes"]
+            master["qualityComposite"] / master["effectiveTimeMinutes"]
         )
 else:
     print(f"Warning: {POEM_SCORES_PATH} not found. Ratings were not merged.")
@@ -257,10 +267,11 @@ print("\nWorkflow counts:")
 print(master["workflow"].value_counts())
 
 print("\nError exposure groups:")
-print(master[["participantId", "errorExposed"]]
-      .drop_duplicates()
-      ["errorExposed"]
-      .value_counts())
+print(
+    master[["participantId", "errorExposed"]]
+    .drop_duplicates()["errorExposed"]
+    .value_counts()
+)
 
 print("\nError rounds:")
 print(master["isErrorRound"].value_counts())

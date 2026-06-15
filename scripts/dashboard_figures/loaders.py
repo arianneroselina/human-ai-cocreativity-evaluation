@@ -2,9 +2,15 @@ import re
 
 import pandas as pd
 
-from scripts.config import MASTER_DATASET_PATH, WORKFLOW_LABELS, TABLE_DIR, PARTICIPANT_COLUMN_ALIASES, \
-    PARTICIPANT_LIKERT_COLUMNS, INPUTS_DIR
-from scripts.dashboard_figures.utils import ensure_numeric
+from scripts.config import (
+    MASTER_DATASET_PATH,
+    WORKFLOW_LABELS,
+    TABLE_DIR,
+    PARTICIPANT_COLUMN_ALIASES,
+    PARTICIPANT_LIKERT_COLUMNS,
+    INPUTS_DIR,
+)
+from scripts.utils import ensure_numeric
 
 
 def load_master_dataset():
@@ -15,25 +21,28 @@ def load_master_dataset():
 
     df = pd.read_csv(MASTER_DATASET_PATH)
 
-    ensure_numeric(df, [
-        "roundIndex",
-        "participantId",
-        "timeMs",
-        "wordCount",
-        "charCount",
-        "effectiveTimeMinutes",
-        "qualityComposite",
-        "meanOverallQuality",
-        "satisfactionResult",
-        "frustration",
-        "effort",
-        "performance",
-        "aiPerformanceOverall",
-        "aiUnderstanding",
-        "aiCollaboration",
-        "aiCreativitySupport",
-        "constraintScore",
-    ])
+    ensure_numeric(
+        df,
+        [
+            "roundIndex",
+            "participantId",
+            "timeMs",
+            "wordCount",
+            "charCount",
+            "effectiveTimeMinutes",
+            "qualityComposite",
+            "meanOverallQuality",
+            "satisfactionResult",
+            "frustration",
+            "effort",
+            "performance",
+            "aiPerformanceOverall",
+            "aiUnderstanding",
+            "aiCollaboration",
+            "aiCreativitySupport",
+            "constraintScore",
+        ],
+    )
 
     if "workflow" in df.columns:
         df["workflowLabel"] = df["workflow"].map(WORKFLOW_LABELS).fillna(df["workflow"])
@@ -93,7 +102,10 @@ def load_participant_info():
                 if source_column is not None:
                     clean_df[target_column] = raw_df[source_column]
 
-            if "age" not in clean_df.columns and "participantId" not in clean_df.columns:
+            if (
+                "age" not in clean_df.columns
+                and "participantId" not in clean_df.columns
+            ):
                 continue
 
             clean_df["sourceFolder"] = folder.name
@@ -148,10 +160,7 @@ def normalize_column_name(column):
 
 
 def find_source_column(columns, aliases):
-    normalized_columns = {
-        normalize_column_name(column): column
-        for column in columns
-    }
+    normalized_columns = {normalize_column_name(column): column for column in columns}
 
     for alias in aliases:
         if alias in normalized_columns:
@@ -188,4 +197,3 @@ def parse_likert(value):
         return None
 
     return int(match.group(0))
-

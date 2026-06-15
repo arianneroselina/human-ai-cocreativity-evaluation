@@ -8,10 +8,7 @@ export type WorkflowFeedbackSummary = {
   summary: string;
 };
 
-const SUMMARY_PATH = path.join(
-  process.cwd(),
-  "data/runtime/workflow_feedback_summaries.csv",
-);
+const SUMMARY_PATH = path.join(process.cwd(), "data/runtime/workflow_feedback_summaries.csv");
 
 function parseCsvLine(line: string): string[] {
   const values: string[] = [];
@@ -47,9 +44,7 @@ function parseCsvLine(line: string): string[] {
 }
 
 function parseCsv(content: string): Record<string, string>[] {
-  const lines = content
-    .split(/\r?\n/)
-    .filter((line) => line.trim().length > 0);
+  const lines = content.split(/\r?\n/).filter((line) => line.trim().length > 0);
 
   if (lines.length === 0) {
     return [];

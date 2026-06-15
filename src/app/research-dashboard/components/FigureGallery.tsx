@@ -151,9 +151,7 @@ export default function FigureGallery({ figures }: { figures: DashboardFigure[] 
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h3 className="text-lg font-semibold text-gray-900">{figure.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-gray-500">
-                  {figure.description}
-                </p>
+                <p className="mt-1 text-sm leading-relaxed text-gray-500">{figure.description}</p>
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
@@ -196,12 +194,8 @@ export default function FigureGallery({ figures }: { figures: DashboardFigure[] 
           >
             <div className="mb-3 flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {selectedFigure.title}
-                </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  {selectedFigure.description}
-                </p>
+                <h2 className="text-xl font-semibold text-gray-900">{selectedFigure.title}</h2>
+                <p className="mt-1 text-sm text-gray-500">{selectedFigure.description}</p>
               </div>
 
               <div className="flex shrink-0 items-center gap-2">

@@ -201,18 +201,12 @@ export function getConstraintByWorkflow(rows: AnyRow[]): ConstraintByWorkflowRow
         })
         .filter((value): value is 0 | 1 => value !== null);
 
-      const passedTotal = passedValues.reduce(
-        (sum: number, value) => sum + value,
-        0,
-      );
+      const passedTotal = passedValues.reduce((sum: number, value) => sum + value, 0);
 
       return {
         workflow,
         rounds: workflowRows.length,
-        passedRate:
-          passedValues.length > 0
-            ? (passedTotal / passedValues.length) * 100
-            : null,
+        passedRate: passedValues.length > 0 ? (passedTotal / passedValues.length) * 100 : null,
         meanConstraintScore: mean(workflowRows.map((row) => toNumber(row.constraintScore))),
       };
     })

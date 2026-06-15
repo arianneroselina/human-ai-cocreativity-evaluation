@@ -52,8 +52,7 @@ def _collect_round_comments(df):
 
     workflow_column = _detect_column(df, WORKFLOW_COLUMNS)
     available_comment_columns = [
-        column for column in ROUND_COMMENT_COLUMNS
-        if column in df.columns
+        column for column in ROUND_COMMENT_COLUMNS if column in df.columns
     ]
 
     if not workflow_column or not available_comment_columns:
@@ -66,12 +65,14 @@ def _collect_round_comments(df):
             comment = _clean_text(row[column])
 
             if comment:
-                comments.append({
-                    "source": "round",
-                    "workflow": workflow,
-                    "workflowLabel": _workflow_label(workflow),
-                    "comment": comment,
-                })
+                comments.append(
+                    {
+                        "source": "round",
+                        "workflow": workflow,
+                        "workflowLabel": _workflow_label(workflow),
+                        "comment": comment,
+                    }
+                )
 
     return comments
 
@@ -83,7 +84,8 @@ def _collect_final_feedback_comments(feedback_df):
         return comments
 
     available_comment_columns = [
-        column for column in FINAL_FEEDBACK_COMMENT_COLUMNS
+        column
+        for column in FINAL_FEEDBACK_COMMENT_COLUMNS
         if column in feedback_df.columns
     ]
 
@@ -95,12 +97,14 @@ def _collect_final_feedback_comments(feedback_df):
             comment = _clean_text(row[column])
 
             if comment:
-                comments.append({
-                    "source": "final_feedback",
-                    "workflow": "final_feedback",
-                    "workflowLabel": "Final feedback",
-                    "comment": comment,
-                })
+                comments.append(
+                    {
+                        "source": "final_feedback",
+                        "workflow": "final_feedback",
+                        "workflowLabel": "Final feedback",
+                        "comment": comment,
+                    }
+                )
 
     return comments
 
@@ -154,9 +158,7 @@ def _summarize_comments(client, workflow_label, comments):
             {
                 "role": "user",
                 "content": (
-                    f"Feedback group: {workflow_label}\n\n"
-                    "Comments:\n"
-                    f"{payload}"
+                    f"Feedback group: {workflow_label}\n\nComments:\n{payload}"
                 ),
             },
         ],
@@ -194,12 +196,14 @@ def generate_feedback_summaries(df, feedback_df):
     for workflow, comments in sorted(comments_by_workflow.items()):
         workflow_label = _workflow_label(workflow)
 
-        summary_rows.append({
-            "workflow": workflow,
-            "workflowLabel": workflow_label,
-            "commentCount": len(comments),
-            "summary": _summarize_comments(client, workflow_label, comments),
-        })
+        summary_rows.append(
+            {
+                "workflow": workflow,
+                "workflowLabel": workflow_label,
+                "commentCount": len(comments),
+                "summary": _summarize_comments(client, workflow_label, comments),
+            }
+        )
 
     summary_df = pd.DataFrame(summary_rows).sort_values(
         ["workflow", "commentCount"],

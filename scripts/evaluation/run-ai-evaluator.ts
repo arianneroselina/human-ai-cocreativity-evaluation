@@ -34,10 +34,7 @@ function clampRating(value: unknown) {
   return Math.min(5, Math.max(1, Math.round(number)));
 }
 
-async function ratePoemWithAi(poem: {
-  topic: string;
-  text: string;
-}): Promise<AiRating> {
+async function ratePoemWithAi(poem: { topic: string; text: string }): Promise<AiRating> {
   const response = await openai.responses.create({
     model: "gpt-4o-mini",
     input: [
@@ -106,10 +103,7 @@ async function main() {
         },
       },
     },
-    orderBy: [
-      { participantId: "asc" },
-      { roundIndex: "asc" },
-    ],
+    orderBy: [{ participantId: "asc" }, { roundIndex: "asc" }],
   });
 
   console.log(`Found ${poems.length} poems to rate.`);
@@ -142,7 +136,6 @@ async function main() {
   }
 }
 
-main()
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().finally(async () => {
+  await prisma.$disconnect();
+});

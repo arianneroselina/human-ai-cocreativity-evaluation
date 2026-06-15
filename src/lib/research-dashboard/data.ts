@@ -18,10 +18,7 @@ import {
 import type { ResearchDashboardData } from "./types";
 
 const EXPECTED_EVALUATORS = 3;
-const DASHBOARD_DATASET_PATH = path.join(
-  process.cwd(),
-  "data", "runtime", "dashboard_dataset.csv"
-);
+const DASHBOARD_DATASET_PATH = path.join(process.cwd(), "data", "runtime", "dashboard_dataset.csv");
 
 const INPUTS_DIR = path.join(process.cwd(), "inputs");
 

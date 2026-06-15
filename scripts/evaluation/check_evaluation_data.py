@@ -81,7 +81,8 @@ with psycopg.connect(PRISMA_DATABASE_URL, row_factory=dict_row) as conn:
         """)
         print_table("Ratings by evaluator", cur.fetchall())
 
-        cur.execute("""
+        cur.execute(
+            """
             SELECT
                 p."id" AS "poemId",
                 p."participantId",
@@ -94,7 +95,9 @@ with psycopg.connect(PRISMA_DATABASE_URL, row_factory=dict_row) as conn:
             GROUP BY p."id", p."participantId", p."roundIndex", p."workflow"
             HAVING COUNT(r."id") <> %s
             ORDER BY rating_count ASC, p."participantId", p."roundIndex";
-        """, (EXPECTED_EVALUATORS,))
+        """,
+            (EXPECTED_EVALUATORS,),
+        )
         incomplete_poems = cur.fetchall()
 
         print_table(
@@ -102,7 +105,11 @@ with psycopg.connect(PRISMA_DATABASE_URL, row_factory=dict_row) as conn:
             incomplete_poems,
         )
 
-        if missing_metadata == 0 and total_ratings == expected_total_ratings and not incomplete_poems:
+        if (
+            missing_metadata == 0
+            and total_ratings == expected_total_ratings
+            and not incomplete_poems
+        ):
             print("\nStatus: OK. Evaluation data looks complete.")
         else:
             print("\nStatus: Check needed. Some data is missing or incomplete.")

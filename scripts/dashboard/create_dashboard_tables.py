@@ -26,7 +26,13 @@ THEME_KEYWORDS = {
     "Speed / time": ["time", "fast", "quick", "slow", "deadline"],
     "Creativity": ["creative", "creativity", "idea", "inspiration"],
     "Quality": ["quality", "better", "good", "bad", "improve"],
-    "Rules / constraints": ["rule", "constraint", "requirement", "forbidden", "required"],
+    "Rules / constraints": [
+        "rule",
+        "constraint",
+        "requirement",
+        "forbidden",
+        "required",
+    ],
     "Frustration": ["frustrated", "frustrating", "annoying", "stress", "difficult"],
     "Trust": ["trust", "reliable", "confidence", "depend"],
     "Helpfulness": ["helpful", "support", "assist", "useful"],
@@ -132,11 +138,15 @@ def create_final_ranking_table(feedback_df):
     for workflow in WORKFLOW_ORDER:
         rank_count = rank_counts[workflow]
 
-        rows.append({
-            "workflow": workflow,
-            "firstChoiceCount": first_choice_counts[workflow],
-            "averageRank": rank_sums[workflow] / rank_count if rank_count > 0 else None,
-        })
+        rows.append(
+            {
+                "workflow": workflow,
+                "firstChoiceCount": first_choice_counts[workflow],
+                "averageRank": rank_sums[workflow] / rank_count
+                if rank_count > 0
+                else None,
+            }
+        )
 
     return pd.DataFrame(rows)
 
@@ -176,10 +186,12 @@ def create_comment_theme_table(master_df, feedback_df):
                 count += 1
 
         if count > 0:
-            rows.append({
-                "theme": theme,
-                "count": count,
-            })
+            rows.append(
+                {
+                    "theme": theme,
+                    "count": count,
+                }
+            )
 
     return pd.DataFrame(rows).sort_values("count", ascending=False)
 

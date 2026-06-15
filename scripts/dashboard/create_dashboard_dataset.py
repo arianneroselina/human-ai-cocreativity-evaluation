@@ -40,7 +40,9 @@ def main():
 
     df = pd.read_csv(MASTER_DATASET_PATH)
     available_columns = [column for column in DASHBOARD_COLUMNS if column in df.columns]
-    missing_columns = [column for column in DASHBOARD_COLUMNS if column not in df.columns]
+    missing_columns = [
+        column for column in DASHBOARD_COLUMNS if column not in df.columns
+    ]
 
     dashboard_df = df[available_columns].copy()
     dashboard_df.to_csv(DASHBOARD_DATASET_PATH, index=False)

@@ -2,111 +2,114 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
-from scripts.config import WORKFLOW_ORDER, TABLE_DIR, WORKFLOW_LABELS
-from scripts.dashboard_figures.utils import save_figure, workflow_label
+from scripts.config import WORKFLOW_ORDER, TABLE_DIR, WORKFLOW_LABELS, ERROR_ROUND_INDEX
+from scripts.utils import (
+    save_figure,
+    workflow_label,
+    shade_main_rounds,
+    annotate_injected_error_round,
+)
 
 
-def plot_composite_quality_over_rounds(df):
-    slug = "11_composite_quality_over_rounds"
+def get_quality_metric(df):
     metric = "qualityComposite"
 
     if metric not in df.columns or df[metric].dropna().empty:
         metric = "meanOverallQuality"
 
     if metric not in df.columns or df[metric].dropna().empty:
+        return None
+
+    return metric
+
+
+def plot_composite_quality_by_round_and_workflow(df):
+    """
+    This figure shows the interaction between round and workflow, because
+    composite quality should not be interpreted by round or workflow alone.
+    """
+    slug = "11_composite_quality_by_round_and_workflow"
+
+    metric = get_quality_metric(df)
+    if metric is None:
+        return
+
+    required_columns = {metric, "roundIndex", "workflow"}
+
+    if not required_columns.issubset(df.columns):
+        return
+
+    plot_df = df.dropna(subset=[metric, "roundIndex", "workflow"]).copy()
+
+    if plot_df.empty:
         return
 
     summary = (
-        df
-        .dropna(subset=[metric, "roundIndex"])
-        .groupby("roundIndex")[metric]
-        .mean()
-        .reset_index(name="meanQuality")
-        .sort_values("roundIndex")
+        plot_df.groupby(["roundIndex", "workflow"])[metric]
+        .agg(
+            meanQuality="mean",
+            count="count",
+        )
+        .reset_index()
+        .sort_values(["roundIndex", "workflow"])
     )
 
-    if summary.empty:
-        return
+    summary["workflowLabel"] = summary["workflow"].map(workflow_label)
 
     summary.to_csv(TABLE_DIR / f"{slug}.csv", index=False)
 
-    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    pivot = summary.pivot(
+        index="roundIndex", columns="workflow", values="meanQuality"
+    ).reindex(columns=WORKFLOW_ORDER)
 
-    ax.plot(
-        summary["roundIndex"],
-        summary["meanQuality"],
-        marker="o",
-    )
+    pivot = pivot.rename(columns=WORKFLOW_LABELS)
 
-    ax.set_title("Composite Poem Quality over Rounds")
-    ax.set_xlabel("Round")
-    ax.set_ylabel("Mean composite quality score (1–5)")
-    ax.set_xticks(sorted(summary["roundIndex"].dropna().unique()))
-    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    fig, ax = plt.subplots(figsize=(8.2, 4.8))
+    shade_main_rounds(ax)
 
-    save_figure(
-        fig,
-        slug,
-        "Composite Quality over Rounds",
-        "Mean externally rated composite poem quality score per round on a 1–5 scale, aggregated from Fluency, Theme Alignment, Meaningfulness, Poeticness, and Overall Quality scores.",
-    )
+    for workflow in WORKFLOW_ORDER:
+        workflow_label_text = WORKFLOW_LABELS.get(workflow, workflow)
 
+        if workflow_label_text not in pivot.columns:
+            continue
 
-def plot_composite_quality_by_workflow(df):
-    slug = "12_composite_quality_by_workflow"
-    metric = "qualityComposite"
+        workflow_series = pivot[workflow_label_text].dropna()
 
-    if metric not in df.columns or df[metric].dropna().empty:
-        metric = "meanOverallQuality"
+        if workflow_series.empty:
+            continue
 
-    if metric not in df.columns or df[metric].dropna().empty:
-        return
-
-    summary = (
-        df
-        .dropna(subset=[metric, "workflow"])
-        .groupby("workflow")[metric]
-        .mean()
-        .reindex(WORKFLOW_ORDER)
-        .dropna()
-    )
-
-    if summary.empty:
-        return
-
-    labeled_summary = summary.rename(index=WORKFLOW_LABELS)
-
-    labeled_summary.to_csv(
-        TABLE_DIR / f"{slug}.csv",
-        header=["meanCompositeQuality"],
+        ax.plot(
+            workflow_series.index,
+            workflow_series.values,
+            marker="o",
+            label=workflow_label_text,
         )
 
-    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    annotate_injected_error_round(ax, ERROR_ROUND_INDEX, y_top=5, text_y=5.25)
 
-    bars = ax.bar(
-        labeled_summary.index,
-        labeled_summary.values,
-    )
-
-    ax.bar_label(bars, padding=3, fmt="%.2f")
-
-    ax.set_title("Composite Quality by Workflow")
-    ax.set_xlabel("Workflow")
+    ax.set_title("Composite Quality by Round and Workflow")
+    ax.set_xlabel("Round")
     ax.set_ylabel("Mean composite quality score (1–5)")
-    ax.set_ylim(0, 5)
-    ax.tick_params(axis="x", rotation=0)
+    ax.set_xticks(sorted(plot_df["roundIndex"].dropna().unique()))
+    ax.set_ylim(0, 5.5)
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+    ax.legend(
+        title="Workflow",
+        bbox_to_anchor=(1.02, 1),
+        loc="upper left",
+    )
 
     save_figure(
         fig,
         slug,
-        "Composite Quality by Workflow",
-        "Mean externally rated composite poem quality score by workflow on a 1–5 scale, aggregated from Fluency, Theme Alignment, Meaningfulness, Poeticness, and Overall Quality scores.",
+        "Composite Quality by Round and Workflow",
+        "Mean externally rated composite poem quality score by round and workflow. This figure combines round effects and workflow effects instead of interpreting them separately.",
     )
 
 
 def plot_quality_dimensions_by_workflow(df):
-    slug = "13_quality_dimensions_by_workflow"
+    slug = "12_quality_dimensions_by_workflow"
 
     dimension_columns = {
         "meanFluency": "Fluency",
@@ -117,7 +120,8 @@ def plot_quality_dimensions_by_workflow(df):
     }
 
     available_columns = [
-        column for column in dimension_columns
+        column
+        for column in dimension_columns
         if column in df.columns and not df[column].dropna().empty
     ]
 
@@ -125,8 +129,7 @@ def plot_quality_dimensions_by_workflow(df):
         return
 
     summary = (
-        df
-        .groupby("workflow")[available_columns]
+        df.groupby("workflow")[available_columns]
         .mean()
         .reindex(WORKFLOW_ORDER)
         .dropna(how="all")
@@ -155,99 +158,89 @@ def plot_quality_dimensions_by_workflow(df):
     )
 
 
-def plot_composite_quality_vs_time(df):
-    slug = "14_composite_quality_vs_time_scatterplot"
-    metric = "qualityComposite"
+def plot_quality_time_efficiency_by_workflow(df):
+    """
+    Merges the previous quality-vs-time scatterplot and quality-efficiency figure.
 
-    if metric not in df.columns or df[metric].dropna().empty:
+    Each point is one workflow:
+    - x-axis: mean completion time
+    - y-axis: mean composite quality
+    - annotation: quality per minute and sample size
+    """
+    slug = "13_quality_time_efficiency_by_workflow"
+
+    metric = get_quality_metric(df)
+    if metric is None:
         return
 
     time_column = "effectiveTimeMinutes"
 
     if time_column not in df.columns:
+        if "timeMs" not in df.columns:
+            return
+
+        df = df.copy()
         df[time_column] = df["timeMs"] / 60000
 
-    plot_df = df.dropna(subset=[time_column, metric, "workflow"]).copy()
+    required_columns = {metric, time_column, "workflow"}
+
+    if not required_columns.issubset(df.columns):
+        return
+
+    plot_df = df.dropna(subset=[metric, time_column, "workflow"]).copy()
 
     if plot_df.empty:
         return
 
-    plot_df[[
-        "roundId",
-        "participantId",
-        "roundIndex",
-        "workflow",
-        time_column,
-        metric,
-    ]].to_csv(TABLE_DIR / f"{slug}.csv", index=False)
-
-    fig, ax = plt.subplots(figsize=(7.2, 4.2))
-
-    for workflow in WORKFLOW_ORDER:
-        workflow_df = plot_df[plot_df["workflow"] == workflow]
-
-        if workflow_df.empty:
-            continue
-
-        ax.scatter(
-            workflow_df[time_column],
-            workflow_df[metric],
-            label=workflow_label(workflow),
-            alpha=0.75,
-        )
-
-    ax.set_title("Output Composite Quality vs. Completion Time")
-    ax.set_xlabel("Time used (minutes)")
-    ax.set_ylabel("Mean composite quality score (1-5)")
-    ax.legend(title="Workflow")
-
-    save_figure(
-        fig,
-        slug,
-        "Composite Quality vs Time Scatterplot",
-        "Relationship between completion time and composite poem quality score on a 1–5 scale. Reported completion times include pauses recorded during the writing process.",
-    )
-
-
-def plot_composite_quality_efficiency_by_workflow(df):
-    slug = "15_composite_quality_efficiency_by_workflow"
-    metric = "qualityPerMinute"
-
-    if metric not in df.columns or df[metric].dropna().empty:
-        return
-
     summary = (
-        df
-        .dropna(subset=[metric])
-        .groupby("workflow")[metric]
-        .mean()
+        plot_df.groupby("workflow")
+        .agg(
+            meanQuality=(metric, "mean"),
+            meanTimeMinutes=(time_column, "mean"),
+            count=(metric, "count"),
+        )
         .reindex(WORKFLOW_ORDER)
-        .dropna()
+        .dropna(subset=["meanQuality", "meanTimeMinutes"])
     )
 
     if summary.empty:
         return
 
-    summary.rename(index=WORKFLOW_LABELS).to_csv(
-        TABLE_DIR / f"{slug}.csv",
-        header=["meanQualityPerMinute"],
+    summary["qualityPerMinute"] = summary["meanQuality"] / summary["meanTimeMinutes"]
+
+    summary = summary.rename(index=WORKFLOW_LABELS)
+
+    summary.to_csv(TABLE_DIR / f"{slug}.csv")
+
+    fig, ax = plt.subplots(figsize=(8.4, 5.2))
+
+    ax.scatter(
+        summary["meanTimeMinutes"],
+        summary["meanQuality"],
+    )
+
+    for workflow_label_text, row in summary.iterrows():
+        ax.annotate(
+            f"{workflow_label_text}\n"
+            f"Quality/min: {row['qualityPerMinute']:.2f}\n"
+            f"n={int(row['count'])}",
+            xy=(row["meanTimeMinutes"], row["meanQuality"]),
+            xytext=(6, 6),
+            textcoords="offset points",
+            fontsize=8,
         )
 
-    fig, ax = plt.subplots(figsize=(7.2, 4.2))
-    bars = ax.bar(summary.rename(index=WORKFLOW_LABELS).index, summary.values)
-
-    ax.bar_label(bars, padding=3, fmt="%.2f")
-
-    ax.set_title("Composite Quality Efficiency by Workflow")
-    ax.set_xlabel("Workflow")
-    ax.set_ylabel("Mean composite quality score per minute")
-    ax.tick_params(axis="x", rotation=0)
+    ax.set_title("Composite Quality, Time, and Efficiency by Workflow")
+    ax.set_xlabel("Mean completion time (minutes)")
+    ax.set_ylabel("Mean composite quality score (1–5)")
+    ax.set_ylim(0, 5)
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
     save_figure(
         fig,
         slug,
-        "Composite Quality Efficiency by Workflow",
-        "Mean externally rated composite poem quality score on a 1-5 scale per minute by workflow.",
+        "Composite Quality, Time, and Efficiency by Workflow",
+        "Workflow-level comparison of mean completion time, mean externally rated composite quality, and quality per minute.",
     )
 
 
@@ -292,7 +285,11 @@ def _plot_poem_text_figure(poem_df, slug, title, description, metric):
     card_height = 0.86 / len(poem_df)
 
     for index, row in poem_df.reset_index(drop=True).iterrows():
-        topic = row["topic"] if "topic" in row and not pd.isna(row["topic"]) else "Unknown topic"
+        topic = (
+            row["topic"]
+            if "topic" in row and not pd.isna(row["topic"])
+            else "Unknown topic"
+        )
 
         header = (
             f"Poem {index + 1}   |   "
@@ -332,7 +329,7 @@ def _plot_poem_text_figure(poem_df, slug, title, description, metric):
             va="top",
             fontsize=9,
             style="italic",
-            )
+        )
 
         ax.text(
             0.03,
@@ -350,7 +347,7 @@ def _plot_poem_text_figure(poem_df, slug, title, description, metric):
                 "edgecolor": "#d9d9d9",
                 "linewidth": 1,
             },
-            )
+        )
 
         y_position = card_bottom
 
@@ -363,8 +360,8 @@ def _plot_poem_text_figure(poem_df, slug, title, description, metric):
 
 
 def plot_best_and_worst_poems_by_quality(df):
-    best_slug = "16_best_poems_by_quality"
-    worst_slug = "16b_worst_poems_by_quality"
+    best_slug = "14_best_poems_by_quality"
+    worst_slug = "14b_worst_poems_by_quality"
 
     metric = "qualityComposite"
 
@@ -397,19 +394,18 @@ def plot_best_and_worst_poems_by_quality(df):
     ]
 
     available_columns = [
-        column for column in export_columns
-        if column in plot_df.columns
+        column for column in export_columns if column in plot_df.columns
     ]
 
     best_poems[available_columns].to_csv(
         TABLE_DIR / f"{best_slug}.csv",
         index=False,
-        )
+    )
 
     worst_poems[available_columns].to_csv(
         TABLE_DIR / f"{worst_slug}.csv",
         index=False,
-        )
+    )
 
     _plot_poem_text_figure(
         best_poems,
@@ -428,112 +424,8 @@ def plot_best_and_worst_poems_by_quality(df):
     )
 
 
-def plot_constraint_fulfillment_over_rounds(df):
-    slug = "17_constraint_fulfillment_over_rounds"
-
-    if "constraintScore" not in df.columns or df["constraintScore"].dropna().empty:
-        return
-
-    plot_df = df.dropna(subset=["constraintScore", "roundIndex"]).copy()
-
-    summary = (
-        plot_df
-        .groupby("roundIndex")["constraintScore"]
-        .mean()
-        .reset_index(name="meanConstraintScore")
-        .sort_values("roundIndex")
-    )
-
-    if summary.empty:
-        return
-
-    summary.to_csv(
-        TABLE_DIR / f"{slug}.csv",
-        index=False,
-        )
-
-    fig, ax = plt.subplots(figsize=(7.2, 4.2))
-
-    ax.plot(
-        summary["roundIndex"],
-        summary["meanConstraintScore"],
-        marker="o",
-    )
-
-    ax.axvline(5, linestyle="--", linewidth=1)
-
-    ax.set_title("Constraint Fulfillment over Rounds")
-    ax.set_xlabel("Round")
-    ax.set_ylabel("Mean constraint fulfillment (%)")
-    ax.set_xticks(sorted(summary["roundIndex"].dropna().unique()))
-    ax.set_ylim(0, 100)
-
-    save_figure(
-        fig,
-        slug,
-        "Constraint Fulfillment over Rounds",
-        "Mean constraint fulfillment percentage per round, with round 5 marked as the injected-error round.",
-    )
-
-
-def plot_constraint_rate_by_workflow(df):
-    slug = "18_passed_constraint_rate_by_workflow"
-
-    if "passed" not in df.columns:
-        return
-
-    constraint_df = df.copy()
-
-    constraint_df["passedNumeric"] = constraint_df["passed"].map({
-        True: 1,
-        False: 0,
-        "true": 1,
-        "false": 0,
-        "t": 1,
-        "f": 0,
-        1: 1,
-        0: 0,
-    })
-
-    summary = (
-            constraint_df
-            .groupby("workflow")["passedNumeric"]
-            .mean()
-            .reindex(WORKFLOW_ORDER)
-            .dropna() * 100
-    )
-
-    if summary.empty:
-        return
-
-    summary.rename(index=WORKFLOW_LABELS).to_csv(
-        TABLE_DIR / f"{slug}.csv",
-        header=["passedRatePercent"],
-        )
-
-    fig, ax = plt.subplots(figsize=(7.2, 4.2))
-    summary.rename(index=WORKFLOW_LABELS).plot(kind="bar", ax=ax)
-
-    ax.set_title("Passed Constraint Rate by Workflow")
-    ax.set_xlabel("Workflow")
-    ax.set_ylabel("Passed rate (%)")
-    ax.set_ylim(0, 100)
-    ax.tick_params(axis="x", rotation=0)
-
-    save_figure(
-        fig,
-        slug,
-        "Passed Constraint Rate by Workflow",
-        "Percentage of rounds that passed the task constraints.",
-    )
-
-
 def plot_quality(df):
-    plot_composite_quality_over_rounds(df)
-    plot_composite_quality_by_workflow(df)
+    plot_composite_quality_by_round_and_workflow(df)
     plot_quality_dimensions_by_workflow(df)
-    plot_composite_quality_vs_time(df)
-    plot_composite_quality_efficiency_by_workflow(df)
+    plot_quality_time_efficiency_by_workflow(df)
     plot_best_and_worst_poems_by_quality(df)
-    plot_constraint_fulfillment_over_rounds(df)
-    plot_constraint_rate_by_workflow(df)

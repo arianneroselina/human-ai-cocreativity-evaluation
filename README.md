@@ -10,10 +10,10 @@ This repository does **not** conduct the original writing study. It receives exp
 
 After starting the development server, the app has two main routes:
 
-| Route | Purpose |
-| --- | --- |
-| [`/evaluation`](https://human-ai-cocreativity-evaluation.vercel.app/evaluation) | Blind poem evaluation interface. Evaluators rate one poem at a time without seeing authorship or workflow condition. |
-| [`/research-dashboard`](https://human-ai-cocreativity-evaluation.vercel.app/research-dashboard) | Research dashboard for evaluator progress, processed results, generated figures, and feedback summaries. |
+| Route                                                                                           | Purpose                                                                                                              |
+| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| [`/evaluation`](https://human-ai-cocreativity-evaluation.vercel.app/evaluation)                 | Blind poem evaluation interface. Evaluators rate one poem at a time without seeing authorship or workflow condition. |
+| [`/research-dashboard`](https://human-ai-cocreativity-evaluation.vercel.app/research-dashboard) | Research dashboard for evaluator progress, processed results, generated figures, and feedback summaries.             |
 
 The root route `/` redirects to `/evaluation`.
 

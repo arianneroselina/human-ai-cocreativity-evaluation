@@ -29,13 +29,13 @@ function NavLink({ href, children }: { href: string; children: ReactNode }) {
 }
 
 function FoldableSection({
-                           id,
-                           title,
-                           description,
-                           badge,
-                           defaultOpen = false,
-                           children,
-                         }: {
+  id,
+  title,
+  description,
+  badge,
+  defaultOpen = false,
+  children,
+}: {
   id: string;
   title: string;
   description?: string;
@@ -62,9 +62,7 @@ function FoldableSection({
           </div>
 
           {description && (
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">
-              {description}
-            </p>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">{description}</p>
           )}
         </div>
 
@@ -85,31 +83,31 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       title: "Workflow Behavior",
       description: "Workflow choices, transitions, and final preferences.",
       figures: figures.filter((figure) =>
-        ["01_", "02_", "03_", "04_"].some((prefix) =>
-          figure.slug.startsWith(prefix),
-        ),
+        ["01_", "02_", "03_", "04_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
     {
       id: "quality-figures",
-      title: "Output Quality and Constraints",
-      description:
-        "Evaluator-rated quality, quality dimensions, constraint success, and quality efficiency.",
+      title: "Output Quality by Evaluators",
+      description: "Evaluator-rated quality, quality dimensions, and efficiency.",
       figures: figures.filter((figure) =>
-        ["11_", "12_", "13_", "14_", "15_", "16_", "16b_", "17_", "18_"].some((prefix) =>
-          figure.slug.startsWith(prefix),
-        ),
+        ["11_", "12_", "13_", "14_", "14b_"].some((prefix) => figure.slug.startsWith(prefix))
+      ),
+    },
+    {
+      id: "constraints-figures",
+      title: "Constraint Fulfillment",
+      description: "Whether submitted poems fulfilled the task constraints.",
+      figures: figures.filter((figure) =>
+        ["16_", "17_", "18_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
     {
       id: "experience-figures",
       title: "Participant Experience",
-      description:
-        "Satisfaction, frustration, AI performance ratings, and perceived task load.",
+      description: "Satisfaction, frustration, AI performance ratings, and perceived task load.",
       figures: figures.filter((figure) =>
-        ["21_", "22_", "23_"].some((prefix) =>
-          figure.slug.startsWith(prefix),
-        ),
+        ["21_", "22_", "23_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
     {
@@ -118,22 +116,17 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       description:
         "Round-5 error exposure, line-count error, post-error behavior, and subjective reactions.",
       figures: figures.filter((figure) =>
-        ["31_", "32_", "33_", "34_", "34b_"].some((prefix) =>
-          figure.slug.startsWith(prefix),
-        ),
+        ["31_", "32_", "33_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
     {
       id: "participant-figures",
       title: "Participant Information",
-      description:
-        "Age, gender, education, language, and AI attitude distributions.",
+      description: "Age, gender, education, language, and AI attitude distributions.",
       figures: figures.filter((figure) =>
-        ["41_", "42_", "43_", "44_", "45_", "46_"].some((prefix) =>
-          figure.slug.startsWith(prefix),
-        ),
+        ["41_", "42_", "43_", "44_", "45_", "46_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
-    }
+    },
   ].filter((group) => group.figures.length > 0);
 }
 
@@ -179,8 +172,8 @@ export default async function ResearchDashboardPage() {
               </h1>
 
               <p className="mt-3 max-w-3xl text-base leading-7 text-gray-600">
-                Overview of evaluator progress, rating completeness, generated figures,
-                participant information, and qualitative feedback summaries.
+                Overview of evaluator progress, rating completeness, generated figures, participant
+                information, and qualitative feedback summaries.
               </p>
             </div>
 
@@ -193,8 +186,8 @@ export default async function ResearchDashboardPage() {
           {!data.hasDashboardDataset && (
             <div className="mt-5 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900">
               <strong>Missing dataset.</strong> Run{" "}
-              <code className="font-mono">make process-data</code> to generate the processed
-              dataset and research figures.
+              <code className="font-mono">make process-data</code> to generate the processed dataset
+              and research figures.
             </div>
           )}
         </section>

@@ -1,55 +1,126 @@
+import pandas as pd
 from matplotlib import pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
-from scripts.config import WORKFLOW_ORDER, TABLE_DIR, WORKFLOW_LABELS
-from scripts.dashboard_figures.utils import save_figure
+from scripts.config import ERROR_ROUND_INDEX, TABLE_DIR, WORKFLOW_LABELS, WORKFLOW_ORDER
+from scripts.utils import (
+    is_ai_supported_row,
+    save_figure,
+    shade_main_rounds,
+    workflow_label,
+    annotate_injected_error_round,
+)
 
 
-def plot_satisfaction_by_workflow(df):
-    slug = "21_satisfaction_by_workflow"
+def drop_duplicate_participant_rounds(df: pd.DataFrame) -> pd.DataFrame:
+    if "participantId" not in df.columns:
+        return df
+
+    return df.drop_duplicates(
+        subset=["participantId", "roundIndex"],
+        keep="first",
+    )
+
+
+def plot_satisfaction_by_round_and_workflow(df):
+    """
+    Shows participant satisfaction by both round and workflow.
+
+    Satisfaction should not be interpreted only by workflow or only by round,
+    because workflow choice and round progression may interact.
+    """
+    slug = "21_satisfaction_by_round_and_workflow"
     column = "satisfactionResult"
 
-    if column not in df.columns:
+    required_columns = {column, "roundIndex", "workflow"}
+
+    if not required_columns.issubset(df.columns):
+        return
+
+    plot_df = df.dropna(subset=[column, "roundIndex", "workflow"]).copy()
+    plot_df = drop_duplicate_participant_rounds(plot_df)
+
+    plot_df[column] = pd.to_numeric(plot_df[column], errors="coerce")
+    plot_df["roundIndex"] = pd.to_numeric(plot_df["roundIndex"], errors="coerce")
+
+    plot_df = plot_df.dropna(subset=[column, "roundIndex"])
+
+    if plot_df.empty:
         return
 
     summary = (
-        df
-        .dropna(subset=[column])
-        .groupby("workflow")[column]
-        .mean()
-        .reindex(WORKFLOW_ORDER)
-        .dropna()
-        .rename(index=WORKFLOW_LABELS)
+        plot_df.groupby(["roundIndex", "workflow"])[column]
+        .agg(
+            meanSatisfaction="mean",
+            count="count",
+        )
+        .reset_index()
+        .sort_values(["roundIndex", "workflow"])
     )
 
-    if summary.empty:
+    summary["workflowLabel"] = summary["workflow"].map(workflow_label)
+    summary.to_csv(TABLE_DIR / f"{slug}.csv", index=False)
+
+    pivot = summary.pivot(
+        index="roundIndex",
+        columns="workflow",
+        values="meanSatisfaction",
+    ).reindex(columns=WORKFLOW_ORDER)
+
+    if pivot.dropna(how="all").empty:
         return
 
-    summary.to_csv(
-        TABLE_DIR / f"{slug}.csv",
-        header=["meanSatisfaction"],
+    fig, ax = plt.subplots(figsize=(8.2, 4.8))
+    shade_main_rounds(ax, label="Main rounds (5–7)", label_y=0.03)
+
+    for workflow in WORKFLOW_ORDER:
+        if workflow not in pivot.columns:
+            continue
+
+        workflow_series = pivot[workflow].dropna()
+
+        if workflow_series.empty:
+            continue
+
+        ax.plot(
+            workflow_series.index,
+            workflow_series.values,
+            marker="o",
+            label=workflow_label(workflow),
+            zorder=2,
         )
 
-    fig, ax = plt.subplots(figsize=(7.2, 4.2))
-    bars = ax.bar(summary.index, summary.values)
+    annotate_injected_error_round(ax, ERROR_ROUND_INDEX, y_top=5.0, text_y=5.25)
 
-    ax.bar_label(bars, padding=3, fmt="%.2f")
-
-    ax.set_title("Participant Satisfaction by Workflow")
-    ax.set_xlabel("Workflow")
+    ax.set_title("Participant Satisfaction by Round and Workflow")
+    ax.set_xlabel("Round")
     ax.set_ylabel("Mean satisfaction rating (1–5)")
-    ax.set_ylim(0, 5)
-    ax.tick_params(axis="x", rotation=0)
+    ax.set_ylim(0, 5.5)
+    ax.set_xticks(sorted(plot_df["roundIndex"].dropna().unique()))
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+    ax.legend(
+        title="Workflow",
+        bbox_to_anchor=(1.02, 1),
+        loc="upper left",
+    )
 
     save_figure(
         fig,
         slug,
-        "Participant Satisfaction by Workflow",
-        "Mean participant-reported satisfaction ratings on a 1–5 scale after each writing round by workflow.",
+        "Participant Satisfaction by Round and Workflow",
+        "Mean participant-reported satisfaction ratings on a 1–5 scale by round and workflow.",
     )
 
 
-def plot_ai_experience_over_rounds(df):
-    slug = "22_ai_experience_over_rounds"
+def plot_ai_experience_by_round_and_workflow(df):
+    """
+    Shows AI-related experience ratings by round and AI-supported workflow.
+
+    To keep the figure readable, each AI-related rating dimension is shown
+    in a separate subplot, while workflow is represented as lines.
+    """
+    slug = "22_ai_experience_by_round_and_workflow"
 
     ai_metrics = {
         "aiUnderstanding": "AI understanding",
@@ -58,57 +129,142 @@ def plot_ai_experience_over_rounds(df):
         "aiPerformanceOverall": "AI performance",
     }
 
+    required_columns = {"roundIndex", "workflow"}
+
+    if not required_columns.issubset(df.columns):
+        return
+
     available_metrics = [
-        column for column in ai_metrics
+        column
+        for column in ai_metrics
         if column in df.columns and not df[column].dropna().empty
     ]
 
     if not available_metrics:
         return
 
-    ai_df = df[df["workflow"] != "human"].copy()
+    plot_df = df.dropna(subset=["roundIndex", "workflow"]).copy()
+    plot_df = drop_duplicate_participant_rounds(plot_df)
 
-    if ai_df.empty:
-        return
-
-    summary = (
-        ai_df
-        .groupby("roundIndex")[available_metrics]
-        .mean()
-        .reset_index()
-        .sort_values("roundIndex")
+    plot_df["roundIndex"] = pd.to_numeric(
+        plot_df["roundIndex"],
+        errors="coerce",
     )
 
-    summary = summary.rename(columns=ai_metrics)
+    plot_df = plot_df.dropna(subset=["roundIndex"])
+
+    if plot_df.empty:
+        return
+
+    plot_df = plot_df[plot_df.apply(is_ai_supported_row, axis=1)].copy()
+
+    if plot_df.empty:
+        return
+
+    for metric in available_metrics:
+        plot_df[metric] = pd.to_numeric(plot_df[metric], errors="coerce")
+
+    summary = (
+        plot_df.groupby(["roundIndex", "workflow"])[available_metrics]
+        .mean()
+        .reset_index()
+        .sort_values(["roundIndex", "workflow"])
+    )
+
+    summary["workflowLabel"] = summary["workflow"].map(workflow_label)
     summary.to_csv(TABLE_DIR / f"{slug}.csv", index=False)
 
-    fig, ax = plt.subplots(figsize=(7.4, 4.4))
+    fig, axes = plt.subplots(
+        2,
+        2,
+        figsize=(11.2, 7.2),
+        sharex=True,
+        sharey=True,
+    )
 
-    for metric_label in ai_metrics.values():
-        if metric_label not in summary.columns:
-            continue
+    axes = axes.flatten()
 
-        ax.plot(
-            summary["roundIndex"],
-            summary[metric_label],
-            marker="o",
-            label=metric_label,
+    ai_workflows_in_order = [
+        workflow for workflow in WORKFLOW_ORDER if workflow != "human"
+    ]
+
+    for ax, metric in zip(axes, available_metrics):
+        metric_label = ai_metrics[metric]
+
+        pivot = summary.pivot(
+            index="roundIndex",
+            columns="workflow",
+            values=metric,
+        ).reindex(columns=ai_workflows_in_order)
+
+        shade_main_rounds(ax, label="", label_y=0.03)
+
+        for workflow in ai_workflows_in_order:
+            if workflow not in pivot.columns:
+                continue
+
+            workflow_series = pivot[workflow].dropna()
+
+            if workflow_series.empty:
+                continue
+
+            ax.plot(
+                workflow_series.index,
+                workflow_series.values,
+                marker="o",
+                label=workflow_label(workflow),
+                zorder=2,
+            )
+
+        ax.axvline(
+            ERROR_ROUND_INDEX,
+            linestyle="--",
+            linewidth=1,
+            zorder=3,
         )
 
-    ax.axvline(5, linestyle="--", linewidth=1)
+        ax.set_title(metric_label)
+        ax.set_xlabel("Round")
+        ax.set_ylabel("Mean rating (1–5)")
+        ax.set_ylim(0, 5.5)
+        ax.set_xticks(sorted(plot_df["roundIndex"].dropna().unique()))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
-    ax.set_title("AI Collaboration Experience over Rounds")
-    ax.set_xlabel("Round")
-    ax.set_ylabel("Mean rating (1–5)")
-    ax.set_ylim(0, 5)
-    ax.set_xticks(sorted(summary["roundIndex"].dropna().unique()))
-    ax.legend(title="AI-related measure")
+    for ax in axes[len(available_metrics) :]:
+        ax.axis("off")
+
+    handles, labels = axes[0].get_legend_handles_labels()
+
+    fig.legend(
+        handles,
+        labels,
+        title="AI-supported workflow",
+        bbox_to_anchor=(1.02, 0.5),
+        loc="center left",
+    )
+
+    fig.suptitle(
+        "AI Collaboration Experience by Round and Workflow",
+        fontsize=14,
+    )
+
+    fig.text(
+        0.48,
+        0.02,
+        "Shaded area marks the main rounds (5–7); dashed line marks the injected AI-error round.",
+        ha="center",
+        va="bottom",
+        fontsize=9,
+        color="dimgray",
+    )
+
+    fig.tight_layout(rect=[0, 0.04, 0.86, 0.94])
 
     save_figure(
         fig,
         slug,
-        "AI Collaboration Experience over Rounds",
-        "Mean participant ratings on a 1–5 scale for AI understanding, collaboration quality, creativity support, and overall AI performance across AI-supported rounds.",
+        "AI Collaboration Experience by Round and Workflow",
+        "Mean participant ratings on a 1–5 scale for AI understanding, collaboration quality, creativity support, and overall AI performance, separated by round and AI-supported workflow.",
     )
 
 
@@ -125,7 +281,8 @@ def plot_tlx_subscale_ratings_by_workflow(df):
     }
 
     available_columns = [
-        column for column in load_columns
+        column
+        for column in load_columns
         if column in df.columns and not df[column].dropna().empty
     ]
 
@@ -133,8 +290,7 @@ def plot_tlx_subscale_ratings_by_workflow(df):
         return
 
     summary = (
-        df
-        .groupby("workflow")[available_columns]
+        df.groupby("workflow")[available_columns]
         .mean()
         .reindex(WORKFLOW_ORDER)
         .dropna(how="all")
@@ -170,6 +326,6 @@ def plot_tlx_subscale_ratings_by_workflow(df):
 
 
 def plot_experience(df):
-    plot_satisfaction_by_workflow(df)
-    plot_ai_experience_over_rounds(df)
+    plot_satisfaction_by_round_and_workflow(df)
+    plot_ai_experience_by_round_and_workflow(df)
     plot_tlx_subscale_ratings_by_workflow(df)

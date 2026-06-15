@@ -47,7 +47,7 @@ export default function EvaluationWorkbench({ poems }: EvaluationWorkbenchProps)
   const canSubmit = fluency && themeAlignment && meaningfulness && poeticness && overallQuality;
 
   async function handleStart() {
-    let cleanEvaluatorCode = evaluatorId.trim()
+    let cleanEvaluatorCode = evaluatorId.trim();
     if (!cleanEvaluatorCode || !["1", "2"].includes(cleanEvaluatorCode)) {
       alert("Please choose your evaluator ID.");
       return;

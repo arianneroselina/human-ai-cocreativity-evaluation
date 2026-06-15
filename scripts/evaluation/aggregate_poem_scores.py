@@ -68,9 +68,7 @@ for row in rows:
     valid_means = [value for value in means if value is not None]
 
     row["qualityComposite"] = (
-        sum(valid_means) / len(valid_means)
-        if valid_means
-        else None
+        sum(valid_means) / len(valid_means) if valid_means else None
     )
 
     row["isFullyRated"] = row["ratingCount"] == EXPECTED_EVALUATORS
