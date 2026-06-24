@@ -1,183 +1,463 @@
+"""Workflow selection behaviour figures.
+
+Core workflow figures
+---------------------
+01  Total workflow usage across all free-choice main rounds
+02  First voluntary workflow choice after controlled practice
+03  Workflow distribution across Main Rounds 1–3
+04  Participant-level workflow trajectories across the main rounds
+05a Final practice workflow -> first voluntary workflow choice
+05b Main-round workflow transition heatmaps (Main 1 -> 2 and Main 2 -> 3)
+06  Workflow retention after a voluntary choice
+07  Number and pattern of workflow switches
+08  Participant-reported workflow preference rank distribution
+09  Stated workflow preference versus revealed workflow behaviour
+"""
+
 import json
 import re
 
+import numpy as np
 import pandas as pd
+from matplotlib import patches
 from matplotlib import pyplot as plt
-from matplotlib.ticker import MaxNLocator
+from matplotlib.colors import BoundaryNorm, ListedColormap
 
-from scripts.config import WORKFLOW_LABELS, TABLE_DIR, WORKFLOW_ORDER
-from scripts.utils import save_figure
+from scripts.config import (
+    AI_SUPPORTED_WORKFLOWS,
+    MAIN_ROUND_INDICES,
+    PRACTICE_ROUND_INDICES,
+    WORKFLOW_COLORS,
+    WORKFLOW_LABELS,
+    WORKFLOW_ORDER,
+)
+from scripts.dashboard_figures.helpers import (
+    workflow_display_name,
+    round_display_name,
+)
+from scripts.dashboard_figures.style import (
+    BAR_EDGE_COLOR,
+    apply_standard_axes_style,
+)
+from scripts.utils import (
+    drop_duplicate_participant_rounds,
+    require_columns,
+    save_figure,
+    save_table,
+)
+
+
+RANK_COLORS = ["C0", "C1", "C2", "C3"]
+
+
+# -----------------------------------------------------------------------------
+# Shared workflow helpers
+# -----------------------------------------------------------------------------
+
+
+def _prepare_round_data(df):
+    """Deduplicate and normalise the columns required by workflow figures."""
+    required = {"participantId", "roundIndex", "workflow"}
+
+    if df.empty or not require_columns(df, required, "workflow figures"):
+        return pd.DataFrame(columns=sorted(required))
+
+    prepared = drop_duplicate_participant_rounds(df.copy())
+    prepared["roundIndex"] = pd.to_numeric(
+        prepared["roundIndex"],
+        errors="coerce",
+    )
+    prepared = prepared.dropna(
+        subset=["participantId", "roundIndex", "workflow"],
+    )
+    prepared["roundIndex"] = prepared["roundIndex"].astype(int)
+
+    return prepared[prepared["workflow"].isin(WORKFLOW_ORDER)].copy()
+
+
+def _main_round_data(df):
+    """Return only free-choice main-round observations from the study design."""
+    prepared = _prepare_round_data(df)
+
+    if prepared.empty:
+        return prepared
+
+    return prepared[prepared["roundIndex"].isin(MAIN_ROUND_INDICES)].copy()
+
+
+def _available_main_rounds(main_df):
+    """Return configured main rounds that are represented in the dataset."""
+    if main_df.empty:
+        return []
+
+    observed_rounds = set(main_df["roundIndex"].unique())
+    return [
+        round_index
+        for round_index in MAIN_ROUND_INDICES
+        if round_index in observed_rounds
+    ]
+
+
+def _workflow_counts(dataframe, workflow_column="workflow"):
+    """Count workflows while retaining every configured workflow category."""
+    return (
+        dataframe[workflow_column]
+        .value_counts()
+        .reindex(WORKFLOW_ORDER, fill_value=0)
+        .astype(int)
+    )
+
+
+def _complete_main_sequences(main_df):
+    """Return participants with an observation in every planned main round."""
+    if main_df.empty:
+        return pd.DataFrame(columns=MAIN_ROUND_INDICES)
+
+    sequence_matrix = main_df.pivot_table(
+        index="participantId",
+        columns="roundIndex",
+        values="workflow",
+        aggfunc="first",
+    ).reindex(columns=MAIN_ROUND_INDICES)
+
+    return sequence_matrix.dropna(how="any")
+
+
+def _transition_rows_for_pair(round_df, from_round, to_round):
+    """Create transitions for one explicit consecutive round pair only."""
+    source = round_df.loc[
+        round_df["roundIndex"] == from_round,
+        ["participantId", "workflow"],
+    ].rename(columns={"workflow": "fromWorkflow"})
+
+    target = round_df.loc[
+        round_df["roundIndex"] == to_round,
+        ["participantId", "workflow"],
+    ].rename(columns={"workflow": "toWorkflow"})
+
+    transitions = source.merge(target, on="participantId", how="inner")
+    transitions["fromRound"] = from_round
+    transitions["toRound"] = to_round
+    transitions["switched"] = transitions["fromWorkflow"] != transitions["toWorkflow"]
+
+    return transitions
+
+
+def _transition_matrix(transitions):
+    """Return count and source-row-percentage matrices for transitions."""
+    counts = (
+        transitions.groupby(["fromWorkflow", "toWorkflow"])
+        .size()
+        .unstack(fill_value=0)
+        .reindex(index=WORKFLOW_ORDER, columns=WORKFLOW_ORDER, fill_value=0)
+    )
+
+    row_totals = counts.sum(axis=1).astype(float)
+    row_percentages = (
+        counts.div(row_totals.replace(0, np.nan), axis=0).mul(100).fillna(0.0)
+    )
+
+    return counts, row_percentages, row_totals.astype(int)
+
+
+def _save_transition_heatmap(
+    transitions,
+    slug,
+    title,
+    source_axis_label,
+    target_axis_label,
+    description,
+):
+    """Save a transition heatmap with counts and source-row percentages."""
+    if transitions.empty:
+        return
+
+    counts, row_percentages, row_totals = _transition_matrix(transitions)
+
+    display_counts = counts.rename(index=WORKFLOW_LABELS, columns=WORKFLOW_LABELS)
+    display_percentages = row_percentages.rename(
+        index=WORKFLOW_LABELS,
+        columns=WORKFLOW_LABELS,
+    )
+
+    save_table(display_counts, f"{slug}_counts")
+    save_table(display_percentages.round(2), f"{slug}_row_percentages")
+
+    fig, ax = plt.subplots(figsize=(7.2, 5.8))
+    image = ax.imshow(
+        row_percentages.values,
+        vmin=0,
+        vmax=100,
+        cmap="Blues",
+    )
+
+    x_labels = [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER]
+    y_labels = [
+        (f"{workflow_display_name(workflow)}\n(n={int(row_totals.loc[workflow])})")
+        if row_totals.loc[workflow] > 0
+        else workflow_display_name(workflow)
+        for workflow in WORKFLOW_ORDER
+    ]
+
+    ax.set_title(title)
+    ax.set_xlabel(target_axis_label)
+    ax.set_ylabel(source_axis_label)
+    ax.set_xticks(range(len(WORKFLOW_ORDER)))
+    ax.set_xticklabels(x_labels, rotation=30, ha="right")
+    ax.set_yticks(range(len(WORKFLOW_ORDER)))
+    ax.set_yticklabels(y_labels)
+
+    for row_index, from_workflow in enumerate(WORKFLOW_ORDER):
+        for column_index, to_workflow in enumerate(WORKFLOW_ORDER):
+            count = int(counts.loc[from_workflow, to_workflow])
+            percentage = float(row_percentages.loc[from_workflow, to_workflow])
+
+            if row_totals.loc[from_workflow] == 0:
+                label = "–"
+            else:
+                label = f"{count}\n{percentage:.0f}%"
+
+            text_color = "white" if percentage >= 55 else "black"
+            ax.text(
+                column_index,
+                row_index,
+                label,
+                ha="center",
+                va="center",
+                color=text_color,
+                fontsize=9,
+            )
+
+    fig.colorbar(
+        image,
+        ax=ax,
+        label="Share within source workflow (%)",
+    )
+
+    save_figure(fig, slug, title, description)
+
+
+# -----------------------------------------------------------------------------
+# 01–03: Aggregate workflow choices
+# -----------------------------------------------------------------------------
 
 
 def plot_total_workflow_usage_counts(df):
-    slug = "01_total_workflow_usage_counts"
+    """Plot pooled workflow selections across all free-choice main rounds."""
+    slug = "01_total_workflow_usage_main_rounds"
+    main_df = _main_round_data(df)
 
-    if "workflow" not in df.columns:
+    if main_df.empty:
         return
 
-    summary = df["workflow"].value_counts().reindex(WORKFLOW_ORDER).dropna().astype(int)
+    counts = _workflow_counts(main_df)
+    total_selections = int(counts.sum())
 
-    if summary.empty:
+    if total_selections == 0:
         return
 
-    display_summary = summary.rename(index=WORKFLOW_LABELS)
+    ai_count = int(counts.loc[AI_SUPPORTED_WORKFLOWS].sum())
 
     export_df = pd.DataFrame(
         {
-            "count": display_summary,
-            "percentage": (display_summary / display_summary.sum() * 100).round(2),
+            "workflow": [
+                workflow_display_name(workflow) for workflow in WORKFLOW_ORDER
+            ],
+            "selection_count": counts.values,
+            "percentage_of_all_main_round_selections": (counts / total_selections * 100)
+            .round(2)
+            .values,
         }
     )
+    save_table(export_df, slug, index=False)
 
-    export_df.to_csv(TABLE_DIR / f"{slug}.csv")
-
-    def format_pie_label(percent):
-        count = int(round(percent * display_summary.sum() / 100))
-
-        if count == 0:
-            return ""
-
-        return f"{percent:.1f}%\n(n={count})"
-
-    fig, ax = plt.subplots(figsize=(7.0, 5.2))
-
-    wedges, _, _ = ax.pie(
-        display_summary.values,
-        autopct=format_pie_label,
-        startangle=90,
-        counterclock=False,
-        pctdistance=0.72,
-        wedgeprops={
-            "edgecolor": "white",
-            "linewidth": 1,
-        },
-        textprops={
-            "fontsize": 9,
-        },
+    fig, ax = plt.subplots(figsize=(8.2, 4.8))
+    labels = [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER]
+    bars = ax.bar(
+        labels,
+        counts.values,
+        color=[WORKFLOW_COLORS[workflow] for workflow in WORKFLOW_ORDER],
+        edgecolor=BAR_EDGE_COLOR,
     )
+    apply_standard_axes_style(ax)
 
-    ax.legend(
-        wedges,
-        display_summary.index,
-        title="Workflow",
-        bbox_to_anchor=(1.02, 0.5),
-        loc="center left",
+    for bar, count in zip(bars, counts.values):
+        percentage = count / total_selections * 100
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(total_selections * 0.015, 0.15),
+            f"{count} ({percentage:.1f}%)",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+
+    ax.set_title("Total Workflow Usage in Main Rounds")
+    ax.set_xlabel("Workflow")
+    ax.set_ylabel("Workflow selections")
+    ax.set_ylim(0, max(counts.max() * 1.25, 1))
+    ax.tick_params(axis="x", rotation=15)
+    ax.text(
+        0.5,
+        -0.22,
+        (
+            "AI-involving selections: "
+            f"{ai_count}/{total_selections} "
+            f"({ai_count / total_selections * 100:.1f}%)"
+        ),
+        transform=ax.transAxes,
+        ha="center",
+        fontsize=9,
     )
-
-    ax.set_title("Total Workflow Usage")
-    ax.axis("equal")
 
     save_figure(
         fig,
         slug,
-        "Total Workflow Usage",
-        "Share and number of rounds in which each workflow was used.",
+        "Total Workflow Usage in Main Rounds",
+        "Pooled count and share of all workflow selections across the three "
+        f"free-choice main rounds (N={total_selections} selections).",
+    )
+
+
+def plot_first_voluntary_workflow_choice(df):
+    """Plot the choice made in the planned first free-choice main round."""
+    slug = "02_first_voluntary_workflow_choice"
+    main_df = _main_round_data(df)
+    first_main_round = MAIN_ROUND_INDICES[0]
+
+    if main_df.empty or first_main_round not in _available_main_rounds(main_df):
+        return
+
+    first_choice_df = main_df[main_df["roundIndex"] == first_main_round].copy()
+    counts = _workflow_counts(first_choice_df)
+    total = int(counts.sum())
+
+    if total == 0:
+        return
+
+    ai_count = int(counts.loc[AI_SUPPORTED_WORKFLOWS].sum())
+
+    export_df = pd.DataFrame(
+        {
+            "workflow": [
+                workflow_display_name(workflow) for workflow in WORKFLOW_ORDER
+            ],
+            "count": counts.values,
+            "percentage": (counts / total * 100).round(2).values,
+        }
+    )
+    save_table(export_df, slug, index=False)
+
+    fig, ax = plt.subplots(figsize=(8.0, 4.8))
+    labels = [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER]
+    bars = ax.bar(
+        labels,
+        counts.values,
+        color=[WORKFLOW_COLORS[workflow] for workflow in WORKFLOW_ORDER],
+        edgecolor=BAR_EDGE_COLOR,
+    )
+    apply_standard_axes_style(ax)
+
+    for bar, count in zip(bars, counts.values):
+        percentage = count / total * 100
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(total * 0.015, 0.15),
+            f"{count} ({percentage:.1f}%)",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+
+    ax.set_title("First Voluntary Workflow Choice After Practice")
+    ax.set_xlabel("Workflow")
+    ax.set_ylabel("Participants")
+    ax.set_ylim(0, max(counts.max() * 1.25, 1))
+    ax.tick_params(axis="x", rotation=15)
+    ax.text(
+        0.5,
+        -0.22,
+        (f"AI-involving workflows: {ai_count}/{total} ({ai_count / total * 100:.1f}%)"),
+        transform=ax.transAxes,
+        ha="center",
+        fontsize=9,
+    )
+
+    save_figure(
+        fig,
+        slug,
+        "First Voluntary Workflow Choice After Practice",
+        "Distribution of workflow selections in Main 1, the first free-choice "
+        f"round after controlled practice (N={total}).",
     )
 
 
 def plot_workflow_distribution(df):
-    slug = "02_workflow_distribution_main_rounds"
+    """Plot workflow distributions separately for all available main rounds."""
+    slug = "03_workflow_distribution_main_rounds"
+    main_df = _main_round_data(df)
+    main_rounds = _available_main_rounds(main_df)
 
-    required_columns = {"roundIndex", "workflow"}
-    if not required_columns.issubset(df.columns):
+    if main_df.empty or not main_rounds:
         return
-
-    choice_df = df[df["roundIndex"] >= 5].copy()
-    choice_df = choice_df.dropna(subset=["roundIndex", "workflow"])
-
-    if choice_df.empty:
-        return
-
-    if "participantId" in choice_df.columns:
-        choice_df = choice_df.drop_duplicates(
-            subset=["participantId", "roundIndex"],
-            keep="first",
-        )
 
     counts = (
-        choice_df.groupby(["roundIndex", "workflow"])
+        main_df.groupby(["roundIndex", "workflow"])
         .size()
         .unstack(fill_value=0)
-        .reindex(columns=WORKFLOW_ORDER, fill_value=0)
-        .sort_index()
+        .reindex(index=main_rounds, columns=WORKFLOW_ORDER, fill_value=0)
     )
+    totals = counts.sum(axis=1)
+    percentages = counts.div(totals.replace(0, pd.NA), axis=0).mul(100).fillna(0)
+    ai_counts = counts.loc[:, AI_SUPPORTED_WORKFLOWS].sum(axis=1)
+    ai_percentages = (ai_counts / totals.replace(0, pd.NA) * 100).round(2)
 
-    if counts.empty:
-        return
+    export_df = percentages.rename(columns=WORKFLOW_LABELS).copy()
+    export_df.insert(
+        0,
+        "Main round",
+        [round_display_name(round_index) for round_index in main_rounds],
+    )
+    export_df["AI-involving count"] = ai_counts.values
+    export_df["Total count"] = totals.values
+    export_df["AI-involving percentage"] = ai_percentages.values
+    save_table(export_df, slug, index=False)
 
-    # Sort workflow order according to their frequency in round 5.
-    if 5 in counts.index:
-        round5_rank = counts.loc[5].sort_values(ascending=False)
+    fig, ax = plt.subplots(figsize=(8.6, 5.2))
+    positions = np.arange(len(main_rounds))
+    bottom = np.zeros(len(main_rounds))
 
-        sorted_workflows = [
-            workflow for workflow in round5_rank.index if workflow in WORKFLOW_ORDER
+    for workflow in WORKFLOW_ORDER:
+        values = percentages[workflow].values
+        ax.bar(
+            positions,
+            values,
+            bottom=bottom,
+            label=workflow_display_name(workflow),
+            color=WORKFLOW_COLORS[workflow],
+            edgecolor=BAR_EDGE_COLOR,
+        )
+        bottom += values
+
+    apply_standard_axes_style(ax)
+
+    ax.set_xticks(positions)
+    ax.set_xticklabels(
+        [
+            f"{round_display_name(round_index)}\n(n={int(totals.loc[round_index])})"
+            for round_index in main_rounds
         ]
-    else:
-        sorted_workflows = WORKFLOW_ORDER
-
-    # Keep remaining workflows in the predefined order, if not present in round 5.
-    sorted_workflows += [
-        workflow for workflow in WORKFLOW_ORDER if workflow not in sorted_workflows
-    ]
-
-    counts = counts.reindex(columns=sorted_workflows, fill_value=0)
-
-    percentages = counts.div(counts.sum(axis=1), axis=0) * 100
-
-    ai_assisted_workflows = [
-        workflow for workflow in WORKFLOW_ORDER if workflow != "human"
-    ]
-
-    ai_summary = pd.DataFrame(
-        {
-            "ai_assisted_count": counts[
-                [
-                    workflow
-                    for workflow in ai_assisted_workflows
-                    if workflow in counts.columns
-                ]
-            ].sum(axis=1),
-            "total_count": counts.sum(axis=1),
-        }
     )
-
-    ai_summary["ai_assisted_percentage"] = (
-        ai_summary["ai_assisted_count"] / ai_summary["total_count"] * 100
-    ).round(2)
-
-    output_table = percentages.copy()
-    output_table.columns = [
-        WORKFLOW_LABELS.get(column, column) for column in output_table.columns
-    ]
-
-    output_table["AI-assisted count"] = ai_summary["ai_assisted_count"]
-    output_table["Total count"] = ai_summary["total_count"]
-    output_table["AI-assisted percentage"] = ai_summary["ai_assisted_percentage"]
-
-    output_table.to_csv(TABLE_DIR / f"{slug}.csv")
-
-    plot_percentages = percentages.rename(columns=WORKFLOW_LABELS)
-
-    fig, ax = plt.subplots(figsize=(8.0, 4.8))
-
-    plot_percentages.plot(
-        kind="bar",
-        stacked=True,
-        ax=ax,
-    )
-
-    ax.set_title("Workflow Distribution in Main Rounds")
-    ax.set_xlabel("Main round")
+    ax.set_ylim(0, 113)
+    ax.set_title("Workflow Distribution Across Main Rounds")
+    ax.set_xlabel("Free-choice round")
     ax.set_ylabel("Share of participants (%)")
-    ax.set_ylim(0, 112)
-    ax.tick_params(axis="x", rotation=0)
 
-    for index, (round_index, row) in enumerate(ai_summary.iterrows()):
+    for position, round_index in enumerate(main_rounds):
         ax.text(
-            index,
+            position,
             103,
-            f"AI-assisted: {row['ai_assisted_percentage']:.1f}%\n"
-            f"(n={int(row['ai_assisted_count'])}/{int(row['total_count'])})",
+            f"AI-involving\n{ai_percentages.loc[round_index]:.1f}%",
             ha="center",
             va="bottom",
             fontsize=8,
@@ -192,115 +472,501 @@ def plot_workflow_distribution(df):
     save_figure(
         fig,
         slug,
-        "Workflow Distribution in Main Rounds",
-        "Share of selected workflows in rounds 5–7, with total AI-assisted workflow use annotated above each round. Workflow categories are ordered by their frequency in round 5.",
+        "Workflow Distribution Across Main Rounds",
+        "Share of participants selecting each workflow in every free-choice "
+        "main round. Workflow colours and order are fixed across figures.",
     )
 
 
-def plot_workflow_transitions(df):
-    if "participantId" not in df.columns:
+# -----------------------------------------------------------------------------
+# 04–05: Individual trajectories and transitions
+# -----------------------------------------------------------------------------
+
+
+def plot_participant_workflow_trajectories(df):
+    """Show each participant's main-round sequence as a compact matrix."""
+    slug = "04_participant_workflow_trajectories"
+    main_df = _main_round_data(df)
+    main_rounds = _available_main_rounds(main_df)
+
+    if main_df.empty or not main_rounds:
         return
 
-    transition_rows = []
+    sequence_matrix = main_df.pivot_table(
+        index="participantId",
+        columns="roundIndex",
+        values="workflow",
+        aggfunc="first",
+    ).reindex(columns=main_rounds)
 
-    for _, participant_df in df.groupby("participantId"):
-        participant_df = participant_df.sort_values("roundIndex")
-
-        rows = participant_df[["roundIndex", "workflow"]].dropna().to_dict("records")
-
-        for index in range(len(rows) - 1):
-            current = rows[index]
-            next_row = rows[index + 1]
-
-            from_round = int(current["roundIndex"])
-            to_round = int(next_row["roundIndex"])
-
-            if from_round < 4 or to_round < 5:
-                continue
-
-            transition_rows.append(
-                {
-                    "fromRound": from_round,
-                    "toRound": to_round,
-                    "fromWorkflow": current["workflow"],
-                    "toWorkflow": next_row["workflow"],
-                }
-            )
-
-    if not transition_rows:
+    if sequence_matrix.empty:
         return
 
-    transition_df = pd.DataFrame(transition_rows)
+    workflow_codes = {workflow: index for index, workflow in enumerate(WORKFLOW_ORDER)}
+    missing_code = len(WORKFLOW_ORDER)
 
-    for (from_round, to_round), step_df in transition_df.groupby(
-        ["fromRound", "toRound"]
-    ):
-        slug = f"03_workflow_transition_r{from_round}_to_r{to_round}"
+    sort_codes = sequence_matrix.apply(
+        lambda column: column.map(workflow_codes).fillna(missing_code)
+    )
+    sequence_matrix = sequence_matrix.loc[
+        sort_codes.sort_values(by=main_rounds, kind="stable").index
+    ]
 
-        matrix = (
-            step_df.groupby(["fromWorkflow", "toWorkflow"])
-            .size()
-            .unstack(fill_value=0)
-            .reindex(index=WORKFLOW_ORDER, columns=WORKFLOW_ORDER, fill_value=0)
+    participant_codes = [
+        f"P{index:02d}" for index in range(1, len(sequence_matrix) + 1)
+    ]
+    export_df = sequence_matrix.copy()
+    export_df.insert(0, "participantCode", participant_codes)
+    export_df = export_df.rename(
+        columns={
+            round_index: round_display_name(round_index) for round_index in main_rounds
+        }
+    )
+    save_table(export_df, slug, index=False)
+
+    display_matrix = sequence_matrix.apply(
+        lambda column: column.map(workflow_codes).fillna(missing_code)
+    )
+
+    cmap = ListedColormap(
+        [WORKFLOW_COLORS[workflow] for workflow in WORKFLOW_ORDER] + ["#efefef"]
+    )
+    norm = BoundaryNorm(
+        boundaries=np.arange(-0.5, len(WORKFLOW_ORDER) + 1.5, 1),
+        ncolors=cmap.N,
+    )
+
+    figure_height = max(
+        4.0,
+        min(10.5, 0.28 * len(sequence_matrix) + 2.1),
+    )
+    fig, ax = plt.subplots(figsize=(7.8, figure_height))
+    ax.imshow(
+        display_matrix.values,
+        cmap=cmap,
+        norm=norm,
+        aspect="auto",
+    )
+
+    for row_index in range(display_matrix.shape[0] + 1):
+        ax.axhline(row_index - 0.5, color="white", linewidth=0.8)
+    for column_index in range(display_matrix.shape[1] + 1):
+        ax.axvline(column_index - 0.5, color="white", linewidth=0.8)
+
+    ax.set_xticks(range(len(main_rounds)))
+    ax.set_xticklabels([round_display_name(round_index) for round_index in main_rounds])
+    ax.set_ylabel("Participants (sorted by trajectory)")
+    ax.set_title("Participant Workflow Trajectories Across Main Rounds")
+
+    if len(participant_codes) <= 30:
+        ax.set_yticks(range(len(participant_codes)))
+        ax.set_yticklabels(participant_codes, fontsize=7)
+    else:
+        ax.set_yticks([])
+
+    legend_handles = [
+        patches.Patch(
+            color=WORKFLOW_COLORS[workflow],
+            label=workflow_display_name(workflow),
+        )
+        for workflow in WORKFLOW_ORDER
+    ]
+    if sequence_matrix.isna().any().any():
+        legend_handles.append(patches.Patch(color="#efefef", label="Missing"))
+
+    ax.legend(
+        handles=legend_handles,
+        title="Workflow",
+        bbox_to_anchor=(1.02, 1),
+        loc="upper left",
+    )
+
+    save_figure(
+        fig,
+        slug,
+        "Participant Workflow Trajectories Across Main Rounds",
+        "Each row represents one anonymous participant and each column one "
+        "free-choice main round. Missing rounds are shown separately rather "
+        "than being treated as transitions.",
+    )
+
+
+def plot_practice_to_first_choice_transition(df):
+    """Compare the final assigned practice workflow with the first choice."""
+    slug = "05a_final_practice_to_first_voluntary_choice"
+    prepared = _prepare_round_data(df)
+    final_practice_round = PRACTICE_ROUND_INDICES[-1]
+    first_main_round = MAIN_ROUND_INDICES[0]
+
+    if prepared.empty:
+        return
+
+    transitions = _transition_rows_for_pair(
+        prepared,
+        from_round=final_practice_round,
+        to_round=first_main_round,
+    )
+
+    _save_transition_heatmap(
+        transitions=transitions,
+        slug=slug,
+        title="Final Practice Workflow to First Voluntary Choice",
+        source_axis_label=(
+            f"Assigned workflow in {round_display_name(final_practice_round)}"
+        ),
+        target_axis_label=(
+            f"Chosen workflow in {round_display_name(first_main_round)}"
+        ),
+        description=(
+            "Transition from the final assigned practice round to the first "
+            "voluntary workflow choice. This is shown separately because the "
+            "source workflow was not freely selected."
+        ),
+    )
+
+
+def plot_main_workflow_transitions(df):
+    """Plot only genuine transitions between consecutive main rounds."""
+    main_df = _main_round_data(df)
+    main_rounds = _available_main_rounds(main_df)
+
+    if main_df.empty or len(main_rounds) < 2:
+        return
+
+    for from_round, to_round in zip(main_rounds, main_rounds[1:]):
+        from_label = round_display_name(from_round)
+        to_label = round_display_name(to_round)
+        slug = (
+            "05b_workflow_transition_"
+            f"{from_label.lower().replace(' ', '_')}_to_"
+            f"{to_label.lower().replace(' ', '_')}"
+        )
+        transitions = _transition_rows_for_pair(
+            main_df,
+            from_round,
+            to_round,
         )
 
-        row_totals = matrix.sum(axis=1).replace(0, pd.NA)
-        matrix_percentages = matrix.div(row_totals, axis=0) * 100
-        matrix_percentages = matrix_percentages.fillna(0)
-
-        matrix = matrix.rename(index=WORKFLOW_LABELS, columns=WORKFLOW_LABELS)
-
-        matrix.to_csv(TABLE_DIR / f"{slug}.csv")
-
-        matrix_percentages_renamed = matrix_percentages.rename(
-            index=WORKFLOW_LABELS,
-            columns=WORKFLOW_LABELS,
+        _save_transition_heatmap(
+            transitions=transitions,
+            slug=slug,
+            title=f"Workflow Transition: {from_label} → {to_label}",
+            source_axis_label=f"Workflow in {from_label}",
+            target_axis_label=f"Workflow in {to_label}",
+            description=(
+                f"Transition counts and source-workflow percentages from "
+                f"{from_label} to {to_label}. Only participants with both "
+                "consecutive rounds are included."
+            ),
         )
 
-        matrix_percentages_renamed.round(2).to_csv(
-            TABLE_DIR / f"{slug}_row_percentages.csv"
+
+# -----------------------------------------------------------------------------
+# 06–07: Retention and switching behaviour
+# -----------------------------------------------------------------------------
+
+
+def plot_workflow_retention(df):
+    """Show how often each voluntary workflow is retained in the next round."""
+    slug = "06_workflow_retention"
+    main_df = _main_round_data(df)
+    main_rounds = _available_main_rounds(main_df)
+
+    if main_df.empty or len(main_rounds) < 2:
+        return
+
+    transition_sets = [
+        _transition_rows_for_pair(main_df, from_round, to_round)
+        for from_round, to_round in zip(main_rounds, main_rounds[1:])
+    ]
+    transitions = pd.concat(transition_sets, ignore_index=True)
+
+    if transitions.empty:
+        return
+
+    summary = (
+        transitions.groupby("fromWorkflow")
+        .agg(
+            eligible_transitions=("participantId", "size"),
+            retained=("switched", lambda values: int((~values).sum())),
+            switched=("switched", "sum"),
+        )
+        .reindex(WORKFLOW_ORDER, fill_value=0)
+    )
+    summary["retention_percentage"] = np.where(
+        summary["eligible_transitions"] > 0,
+        summary["retained"] / summary["eligible_transitions"] * 100,
+        np.nan,
+    )
+    summary.insert(
+        0,
+        "workflow",
+        [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER],
+    )
+    save_table(summary, slug, index=False)
+
+    transition_labels = {
+        (from_round, to_round): (
+            f"{round_display_name(from_round)} → {round_display_name(to_round)}"
+        )
+        for from_round, to_round in zip(main_rounds, main_rounds[1:])
+    }
+    by_step = transitions.copy()
+    by_step["transition"] = [
+        transition_labels[(row.fromRound, row.toRound)]
+        for row in by_step.itertuples(index=False)
+    ]
+    by_step = (
+        by_step.groupby(["transition", "fromWorkflow"])
+        .agg(
+            eligible_transitions=("participantId", "size"),
+            retained=("switched", lambda values: int((~values).sum())),
+        )
+        .reset_index()
+    )
+    by_step["retention_percentage"] = np.where(
+        by_step["eligible_transitions"] > 0,
+        by_step["retained"] / by_step["eligible_transitions"] * 100,
+        np.nan,
+    )
+    by_step["fromWorkflow"] = by_step["fromWorkflow"].map(workflow_display_name)
+    save_table(by_step, f"{slug}_by_transition", index=False)
+
+    fig, ax = plt.subplots(figsize=(8.2, 4.8))
+    labels = [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER]
+    values = summary["retention_percentage"].fillna(0).values
+    bars = ax.bar(
+        labels,
+        values,
+        color=[WORKFLOW_COLORS[workflow] for workflow in WORKFLOW_ORDER],
+        edgecolor=BAR_EDGE_COLOR,
+    )
+    apply_standard_axes_style(ax)
+
+    for bar, (_, row) in zip(bars, summary.iterrows()):
+        eligible = int(row["eligible_transitions"])
+        retained = int(row["retained"])
+        label = (
+            "No next-round\nobservations" if eligible == 0 else f"{retained}/{eligible}"
+        )
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 2,
+            label,
+            ha="center",
+            va="bottom",
+            fontsize=9,
         )
 
-        fig, ax = plt.subplots(figsize=(6.8, 5.4))
+    ax.set_ylim(0, 112)
+    ax.set_title("Workflow Retention in the Next Main Round")
+    ax.set_xlabel("Workflow selected in the earlier round")
+    ax.set_ylabel("Retained in next round (%)")
+    ax.tick_params(axis="x", rotation=15)
 
-        image = ax.imshow(matrix.values)
+    save_figure(
+        fig,
+        slug,
+        "Workflow Retention in the Next Main Round",
+        "Probability of choosing the same workflow in the immediately following "
+        "main round. Consecutive transitions are pooled descriptively.",
+    )
 
-        ax.set_title(f"Workflow Transitions R{from_round} → R{to_round}")
-        ax.set_xlabel(f"Workflow in round {to_round}")
-        ax.set_ylabel(f"Workflow in round {from_round}")
 
-        ax.set_xticks(range(len(matrix.columns)))
-        ax.set_xticklabels(matrix.columns, rotation=30, ha="right")
+def _classify_switch_pattern(sequence):
+    """Classify a complete three-round workflow sequence."""
+    first, second, third = sequence
 
-        ax.set_yticks(range(len(matrix.index)))
-        ax.set_yticklabels(matrix.index)
+    if first == second == third:
+        return "Stayed with one workflow"
+    if first == third and first != second:
+        return "Switched back"
+    if first == second != third or first != second == third:
+        return "Switched and stayed"
+    if len({first, second, third}) == 3:
+        return "Explored three workflows"
 
-        for row_index in range(matrix.shape[0]):
-            for col_index in range(matrix.shape[1]):
-                value = int(matrix.iloc[row_index, col_index])
-                percentage = matrix_percentages.iloc[row_index, col_index]
+    return "Other switching pattern"
 
-                label = f"{value}\n{percentage:.1f}%" if value > 0 else "0"
 
-                ax.text(
-                    col_index,
-                    row_index,
-                    label,
-                    ha="center",
-                    va="center",
-                )
+def plot_workflow_switching_behavior(df):
+    """Plot the number and pattern of switches across all main rounds."""
+    slug = "07_workflow_switching_behavior"
+    main_df = _main_round_data(df)
 
-        fig.colorbar(image, ax=ax, label="Number of participants")
+    if main_df.empty:
+        return
 
-        save_figure(
-            fig,
-            slug,
-            f"Workflow Transitions R{from_round} to R{to_round}",
-            f"Workflow transition counts from round {from_round} to round {to_round}, with row-wise percentages.",
+    sequences = _complete_main_sequences(main_df)
+    if sequences.empty:
+        return
+
+    analysis_df = sequences.copy()
+    analysis_df["switchCount"] = analysis_df.apply(
+        lambda row: sum(
+            row.iloc[index] != row.iloc[index + 1]
+            for index in range(len(MAIN_ROUND_INDICES) - 1)
+        ),
+        axis=1,
+    )
+    analysis_df["switchCategory"] = analysis_df["switchCount"].map(
+        {
+            0: "0 switches",
+            1: "1 switch",
+            2: "2 switches",
+        }
+    )
+    analysis_df["switchPattern"] = analysis_df.apply(
+        lambda row: _classify_switch_pattern(row.loc[MAIN_ROUND_INDICES].tolist()),
+        axis=1,
+    )
+
+    participant_codes = [f"P{index:02d}" for index in range(1, len(analysis_df) + 1)]
+    sequence_export = analysis_df.reset_index().copy()
+    sequence_export.insert(0, "participantCode", participant_codes)
+    sequence_export = sequence_export.drop(columns="participantId")
+    sequence_export = sequence_export.rename(
+        columns={
+            round_index: round_display_name(round_index)
+            for round_index in MAIN_ROUND_INDICES
+        }
+    )
+    save_table(
+        sequence_export,
+        f"{slug}_participant_sequences",
+        index=False,
+    )
+
+    total = len(analysis_df)
+    switch_order = ["0 switches", "1 switch", "2 switches"]
+    switch_counts = (
+        analysis_df["switchCategory"]
+        .value_counts()
+        .reindex(
+            switch_order,
+            fill_value=0,
         )
+    )
+    pattern_order = [
+        "Stayed with one workflow",
+        "Switched and stayed",
+        "Switched back",
+        "Explored three workflows",
+        "Other switching pattern",
+    ]
+    pattern_counts = (
+        analysis_df["switchPattern"]
+        .value_counts()
+        .reindex(
+            pattern_order,
+            fill_value=0,
+        )
+    )
+
+    save_table(
+        pd.DataFrame(
+            {
+                "category": switch_counts.index,
+                "count": switch_counts.values,
+                "percentage": (switch_counts / total * 100).round(2).values,
+            }
+        ),
+        f"{slug}_switch_counts",
+        index=False,
+    )
+    save_table(
+        pd.DataFrame(
+            {
+                "pattern": pattern_counts.index,
+                "count": pattern_counts.values,
+                "percentage": (pattern_counts / total * 100).round(2).values,
+            }
+        ),
+        f"{slug}_patterns",
+        index=False,
+    )
+
+    fig, (ax_count, ax_pattern) = plt.subplots(
+        1,
+        2,
+        figsize=(12.0, 5.0),
+        layout="constrained",
+    )
+
+    count_bars = ax_count.bar(
+        switch_counts.index,
+        switch_counts.values,
+        edgecolor=BAR_EDGE_COLOR,
+    )
+    apply_standard_axes_style(ax_count)
+    ax_count.set_title("Number of Workflow Switches")
+    ax_count.set_xlabel("Switches across all main rounds")
+    ax_count.set_ylabel("Participants")
+    ax_count.set_ylim(0, max(switch_counts.max() * 1.3, 1))
+
+    for bar, count in zip(count_bars, switch_counts.values):
+        ax_count.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(total * 0.02, 0.12),
+            f"{count} ({count / total * 100:.0f}%)",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+
+    pattern_bars = ax_pattern.barh(
+        pattern_counts.index,
+        pattern_counts.values,
+        edgecolor=BAR_EDGE_COLOR,
+    )
+    apply_standard_axes_style(ax_pattern, grid_axis="x")
+    ax_pattern.set_title("Switching Patterns")
+    ax_pattern.set_xlabel("Participants")
+    ax_pattern.set_xlim(0, max(pattern_counts.max() * 1.35, 1))
+
+    for bar, count in zip(pattern_bars, pattern_counts.values):
+        ax_pattern.text(
+            bar.get_width() + max(total * 0.015, 0.1),
+            bar.get_y() + bar.get_height() / 2,
+            f"{count} ({count / total * 100:.0f}%)",
+            va="center",
+            fontsize=9,
+        )
+
+    save_figure(
+        fig,
+        slug,
+        "Workflow Switching Behaviour Across Main Rounds",
+        "Only participants completing every main round are included. The left "
+        "panel shows the number of switches; the right panel distinguishes "
+        "stable use, switching and staying, switching back, and exploration.",
+    )
+
+
+# -----------------------------------------------------------------------------
+# 08–09: Stated preferences versus revealed behaviour
+# -----------------------------------------------------------------------------
+
+
+def normalize_ranking(items):
+    """Normalise ranking entries to configured workflow identifiers."""
+    result = []
+
+    for item in items:
+        normalized = str(item).strip().lower()
+        normalized = normalized.replace(" ", "_")
+        normalized = normalized.replace("-", "_")
+        normalized = normalized.replace("→", "_")
+        normalized = re.sub(r"_+", "_", normalized)
+
+        if normalized in WORKFLOW_ORDER:
+            result.append(normalized)
+
+    return result
 
 
 def parse_workflow_ranking(value):
+    """Parse JSON and legacy string representations of a workflow ranking."""
     if pd.isna(value):
         return []
 
@@ -308,7 +974,6 @@ def parse_workflow_ranking(value):
 
     try:
         parsed = json.loads(raw)
-
         if isinstance(parsed, list):
             ranking = []
 
@@ -319,109 +984,386 @@ def parse_workflow_ranking(value):
                     ranking.append(str(item["workflow"]))
 
             return normalize_ranking(ranking)
-
     except json.JSONDecodeError:
         pass
 
     raw = raw.strip("{}[]()")
-
-    parts = re.split(r"[>,;|\n,]+", raw)
-
-    return normalize_ranking(parts)
+    return normalize_ranking(re.split(r"[>,;|\n]+", raw))
 
 
-def normalize_ranking(items):
-    result = []
+def _build_valid_ranking_rows(feedback_df):
+    """Return complete rankings plus an audit table for invalid entries."""
+    required = {"sessionId", "workflowRanking"}
 
-    for item in items:
-        normalized = str(item).strip().lower()
-        normalized = normalized.replace(" ", "_")
-        normalized = normalized.replace("-", "_")
-        normalized = normalized.replace("→", "_")
-        normalized = normalized.replace("__", "_")
+    if feedback_df.empty or not require_columns(
+        feedback_df,
+        required,
+        "workflow preference ranking",
+    ):
+        return pd.DataFrame(), pd.DataFrame()
 
-        if normalized in WORKFLOW_ORDER:
-            result.append(normalized)
-
-    return result
-
-
-def plot_final_workflow_ranking(feedback_df):
-    slug = "04_final_workflow_ranking_overview"
-
-    if feedback_df.empty or "workflowRanking" not in feedback_df.columns:
-        return
-
+    feedback = feedback_df.drop_duplicates(
+        "sessionId",
+        keep="last",
+    ).copy()
     ranking_rows = []
+    audit_rows = []
+    expected_workflows = set(WORKFLOW_ORDER)
 
-    for _, row in feedback_df.iterrows():
+    for _, row in feedback.iterrows():
         ranking = parse_workflow_ranking(row["workflowRanking"])
+        is_valid = (
+            len(ranking) == len(WORKFLOW_ORDER) and set(ranking) == expected_workflows
+        )
 
-        for rank_index, workflow in enumerate(ranking, start=1):
+        audit_rows.append(
+            {
+                "sessionId": row["sessionId"],
+                "validRanking": is_valid,
+                "parsedWorkflowCount": len(ranking),
+                "ranking": " > ".join(ranking),
+            }
+        )
+
+        if not is_valid:
+            continue
+
+        for rank, workflow in enumerate(ranking, start=1):
             ranking_rows.append(
                 {
+                    "sessionId": row["sessionId"],
                     "workflow": workflow,
-                    "rank": rank_index,
+                    "rank": rank,
                 }
             )
 
-    if not ranking_rows:
-        return
+    return pd.DataFrame(ranking_rows), pd.DataFrame(audit_rows)
 
-    ranking_df = pd.DataFrame(ranking_rows)
 
-    average_rank = (
-        ranking_df.groupby("workflow")["rank"].mean().reindex(WORKFLOW_ORDER).dropna()
-    )
-
-    sorted_workflows = average_rank.sort_values(ascending=True).index.tolist()
-
+def _ranking_summary(ranking_rows):
+    """Build rank counts and mean rank for complete valid rankings."""
     rank_counts = (
-        ranking_df.groupby(["workflow", "rank"])
+        ranking_rows.groupby(["workflow", "rank"])
         .size()
         .unstack(fill_value=0)
-        .reindex(index=sorted_workflows, fill_value=0)
+        .reindex(
+            index=WORKFLOW_ORDER,
+            columns=range(1, len(WORKFLOW_ORDER) + 1),
+            fill_value=0,
+        )
+    )
+    rank_counts["meanRank"] = (
+        ranking_rows.groupby("workflow")["rank"].mean().reindex(WORKFLOW_ORDER)
     )
 
-    rank_counts = rank_counts.rename(index=WORKFLOW_LABELS)
-    rank_counts.columns = [f"Rank {int(column)}" for column in rank_counts.columns]
+    return rank_counts
 
-    average_rank_sorted = average_rank.reindex(sorted_workflows).rename(
-        index=WORKFLOW_LABELS
+
+def plot_workflow_preference_ranking(feedback_df):
+    """Visualise rank distributions and mean stated preference."""
+    slug = "08_workflow_preference_rank_distribution"
+    ranking_rows, audit_df = _build_valid_ranking_rows(feedback_df)
+
+    if not audit_df.empty:
+        save_table(audit_df, f"{slug}_ranking_audit", index=False)
+
+    if ranking_rows.empty:
+        return
+
+    summary = _ranking_summary(ranking_rows)
+    workflow_order = summary["meanRank"].sort_values().index.tolist()
+    display_summary = summary.loc[workflow_order].copy()
+
+    export_df = display_summary.rename(index=WORKFLOW_LABELS).rename(
+        columns={rank: f"Rank {rank}" for rank in range(1, len(WORKFLOW_ORDER) + 1)}
     )
+    save_table(export_df, slug)
 
-    rank_counts["Average rank"] = average_rank_sorted.round(2)
+    fig, ax = plt.subplots(figsize=(9.2, 5.2))
+    positions = np.arange(len(workflow_order))
+    left = np.zeros(len(workflow_order))
+    valid_participants = ranking_rows["sessionId"].nunique()
 
-    rank_counts.to_csv(TABLE_DIR / f"{slug}.csv")
+    for rank in range(1, len(WORKFLOW_ORDER) + 1):
+        values = display_summary[rank].values
+        ax.barh(
+            positions,
+            values,
+            left=left,
+            label=f"Rank {rank}",
+            color=RANK_COLORS[rank - 1],
+            edgecolor=BAR_EDGE_COLOR,
+        )
+        left += values
 
-    fig, ax = plt.subplots(figsize=(8.2, 3.8))
-    ax.axis("off")
+    apply_standard_axes_style(ax, grid_axis="x")
 
-    table = ax.table(
-        cellText=rank_counts.values,
-        rowLabels=rank_counts.index,
-        colLabels=rank_counts.columns,
-        loc="center",
-        cellLoc="center",
-        rowLoc="center",
+    for index, workflow in enumerate(workflow_order):
+        mean_rank = display_summary.loc[workflow, "meanRank"]
+        ax.text(
+            valid_participants + max(valid_participants * 0.02, 0.15),
+            index,
+            f"Mean rank: {mean_rank:.2f}",
+            va="center",
+            fontsize=9,
+        )
+
+    ax.set_yticks(positions)
+    ax.set_yticklabels([workflow_display_name(workflow) for workflow in workflow_order])
+    ax.invert_yaxis()
+    ax.set_xlim(0, valid_participants * 1.24)
+    ax.set_title("Participant-Reported Workflow Preference Ranking")
+    ax.set_xlabel("Participants")
+    ax.legend(
+        title="Assigned rank",
+        bbox_to_anchor=(1.02, 1),
+        loc="upper left",
     )
-
-    table.auto_set_font_size(False)
-    table.set_fontsize(9)
-    table.scale(1, 1.35)
-
-    ax.set_title("Final Workflow Ranking Overview", pad=16)
 
     save_figure(
         fig,
         slug,
-        "Final Workflow Ranking Overview",
-        "Distribution of final workflow rankings and average rank per workflow, sorted by average rank.",
+        "Participant-Reported Workflow Preference Ranking",
+        "Distribution of first through fourth preference rankings. Only complete, "
+        f"valid rankings are included (N={valid_participants}). Lower mean rank "
+        "indicates stronger stated preference.",
     )
 
 
+def _plot_choice_crosstab(ax, matrix, title, row_label, column_label):
+    """Draw a workflow-by-workflow crosstab heatmap."""
+    image = ax.imshow(matrix.values, cmap="Blues")
+    ax.set_title(title)
+    ax.set_xlabel(column_label)
+    ax.set_ylabel(row_label)
+    ax.set_xticks(range(len(WORKFLOW_ORDER)))
+    ax.set_xticklabels(
+        [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER],
+        rotation=30,
+        ha="right",
+    )
+    ax.set_yticks(range(len(WORKFLOW_ORDER)))
+    ax.set_yticklabels([workflow_display_name(workflow) for workflow in WORKFLOW_ORDER])
+
+    maximum = matrix.values.max()
+
+    for row_index in range(matrix.shape[0]):
+        for column_index in range(matrix.shape[1]):
+            value = int(matrix.iloc[row_index, column_index])
+            text_color = "white" if maximum > 0 and value > maximum / 2 else "black"
+            ax.text(
+                column_index,
+                row_index,
+                str(value),
+                ha="center",
+                va="center",
+                color=text_color,
+            )
+
+    return image
+
+
+def plot_stated_vs_revealed_workflow_behavior(feedback_df, df):
+    """Compare stated top preference with first and modal actual choices."""
+    slug = "09_stated_vs_revealed_workflow_behavior"
+    ranking_rows, _ = _build_valid_ranking_rows(feedback_df)
+    main_df = _main_round_data(df)
+    first_main_round = MAIN_ROUND_INDICES[0]
+
+    if ranking_rows.empty or main_df.empty:
+        return
+
+    if first_main_round not in _available_main_rounds(main_df) or not require_columns(
+        main_df,
+        {"sessionId"},
+        "stated versus revealed workflow behaviour",
+    ):
+        return
+
+    stated_top = ranking_rows[ranking_rows["rank"] == 1].rename(
+        columns={"workflow": "statedTop"}
+    )[["sessionId", "statedTop"]]
+    first_choice = (
+        main_df[main_df["roundIndex"] == first_main_round][["sessionId", "workflow"]]
+        .drop_duplicates("sessionId", keep="last")
+        .rename(columns={"workflow": "firstChoice"})
+    )
+
+    first_joined = stated_top.merge(
+        first_choice,
+        on="sessionId",
+        how="inner",
+    )
+    if first_joined.empty:
+        return
+
+    first_matrix = pd.crosstab(
+        first_joined["statedTop"], first_joined["firstChoice"]
+    ).reindex(
+        index=WORKFLOW_ORDER,
+        columns=WORKFLOW_ORDER,
+        fill_value=0,
+    )
+    save_table(first_matrix, f"{slug}_first_choice")
+
+    first_agreement = int(
+        (first_joined["statedTop"] == first_joined["firstChoice"]).sum()
+    )
+    first_n = len(first_joined)
+
+    sequences = _complete_main_sequences(main_df)
+    session_by_participant = (
+        main_df[["participantId", "sessionId"]]
+        .dropna()
+        .drop_duplicates("participantId", keep="last")
+        .set_index("participantId")["sessionId"]
+    )
+
+    modal_rows = []
+    for participant_id, row in sequences.iterrows():
+        modes = row.value_counts()
+        top_workflows = modes[modes == modes.max()].index.tolist()
+        modal_rows.append(
+            {
+                "participantId": participant_id,
+                "modalChoice": (top_workflows[0] if len(top_workflows) == 1 else pd.NA),
+                "modalTie": len(top_workflows) > 1,
+            }
+        )
+
+    modal_choice = pd.DataFrame(modal_rows)
+    if not modal_choice.empty:
+        modal_choice["sessionId"] = modal_choice["participantId"].map(
+            session_by_participant
+        )
+        modal_choice = modal_choice.dropna(subset=["sessionId"])
+
+    if modal_choice.empty:
+        modal_joined = pd.DataFrame()
+        modal_matrix = pd.DataFrame(
+            0,
+            index=WORKFLOW_ORDER,
+            columns=WORKFLOW_ORDER,
+        )
+        modal_agreement = 0
+        modal_n = 0
+        modal_ties = 0
+    else:
+        modal_joined = stated_top.merge(
+            modal_choice.dropna(subset=["modalChoice"])[["sessionId", "modalChoice"]],
+            on="sessionId",
+            how="inner",
+        )
+        modal_matrix = pd.crosstab(
+            modal_joined["statedTop"],
+            modal_joined["modalChoice"],
+        ).reindex(
+            index=WORKFLOW_ORDER,
+            columns=WORKFLOW_ORDER,
+            fill_value=0,
+        )
+        modal_agreement = int(
+            (modal_joined["statedTop"] == modal_joined["modalChoice"]).sum()
+        )
+        modal_n = len(modal_joined)
+        modal_ties = int(modal_choice["modalTie"].sum())
+
+    save_table(modal_matrix, f"{slug}_modal_choice")
+
+    agreement_summary = pd.DataFrame(
+        [
+            {
+                "comparison": "Stated Rank 1 vs first voluntary choice",
+                "pairedParticipants": first_n,
+                "agreementCount": first_agreement,
+                "agreementPercentage": round(
+                    first_agreement / first_n * 100,
+                    2,
+                ),
+                "excludedModalTies": 0,
+            },
+            {
+                "comparison": ("Stated Rank 1 vs unique modal main-round choice"),
+                "pairedParticipants": modal_n,
+                "agreementCount": modal_agreement,
+                "agreementPercentage": (
+                    round(modal_agreement / modal_n * 100, 2) if modal_n else np.nan
+                ),
+                "excludedModalTies": modal_ties,
+            },
+        ]
+    )
+    save_table(
+        agreement_summary,
+        f"{slug}_agreement_summary",
+        index=False,
+    )
+
+    fig, (first_ax, modal_ax) = plt.subplots(
+        1,
+        2,
+        figsize=(13.0, 5.4),
+        layout="constrained",
+    )
+
+    first_image = _plot_choice_crosstab(
+        first_ax,
+        first_matrix,
+        (
+            f"First voluntary choice\nAgreement: "
+            f"{first_agreement}/{first_n} "
+            f"({first_agreement / first_n * 100:.0f}%)"
+        ),
+        "Stated Rank 1 preference",
+        "First voluntary choice",
+    )
+
+    modal_title = (
+        "Most-used workflow across main rounds\n"
+        f"Agreement: {modal_agreement}/{modal_n} "
+        f"({modal_agreement / modal_n * 100:.0f}%)"
+        if modal_n
+        else ("Most-used workflow across main rounds\nNo unique modal choices")
+    )
+    _plot_choice_crosstab(
+        modal_ax,
+        modal_matrix,
+        modal_title,
+        "Stated Rank 1 preference",
+        "Unique modal workflow",
+    )
+
+    fig.colorbar(
+        first_image,
+        ax=[first_ax, modal_ax],
+        label="Participants",
+    )
+
+    save_figure(
+        fig,
+        slug,
+        "Stated Workflow Preference Versus Revealed Workflow Behaviour",
+        "Rows show the participant's stated top-ranked workflow and columns show "
+        "their actual first or uniquely most-used main-round workflow. Participants "
+        "with a tie for most-used workflow are excluded only from the modal-choice "
+        "panel.",
+    )
+
+
+# -----------------------------------------------------------------------------
+# Public orchestration
+# -----------------------------------------------------------------------------
+
+
 def plot_workflow(df, feedback_df):
+    """Generate the workflow-selection figures in analysis order."""
     plot_total_workflow_usage_counts(df)
+    plot_first_voluntary_workflow_choice(df)
     plot_workflow_distribution(df)
-    plot_workflow_transitions(df)
-    plot_final_workflow_ranking(feedback_df)
+    plot_participant_workflow_trajectories(df)
+    plot_practice_to_first_choice_transition(df)
+    plot_main_workflow_transitions(df)
+    plot_workflow_retention(df)
+    plot_workflow_switching_behavior(df)
+    plot_workflow_preference_ranking(feedback_df)
+    plot_stated_vs_revealed_workflow_behavior(feedback_df, df)
