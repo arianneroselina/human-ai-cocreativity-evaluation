@@ -143,10 +143,6 @@ def add_error_exposure_columns(master):
     master["participantId"] = pd.to_numeric(master["participantId"], errors="coerce")
 
     master["isAiSupportedWorkflow"] = master["workflow"].isin(AI_SUPPORTED_WORKFLOWS)
-
-    # Keep old column name for compatibility with existing scripts.
-    master["isAiWorkflow"] = master["isAiSupportedWorkflow"]
-
     master["isMixedWorkflow"] = master["workflow"].isin(["human_ai", "ai_human"])
 
     error_round = master[master["roundIndex"] == ERROR_ROUND_INDEX][
@@ -185,9 +181,6 @@ def add_error_exposure_columns(master):
             False: "not_exposed",
         }
     )
-
-    # Compatibility column for older dashboard/figure code.
-    master["condition"] = master["errorExposureGroup"]
 
     return master
 
@@ -259,12 +252,6 @@ print(f"Created {MASTER_DATASET_PATH}")
 print(f"Rows: {len(master)}")
 print(f"Participants: {master['participantId'].nunique()}")
 print(f"Expected rows for 24 participants: {24 * 7}")
-
-print("\nRows per participant:")
-print(master.groupby("participantId")["roundId"].count())
-
-print("\nWorkflow counts:")
-print(master["workflow"].value_counts())
 
 print("\nError exposure groups:")
 print(
