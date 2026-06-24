@@ -154,7 +154,6 @@ export-ratings
 aggregate-scores
 create-master
 create-dashboard-dataset
-create-dashboard-tables
 generate-figures
 ```
 

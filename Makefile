@@ -73,6 +73,10 @@ rebuild: clean gen migrate seed-db
 # Evaluation data processing
 # ------------------------------------------------------------
 
+.PHONY: create-dirs
+create-dirs:
+	$(PYTHON) -m scripts.create_project_dirs
+
 .PHONY: eval-check
 eval-check:
 	$(PYTHON) -m scripts.evaluation.check_evaluation_data
@@ -91,19 +95,24 @@ create-master:
 
 .PHONY: create-dashboard-dataset
 create-dashboard-dataset:
-	$(PYTHON) -m scripts.dashboard.create_dashboard_dataset
-
-.PHONY: create-dashboard-tables
-create-dashboard-tables:
-	$(PYTHON) -m scripts.dashboard.create_dashboard_tables
+	$(PYTHON) -m scripts.create_dashboard_dataset
 
 .PHONY: generate-figures
 generate-figures:
 	$(PYTHON) -m scripts.dashboard_figures.generate
 
+.PHONY: analyze-quality
+analyze-quality:
+	$(PYTHON) -m scripts.evaluation.analyze_quality_by_round_workflow
+
 .PHONY: process-data
-process-data: eval-check export-ratings aggregate-scores create-master create-dashboard-dataset create-dashboard-tables generate-figures
+process-data: create-dirs eval-check export-ratings aggregate-scores create-master create-dashboard-dataset generate-figures analyze-quality
 	@echo "Evaluation data exported, dashboard dataset created, and figures generated."
+
+.PHONY: clean-data
+clean-data:
+	rm -rf data/runtime/* data/work/*
+	rm -rf public/research-dashboard/figures/* public/research-dashboard/analysis/*
 
 # ------------------------------------------------------------
 # AI Evaluator
@@ -145,7 +154,7 @@ help:
 	@echo "  make aggregate-scores            Create poem-level mean rating scores"
 	@echo "  make create-master               Create final master_round_dataset.csv"
 	@echo "  make create-dashboard-dataset    Create deployable dashboard runtime dataset"
-	@echo "  make create-dashboard-tables     Create deployable dashboard CSV tables"
 	@echo "  make generate-figures            Generate the visualization figures"
+	@echo "  make analyze-quality             Run mixed-effects statistical analysis"
 	@echo "  make process-data                Run full evaluation data pipeline"
 	@echo ""
