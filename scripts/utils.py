@@ -1,19 +1,130 @@
+"""Shared utility functions for dashboard data preparation and figure export."""
+
 import json
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from scripts.config import WORKFLOW_LABELS, FIGURE_DIR
+from scripts.config import (
+    FIGURE_DIR,
+    TABLE_DIR,
+)
 
-FIGURE_DIR.mkdir(parents=True, exist_ok=True)
 
 MANIFEST = []
 
 
-def workflow_label(value):
-    return WORKFLOW_LABELS.get(str(value), str(value))
+def reset_manifest() -> None:
+    """Clear previously registered figures in the current Python process."""
+    MANIFEST.clear()
 
 
-def save_figure(fig, slug, title, description):
+def require_columns(
+    df: pd.DataFrame,
+    required_columns,
+    context: str = "dataframe",
+) -> bool:
+    """Return whether a dataframe contains all required columns."""
+    missing = set(required_columns) - set(df.columns)
+
+    if missing:
+        print(f"Skipping {context}; missing columns: {sorted(missing)}")
+        return False
+
+    return True
+
+
+def ensure_numeric(df: pd.DataFrame, columns) -> pd.DataFrame:
+    """Convert available dataframe columns to numeric values in place."""
+    for column in columns:
+        if column in df.columns:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
+
+    return df
+
+
+def parse_bool(value) -> bool:
+    """Parse common boolean-like values; missing or unknown values become False."""
+    if pd.isna(value):
+        return False
+
+    if isinstance(value, bool):
+        return value
+
+    normalized = str(value).strip().lower()
+
+    return normalized in {"true", "t", "1", "yes", "y"}
+
+
+def parse_bool_or_none(value):
+    """Parse common boolean-like values; missing or unknown values become None."""
+    if pd.isna(value):
+        return None
+
+    if isinstance(value, bool):
+        return value
+
+    normalized = str(value).strip().lower()
+
+    if normalized in {"true", "t", "1", "yes", "y"}:
+        return True
+
+    if normalized in {"false", "f", "0", "no", "n"}:
+        return False
+
+    return None
+
+
+def drop_duplicate_participant_rounds(
+    df: pd.DataFrame,
+    participant_column: str = "participantId",
+    round_column: str = "roundIndex",
+) -> pd.DataFrame:
+    """Keep the first row for each participant-round combination."""
+    required_columns = {participant_column, round_column}
+
+    if not required_columns.issubset(df.columns):
+        return df
+
+    return df.drop_duplicates(
+        subset=[participant_column, round_column],
+        keep="first",
+    )
+
+
+def format_count_percentage(
+    count: int | float,
+    total: int | float,
+    decimals: int = 0,
+) -> str:
+    """Format a count with its percentage of a total."""
+    if not total:
+        return f"{int(count)} (n/a)"
+
+    percentage = count / total * 100
+    return f"{int(count)} ({percentage:.{decimals}f}%)"
+
+
+def save_table(
+    table: pd.DataFrame | pd.Series,
+    slug: str,
+    index: bool = True,
+) -> Path:
+    """Export a dataframe or series as a CSV table."""
+    table_path = TABLE_DIR / f"{slug}.csv"
+    table.to_csv(table_path, index=index)
+
+    return table_path
+
+
+def save_figure(
+    fig,
+    slug: str,
+    title: str,
+    description: str,
+) -> None:
+    """Save one figure in dashboard formats and register it in the manifest."""
     png_path = FIGURE_DIR / f"{slug}.png"
     pdf_path = FIGURE_DIR / f"{slug}.pdf"
     svg_path = FIGURE_DIR / f"{slug}.svg"
@@ -35,185 +146,11 @@ def save_figure(fig, slug, title, description):
     )
 
 
-def shade_main_rounds(
-    ax,
-    start_round=5,
-    end_round=7,
-    label="Main rounds (5–7)",
-    color="#f2f2f2",
-    alpha=0.8,
-    label_y=0.03,
-):
-    """
-    Adds a light background shade for the main rounds.
-
-    Use this for line plots where the x-axis is the actual round number.
-    Example: rounds 1, 2, 3, 4, 5, 6, 7.
-    """
-    left = start_round - 0.5
-    right = end_round + 0.5
-    center = (start_round + end_round) / 2
-
-    ax.axvspan(
-        left,
-        right,
-        color=color,
-        alpha=alpha,
-        zorder=0,
-    )
-
-    if label:
-        ax.text(
-            center,
-            label_y,
-            label,
-            transform=ax.get_xaxis_transform(),
-            ha="center",
-            va="bottom",
-            fontsize=8,
-            color="dimgray",
-            bbox={
-                "boxstyle": "round,pad=0.25",
-                "facecolor": "white",
-                "edgecolor": "lightgray",
-                "alpha": 0.75,
-            },
-        )
-
-
-def shade_main_rounds_for_bar_axis(
-    ax,
-    round_indices,
-    start_round=5,
-    end_round=7,
-    label="Main rounds (5–7)",
-    color="#f2f2f2",
-    alpha=0.8,
-    label_y=0.03,
-):
-    """
-    Adds background shading for bar plots where rounds are shown as categorical bars.
-
-    Pandas bar plots use positions 0, 1, 2, ... instead of the actual round numbers.
-    """
-    round_positions = {
-        int(round_index): position for position, round_index in enumerate(round_indices)
-    }
-
-    positions = [
-        position
-        for round_index, position in round_positions.items()
-        if start_round <= round_index <= end_round
-    ]
-
-    if not positions:
-        return
-
-    left = min(positions) - 0.5
-    right = max(positions) + 0.5
-    center = (left + right) / 2
-
-    ax.axvspan(
-        left,
-        right,
-        color=color,
-        alpha=alpha,
-        zorder=0,
-    )
-
-    if label:
-        ax.text(
-            center,
-            label_y,
-            label,
-            transform=ax.get_xaxis_transform(),
-            ha="center",
-            va="bottom",
-            fontsize=8,
-            color="dimgray",
-            bbox={
-                "boxstyle": "round,pad=0.25",
-                "facecolor": "white",
-                "edgecolor": "lightgray",
-                "alpha": 0.75,
-            },
-        )
-
-
-def annotate_injected_error_round(ax, error_idx, y_top=5.0, text_y=5.25):
-    ax.axvline(
-        error_idx,
-        linestyle="--",
-        linewidth=1,
-        zorder=3,
-    )
-
-    ax.annotate(
-        "Injected AI error",
-        xy=(error_idx, y_top),
-        xytext=(error_idx + 0.12, text_y),
-        textcoords="data",
-        ha="left",
-        va="bottom",
-        fontsize=8,
-        arrowprops={
-            "arrowstyle": "->",
-            "linewidth": 0.8,
-        },
-        bbox={
-            "boxstyle": "round,pad=0.25",
-            "facecolor": "white",
-            "edgecolor": "lightgray",
-            "alpha": 0.9,
-        },
-    )
-
-
-def save_manifest():
+def save_manifest() -> Path:
+    """Write the registered figure metadata for the Next.js dashboard."""
     manifest_path = FIGURE_DIR / "manifest.json"
 
     with manifest_path.open("w", encoding="utf-8") as file:
-        json.dump(MANIFEST, file, indent=2)
+        json.dump(MANIFEST, file, indent=2, ensure_ascii=False)
 
-
-def ensure_numeric(df, columns):
-    for column in columns:
-        if column in df.columns:
-            df[column] = pd.to_numeric(df[column], errors="coerce")
-
-
-def parse_bool(value):
-    if pd.isna(value):
-        return False
-
-    if isinstance(value, bool):
-        return value
-
-    normalized = str(value).strip().lower()
-
-    return normalized in {"true", "t", "1", "yes", "y"}
-
-
-def parse_bool_or_none(value):
-    if pd.isna(value):
-        return None
-
-    if isinstance(value, bool):
-        return value
-
-    normalized = str(value).strip().lower()
-
-    if normalized in {"true", "t", "1", "yes", "y"}:
-        return True
-
-    if normalized in {"false", "f", "0", "no", "n"}:
-        return False
-
-    return None
-
-
-def is_ai_supported_row(row):
-    if "isAiSupportedWorkflow" in row.index:
-        return parse_bool(row["isAiSupportedWorkflow"])
-
-    return row.get("workflow") in ["ai", "human_ai", "ai_human"]
+    return manifest_path
