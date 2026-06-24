@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 function isValidScore(value: unknown) {
-  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 10;
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 5;
 }
 
 export async function POST(request: Request) {
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       !isValidScore(overallQuality)
     ) {
       return NextResponse.json(
-        { error: "All ratings must be integers from 1 to 10." },
+        { error: "All ratings must be integers from 1 to 5." },
         { status: 400 }
       );
     }

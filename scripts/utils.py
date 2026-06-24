@@ -9,6 +9,7 @@ import pandas as pd
 from scripts.config import (
     FIGURE_DIR,
     TABLE_DIR,
+    ANALYSIS_DIR,
 )
 
 
@@ -154,3 +155,11 @@ def save_manifest() -> Path:
         json.dump(MANIFEST, file, indent=2, ensure_ascii=False)
 
     return manifest_path
+
+
+def save_analysis_table( table: pd.DataFrame | pd.Series, slug: str, index: bool = True, ) -> Path:
+    """Export a supplementary statistical-analysis table as CSV."""
+    ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
+    analysis_path = ANALYSIS_DIR / f"{slug}.csv"
+    table.to_csv(analysis_path, index=index)
+    return analysis_path
