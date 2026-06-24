@@ -9,7 +9,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: "Human-AI Co-Creativity Evaluation",
-  description: "UI-first platform for anonymous poem comparison with dummy data.",
+  description: "Evaluation platform for Human-AI Co-Creative poetry study results.",
   icons: {
     icon: "/human-ai-icon-white.ico",
   },

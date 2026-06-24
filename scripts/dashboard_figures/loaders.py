@@ -47,11 +47,6 @@ def load_master_dataset():
     if "workflow" in df.columns:
         df["workflowLabel"] = df["workflow"].map(WORKFLOW_LABELS).fillna(df["workflow"])
 
-    if "condition" not in df.columns:
-        df["condition"] = "All participants"
-    else:
-        df["condition"] = df["condition"].fillna("All participants")
-
     return df
 
 
