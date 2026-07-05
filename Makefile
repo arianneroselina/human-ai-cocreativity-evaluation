@@ -103,7 +103,7 @@ generate-figures:
 
 .PHONY: analyze-quality
 analyze-quality:
-	$(PYTHON) -m scripts.evaluation.analyze_quality_by_round_workflow
+	$(PYTHON) -m scripts.evaluation.analyze_quality_mixed_effects
 
 .PHONY: process-data
 process-data: create-dirs eval-check export-ratings aggregate-scores create-master create-dashboard-dataset generate-figures analyze-quality

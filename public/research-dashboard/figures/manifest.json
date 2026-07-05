@@ -1,210 +1,330 @@
 [
   {
-    "slug": "01_total_workflow_usage_counts",
-    "title": "Total Workflow Usage",
-    "description": "Share and number of rounds in which each workflow was used.",
-    "pngUrl": "/research-dashboard/figures/01_total_workflow_usage_counts.png",
-    "pdfUrl": "/research-dashboard/figures/01_total_workflow_usage_counts.pdf",
-    "svgUrl": "/research-dashboard/figures/01_total_workflow_usage_counts.svg"
+    "slug": "01_total_workflow_usage_main_rounds",
+    "title": "Total Workflow Usage in Main Rounds",
+    "description": "Pooled count and share of all workflow selections across the three main rounds (N=72 selections).",
+    "pngUrl": "/research-dashboard/figures/01_total_workflow_usage_main_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/01_total_workflow_usage_main_rounds.pdf",
+    "svgUrl": "/research-dashboard/figures/01_total_workflow_usage_main_rounds.svg"
   },
   {
-    "slug": "02_workflow_distribution_main_rounds",
-    "title": "Workflow Distribution in Main Rounds",
-    "description": "Share of selected workflows in rounds 5\u20137, with total AI-assisted workflow use annotated above each round. Workflow categories are ordered by their frequency in round 5.",
-    "pngUrl": "/research-dashboard/figures/02_workflow_distribution_main_rounds.png",
-    "pdfUrl": "/research-dashboard/figures/02_workflow_distribution_main_rounds.pdf",
-    "svgUrl": "/research-dashboard/figures/02_workflow_distribution_main_rounds.svg"
+    "slug": "02_first_voluntary_workflow_choice",
+    "title": "First Voluntary Workflow Choice After Practice",
+    "description": "Distribution of workflow selections in Main 1, the first mainround after practice (N=24).",
+    "pngUrl": "/research-dashboard/figures/02_first_voluntary_workflow_choice.png",
+    "pdfUrl": "/research-dashboard/figures/02_first_voluntary_workflow_choice.pdf",
+    "svgUrl": "/research-dashboard/figures/02_first_voluntary_workflow_choice.svg"
   },
   {
-    "slug": "03_workflow_transition_r4_to_r5",
-    "title": "Workflow Transitions R4 to R5",
-    "description": "Workflow transition counts from round 4 to round 5, with row-wise percentages.",
-    "pngUrl": "/research-dashboard/figures/03_workflow_transition_r4_to_r5.png",
-    "pdfUrl": "/research-dashboard/figures/03_workflow_transition_r4_to_r5.pdf",
-    "svgUrl": "/research-dashboard/figures/03_workflow_transition_r4_to_r5.svg"
+    "slug": "03_workflow_distribution_main_rounds",
+    "title": "Workflow Distribution Across Main Rounds",
+    "description": "Share of participants selecting each workflow in every main round. Workflow colours and order are fixed across figures.",
+    "pngUrl": "/research-dashboard/figures/03_workflow_distribution_main_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/03_workflow_distribution_main_rounds.pdf",
+    "svgUrl": "/research-dashboard/figures/03_workflow_distribution_main_rounds.svg"
   },
   {
-    "slug": "03_workflow_transition_r5_to_r6",
-    "title": "Workflow Transitions R5 to R6",
-    "description": "Workflow transition counts from round 5 to round 6, with row-wise percentages.",
-    "pngUrl": "/research-dashboard/figures/03_workflow_transition_r5_to_r6.png",
-    "pdfUrl": "/research-dashboard/figures/03_workflow_transition_r5_to_r6.pdf",
-    "svgUrl": "/research-dashboard/figures/03_workflow_transition_r5_to_r6.svg"
+    "slug": "04_participant_workflow_trajectories",
+    "title": "Participant Workflow Trajectories Across Main Rounds",
+    "description": "Each row represents one anonymous participant and each column one main round.",
+    "pngUrl": "/research-dashboard/figures/04_participant_workflow_trajectories.png",
+    "pdfUrl": "/research-dashboard/figures/04_participant_workflow_trajectories.pdf",
+    "svgUrl": "/research-dashboard/figures/04_participant_workflow_trajectories.svg"
   },
   {
-    "slug": "03_workflow_transition_r6_to_r7",
-    "title": "Workflow Transitions R6 to R7",
-    "description": "Workflow transition counts from round 6 to round 7, with row-wise percentages.",
-    "pngUrl": "/research-dashboard/figures/03_workflow_transition_r6_to_r7.png",
-    "pdfUrl": "/research-dashboard/figures/03_workflow_transition_r6_to_r7.pdf",
-    "svgUrl": "/research-dashboard/figures/03_workflow_transition_r6_to_r7.svg"
+    "slug": "05_final_practice_to_first_voluntary_choice",
+    "title": "Final Practice Workflow to First Voluntary Choice",
+    "description": "Transition from the final assigned practice round to the first voluntary workflow choice. Cells show participant counts and row percentages within the assigned final-practice workflow.",
+    "pngUrl": "/research-dashboard/figures/05_final_practice_to_first_voluntary_choice.png",
+    "pdfUrl": "/research-dashboard/figures/05_final_practice_to_first_voluntary_choice.pdf",
+    "svgUrl": "/research-dashboard/figures/05_final_practice_to_first_voluntary_choice.svg"
   },
   {
-    "slug": "04_final_workflow_ranking_overview",
-    "title": "Final Workflow Ranking Overview",
-    "description": "Distribution of final workflow rankings and average rank per workflow, sorted by average rank.",
-    "pngUrl": "/research-dashboard/figures/04_final_workflow_ranking_overview.png",
-    "pdfUrl": "/research-dashboard/figures/04_final_workflow_ranking_overview.pdf",
-    "svgUrl": "/research-dashboard/figures/04_final_workflow_ranking_overview.svg"
+    "slug": "05b_main_workflow_transitions",
+    "title": "Workflow Transitions Across Main Rounds",
+    "description": "Each cell shows the participant count and the percentage within the workflow selected in the preceding Main round.",
+    "pngUrl": "/research-dashboard/figures/05b_main_workflow_transitions.png",
+    "pdfUrl": "/research-dashboard/figures/05b_main_workflow_transitions.pdf",
+    "svgUrl": "/research-dashboard/figures/05b_main_workflow_transitions.svg"
   },
   {
-    "slug": "21_satisfaction_by_round_and_workflow",
+    "slug": "06_workflow_retention",
+    "title": "Workflow Retention in the Next Main Round",
+    "description": "Probability of choosing the same workflow in the immediately following main round.",
+    "pngUrl": "/research-dashboard/figures/06_workflow_retention.png",
+    "pdfUrl": "/research-dashboard/figures/06_workflow_retention.pdf",
+    "svgUrl": "/research-dashboard/figures/06_workflow_retention.svg"
+  },
+  {
+    "slug": "07_workflow_switching_behavior",
+    "title": "Workflow Switching Behaviour Across Main Rounds",
+    "description": "The left panel shows the number of switches; the right panel distinguishes stable use, switching and staying, switching back, and exploration.",
+    "pngUrl": "/research-dashboard/figures/07_workflow_switching_behavior.png",
+    "pdfUrl": "/research-dashboard/figures/07_workflow_switching_behavior.pdf",
+    "svgUrl": "/research-dashboard/figures/07_workflow_switching_behavior.svg"
+  },
+  {
+    "slug": "08_workflow_preference_rank_distribution",
+    "title": "Participant-Reported Workflow Preference Ranking",
+    "description": "Distribution of first through fourth preference rankings (N={valid_participants}). Lower mean rank indicates stronger stated preference.",
+    "pngUrl": "/research-dashboard/figures/08_workflow_preference_rank_distribution.png",
+    "pdfUrl": "/research-dashboard/figures/08_workflow_preference_rank_distribution.pdf",
+    "svgUrl": "/research-dashboard/figures/08_workflow_preference_rank_distribution.svg"
+  },
+  {
+    "slug": "09_stated_vs_revealed_workflow_behavior",
+    "title": "Stated Workflow Preference Versus Revealed Workflow Behaviour",
+    "description": "Rows show the participant's stated top-ranked workflow and columns show their actual first or uniquely most-used main-round workflow. Participants with a tie for most-used workflow are excluded only from the modal-choice panel.",
+    "pngUrl": "/research-dashboard/figures/09_stated_vs_revealed_workflow_behavior.png",
+    "pdfUrl": "/research-dashboard/figures/09_stated_vs_revealed_workflow_behavior.pdf",
+    "svgUrl": "/research-dashboard/figures/09_stated_vs_revealed_workflow_behavior.svg"
+  },
+  {
+    "slug": "31_satisfaction_by_round_and_workflow",
     "title": "Participant Satisfaction by Round and Workflow",
-    "description": "Mean participant-reported satisfaction ratings on a 1\u20135 scale by round and workflow.",
-    "pngUrl": "/research-dashboard/figures/21_satisfaction_by_round_and_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/21_satisfaction_by_round_and_workflow.pdf",
-    "svgUrl": "/research-dashboard/figures/21_satisfaction_by_round_and_workflow.svg"
+    "description": "Mean round-level satisfaction by the workflow used in each round. Error bars show approximate 95% confidence intervals; labels show the number of observations. Main-round workflow means are descriptive because workflows were voluntarily selected.",
+    "pngUrl": "/research-dashboard/figures/31_satisfaction_by_round_and_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/31_satisfaction_by_round_and_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/31_satisfaction_by_round_and_workflow.svg"
   },
   {
-    "slug": "22_ai_experience_by_round_and_workflow",
-    "title": "AI Collaboration Experience by Round and Workflow",
-    "description": "Mean participant ratings on a 1\u20135 scale for AI understanding, collaboration quality, creativity support, and overall AI performance, separated by round and AI-supported workflow.",
-    "pngUrl": "/research-dashboard/figures/22_ai_experience_by_round_and_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/22_ai_experience_by_round_and_workflow.pdf",
-    "svgUrl": "/research-dashboard/figures/22_ai_experience_by_round_and_workflow.svg"
+    "slug": "32_ai_experience_by_round_and_workflow",
+    "title": "AI Interaction Ratings by Round and Workflow",
+    "description": "Mean ratings for AI understanding, collaboration, creativity support, and overall AI performance by round and AI-supported workflow. Error bars show approximate 95% confidence intervals; labels show the number of observations.",
+    "pngUrl": "/research-dashboard/figures/32_ai_experience_by_round_and_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/32_ai_experience_by_round_and_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/32_ai_experience_by_round_and_workflow.svg"
   },
   {
-    "slug": "23_tlx_subscale_ratings_by_workflow",
-    "title": "NASA-TLX Subscale Ratings by Workflow",
-    "description": "Mean NASA-TLX subscale ratings on a 1\u201321 scale across workflows.",
-    "pngUrl": "/research-dashboard/figures/23_tlx_subscale_ratings_by_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/23_tlx_subscale_ratings_by_workflow.pdf",
-    "svgUrl": "/research-dashboard/figures/23_tlx_subscale_ratings_by_workflow.svg"
+    "slug": "33_tlx_score_by_workflow_and_rounds",
+    "title": "Raw NASA-TLX Workload Score by Workflow and Study Phase",
+    "description": "Raw NASA-TLX workload scores were calculated for each participant-round as the equally weighted mean of the six NASA-TLX subscales, then summarised by workflow and rounds. Higher scores indicate greater perceived workload. Error bars show approximate 95% confidence intervals.",
+    "pngUrl": "/research-dashboard/figures/33_tlx_score_by_workflow_and_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/33_tlx_score_by_workflow_and_rounds.pdf",
+    "svgUrl": "/research-dashboard/figures/33_tlx_score_by_workflow_and_rounds.svg"
   },
   {
-    "slug": "11_composite_quality_by_round_and_workflow",
-    "title": "Composite Quality by Round and Workflow",
-    "description": "Mean externally rated composite poem quality score by round and workflow. This figure combines round effects and workflow effects instead of interpreting them separately.",
-    "pngUrl": "/research-dashboard/figures/11_composite_quality_by_round_and_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/11_composite_quality_by_round_and_workflow.pdf",
-    "svgUrl": "/research-dashboard/figures/11_composite_quality_by_round_and_workflow.svg"
+    "slug": "34_satisfaction_vs_external_quality",
+    "title": "External Text Quality by Participant Satisfaction",
+    "description": "Distribution of external quality-composite scores at each participant satisfaction level, shown separately for Practice and Main rounds. Boxes show interquartile ranges, individual points show participant-rounds, and connected markers show median external quality. Spearman correlations are descriptive associations pooling workflows within each study phase.",
+    "pngUrl": "/research-dashboard/figures/34_satisfaction_vs_external_quality.png",
+    "pdfUrl": "/research-dashboard/figures/34_satisfaction_vs_external_quality.pdf",
+    "svgUrl": "/research-dashboard/figures/34_satisfaction_vs_external_quality.svg"
   },
   {
-    "slug": "12_quality_dimensions_by_workflow",
-    "title": "Poem Evaluation Dimensions by Workflow",
-    "description": "Mean poem evaluation scores by workflow on a 1\u20135 scale, across the dimensions Fluency, Theme Alignment, Meaningfulness, Poeticness, and Overall Quality.",
-    "pngUrl": "/research-dashboard/figures/12_quality_dimensions_by_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/12_quality_dimensions_by_workflow.pdf",
-    "svgUrl": "/research-dashboard/figures/12_quality_dimensions_by_workflow.svg"
+    "slug": "11_mean_overall_quality_by_workflow_main_rounds",
+    "title": "Mean Overall Quality by Workflow in Main Rounds",
+    "description": "Poem-level mean overall quality in the Main rounds. Participants selected their own workflow, so differences are descriptive associations rather than controlled workflow effects.",
+    "pngUrl": "/research-dashboard/figures/11_mean_overall_quality_by_workflow_main_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/11_mean_overall_quality_by_workflow_main_rounds.pdf",
+    "svgUrl": "/research-dashboard/figures/11_mean_overall_quality_by_workflow_main_rounds.svg"
   },
   {
-    "slug": "13_quality_time_efficiency_by_workflow",
-    "title": "Composite Quality, Time, and Efficiency by Workflow",
-    "description": "Workflow-level comparison of mean completion time, mean externally rated composite quality, and quality per minute.",
-    "pngUrl": "/research-dashboard/figures/13_quality_time_efficiency_by_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/13_quality_time_efficiency_by_workflow.pdf",
-    "svgUrl": "/research-dashboard/figures/13_quality_time_efficiency_by_workflow.svg"
+    "slug": "12_rating_dimensions_by_workflow_main_rounds",
+    "title": "Quality Dimensions by Workflow in Main Rounds",
+    "description": "Mean evaluator ratings by workflow and quality dimension in main rounds rounds. Error bars show descriptive 95% confidence intervals.",
+    "pngUrl": "/research-dashboard/figures/12_rating_dimensions_by_workflow_main_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/12_rating_dimensions_by_workflow_main_rounds.pdf",
+    "svgUrl": "/research-dashboard/figures/12_rating_dimensions_by_workflow_main_rounds.svg"
   },
   {
-    "slug": "14_best_poems_by_quality",
-    "title": "Best Rated Poem(s)",
-    "description": "Poem text for all outputs with the highest mean quality score.",
-    "pngUrl": "/research-dashboard/figures/14_best_poems_by_quality.png",
-    "pdfUrl": "/research-dashboard/figures/14_best_poems_by_quality.pdf",
-    "svgUrl": "/research-dashboard/figures/14_best_poems_by_quality.svg"
+    "slug": "13_quality_vs_completion_time_by_workflow",
+    "title": "Mean Overall Quality and Completion Time by Workflow",
+    "description": "Each point is one evaluated output. Larger diamonds show the mean time and mean quality for each workflow; the plot displays the quality-time trade-off directly rather than using a ratio score.",
+    "pngUrl": "/research-dashboard/figures/13_quality_vs_completion_time_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/13_quality_vs_completion_time_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/13_quality_vs_completion_time_by_workflow.svg"
   },
   {
-    "slug": "14b_worst_poems_by_quality",
-    "title": "Worst Rated Poem(s)",
-    "description": "Poem text for all outputs with the lowest mean quality score.",
-    "pngUrl": "/research-dashboard/figures/14b_worst_poems_by_quality.png",
-    "pdfUrl": "/research-dashboard/figures/14b_worst_poems_by_quality.pdf",
-    "svgUrl": "/research-dashboard/figures/14b_worst_poems_by_quality.svg"
+    "slug": "14_mixed_workflow_direction_quality_main_rounds",
+    "title": "Mixed-Workflow Direction and Quality in Main Rounds",
+    "description": "Within-participant comparison of the two mixed workflows in main rounds. Lines connect the same participant across Human→AI and AI→Human.",
+    "pngUrl": "/research-dashboard/figures/14_mixed_workflow_direction_quality_main_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/14_mixed_workflow_direction_quality_main_rounds.pdf",
+    "svgUrl": "/research-dashboard/figures/14_mixed_workflow_direction_quality_main_rounds.svg"
   },
   {
-    "slug": "16_constraint_fulfillment_by_round_and_workflow",
-    "title": "Constraint Fulfillment by Round and Workflow",
-    "description": "Constraint fulfillment shown as passed constraint rate by round and workflow, with round 5 marked as the injected-error round.",
-    "pngUrl": "/research-dashboard/figures/16_constraint_fulfillment_by_round_and_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/16_constraint_fulfillment_by_round_and_workflow.pdf",
-    "svgUrl": "/research-dashboard/figures/16_constraint_fulfillment_by_round_and_workflow.svg"
+    "slug": "16_main_round_quality_by_error_exposure",
+    "title": "Mean Overall Quality Across Main Rounds by Error Exposure",
+    "description": "Descriptive workflow-level quality trends in Main rounds, shown separately for participants exposed and not exposed to the injected AI error in round 5.",
+    "pngUrl": "/research-dashboard/figures/16_main_round_quality_by_error_exposure.png",
+    "pdfUrl": "/research-dashboard/figures/16_main_round_quality_by_error_exposure.pdf",
+    "svgUrl": "/research-dashboard/figures/16_main_round_quality_by_error_exposure.svg"
   },
   {
-    "slug": "17_constraint_failure_context_by_round",
-    "title": "Constraint Failure Context over Rounds",
-    "description": "Detected constraint failures separated by human-only workflows, AI-supported workflows, and injected AI-error round constraint failures.",
-    "pngUrl": "/research-dashboard/figures/17_constraint_failure_context_by_round.png",
-    "pdfUrl": "/research-dashboard/figures/17_constraint_failure_context_by_round.pdf",
-    "svgUrl": "/research-dashboard/figures/17_constraint_failure_context_by_round.svg"
+    "slug": "17_highest_rated_poem_examples",
+    "title": "Highest-Rated Poem Examples",
+    "description": "Illustrative examples selected by the highest mean overall quality scores. They are individual cases and should not be interpreted as evidence that a workflow generally performs better.",
+    "pngUrl": "/research-dashboard/figures/17_highest_rated_poem_examples.png",
+    "pdfUrl": "/research-dashboard/figures/17_highest_rated_poem_examples.pdf",
+    "svgUrl": "/research-dashboard/figures/17_highest_rated_poem_examples.svg"
   },
   {
-    "slug": "18_line_count_error_by_round_ai_workflows",
-    "title": "Line-Count Error by Round",
-    "description": "Line-count constraint error rate across rounds for AI-supported workflows.",
-    "pngUrl": "/research-dashboard/figures/18_line_count_error_by_round_ai_workflows.png",
-    "pdfUrl": "/research-dashboard/figures/18_line_count_error_by_round_ai_workflows.pdf",
-    "svgUrl": "/research-dashboard/figures/18_line_count_error_by_round_ai_workflows.svg"
+    "slug": "17b_lowest_rated_poem_examples",
+    "title": "Lowest-Rated Poem Examples",
+    "description": "Illustrative examples selected by the lowest mean overall quality scores. They are individual cases and should not be interpreted as evidence that a workflow generally performs worse.",
+    "pngUrl": "/research-dashboard/figures/17b_lowest_rated_poem_examples.png",
+    "pdfUrl": "/research-dashboard/figures/17b_lowest_rated_poem_examples.pdf",
+    "svgUrl": "/research-dashboard/figures/17b_lowest_rated_poem_examples.svg"
   },
   {
-    "slug": "31_round5_workflow_exposure",
-    "title": "Round-5 Workflow and Error Exposure",
-    "description": "Participants were exposed to the injected AI error only if actual exposure was recorded in round 5.",
-    "pngUrl": "/research-dashboard/figures/31_round5_workflow_exposure.png",
-    "pdfUrl": "/research-dashboard/figures/31_round5_workflow_exposure.pdf",
-    "svgUrl": "/research-dashboard/figures/31_round5_workflow_exposure.svg"
+    "slug": "21_main_constraint_pass_rate_by_workflow",
+    "title": "Complete Constraint Fulfillment Rate by Workflow",
+    "description": "Points show the observed percentage of main-round poems that fulfilled every task constraint. Horizontal whiskers show 95% Wilson confidence intervals. Labels show the number of fully successful rounds out of all evaluated rounds for each workflow.",
+    "pngUrl": "/research-dashboard/figures/21_main_constraint_pass_rate_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/21_main_constraint_pass_rate_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/21_main_constraint_pass_rate_by_workflow.svg"
   },
   {
-    "slug": "32_post_error_workflow_choices_by_exposure",
-    "title": "Post-Error Workflow Choices by Error Exposure",
-    "description": "Distribution of workflow choices in rounds 6\u20137, split by whether participants were exposed to the injected AI error in round 5.",
-    "pngUrl": "/research-dashboard/figures/32_post_error_workflow_choices_by_exposure.png",
-    "pdfUrl": "/research-dashboard/figures/32_post_error_workflow_choices_by_exposure.pdf",
-    "svgUrl": "/research-dashboard/figures/32_post_error_workflow_choices_by_exposure.svg"
+    "slug": "22_main_constraint_score_distribution_by_workflow",
+    "title": "Constraint Score Distribution by Workflow in Main Rounds",
+    "description": "Distribution of partial constraint fulfillment under assigned workflows. A score of 100 indicates that all constraints were fulfilled.",
+    "pngUrl": "/research-dashboard/figures/22_main_constraint_score_distribution_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/22_main_constraint_score_distribution_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/22_main_constraint_score_distribution_by_workflow.svg"
   },
   {
-    "slug": "33_interview_coded_ai_error_summary",
-    "title": "Interview-coded AI Error Summary",
-    "description": "Participant-level interview coding of injected AI-error awareness and reported non-injected AI error types.",
-    "pngUrl": "/research-dashboard/figures/33_interview_coded_ai_error_summary.png",
-    "pdfUrl": "/research-dashboard/figures/33_interview_coded_ai_error_summary.pdf",
-    "svgUrl": "/research-dashboard/figures/33_interview_coded_ai_error_summary.svg"
+    "slug": "23_main_failure_breakdown_by_constraint_type",
+    "title": "Constraint Failure Breakdown by Type in Main Rounds",
+    "description": "Failure rates by requirement type and assigned workflow. Each cell also shows the number of individual requirement checks supporting the rate.",
+    "pngUrl": "/research-dashboard/figures/23_main_failure_breakdown_by_constraint_type.png",
+    "pdfUrl": "/research-dashboard/figures/23_main_failure_breakdown_by_constraint_type.pdf",
+    "svgUrl": "/research-dashboard/figures/23_main_failure_breakdown_by_constraint_type.svg"
   },
   {
-    "slug": "41_participant_age_distribution",
+    "slug": "24_main_constraint_fulfillment_by_error_exposure",
+    "title": "Constraint Fulfillment Across Main Rounds by Error Exposure",
+    "description": "Descriptive complete constraint-pass rates across Main rounds, stratified by actual error exposure. Error bars show 95% Wilson intervals.",
+    "pngUrl": "/research-dashboard/figures/24_main_constraint_fulfillment_by_error_exposure.png",
+    "pdfUrl": "/research-dashboard/figures/24_main_constraint_fulfillment_by_error_exposure.pdf",
+    "svgUrl": "/research-dashboard/figures/24_main_constraint_fulfillment_by_error_exposure.svg"
+  },
+  {
+    "slug": "25_injected_error_round_line_count_failures",
+    "title": "Line-Count Failures in the Injected-Error Round",
+    "description": "Line-count constraint failures in Main Round 1, grouped by actual error exposure and selected workflow. Error bars show 95% Wilson intervals.",
+    "pngUrl": "/research-dashboard/figures/25_injected_error_round_line_count_failures.png",
+    "pdfUrl": "/research-dashboard/figures/25_injected_error_round_line_count_failures.pdf",
+    "svgUrl": "/research-dashboard/figures/25_injected_error_round_line_count_failures.svg"
+  },
+  {
+    "slug": "26_main_line_count_error_by_error_exposure",
+    "title": "Line-Count Failure Pattern Across Main Rounds by Error Exposure",
+    "description": "Descriptive line-count failure rates across Main rounds, stratified by actual error exposure. Error bars show 95% Wilson intervals.",
+    "pngUrl": "/research-dashboard/figures/26_main_line_count_error_by_error_exposure.png",
+    "pdfUrl": "/research-dashboard/figures/26_main_line_count_error_by_error_exposure.pdf",
+    "svgUrl": "/research-dashboard/figures/26_main_line_count_error_by_error_exposure.svg"
+  },
+  {
+    "slug": "41_main_round1_workflow_choice",
+    "title": "Workflow Choices in Main Round 1",
+    "description": "Voluntary workflow selections in the first Main round. Participants selecting an AI-supported workflow encountered the injected-error condition.",
+    "pngUrl": "/research-dashboard/figures/41_main_round1_workflow_choice.png",
+    "pdfUrl": "/research-dashboard/figures/41_main_round1_workflow_choice.pdf",
+    "svgUrl": "/research-dashboard/figures/41_main_round1_workflow_choice.svg"
+  },
+  {
+    "slug": "42_post_error_workflow_choices_by_exposure",
+    "title": "Post-Error Workflow Choices by Main Round 1 Exposure",
+    "description": "Distribution of voluntary workflow choices in Main Rounds 2-3 by error exposure.",
+    "pngUrl": "/research-dashboard/figures/42_post_error_workflow_choices_by_exposure.png",
+    "pdfUrl": "/research-dashboard/figures/42_post_error_workflow_choices_by_exposure.pdf",
+    "svgUrl": "/research-dashboard/figures/42_post_error_workflow_choices_by_exposure.svg"
+  },
+  {
+    "slug": "43_injected_error_awareness",
+    "title": "Awareness of the Injected AI Error",
+    "description": "Interview-coded awareness among respondents actually exposed to the injected error in Main Round 1.",
+    "pngUrl": "/research-dashboard/figures/43_injected_error_awareness.png",
+    "pdfUrl": "/research-dashboard/figures/43_injected_error_awareness.pdf",
+    "svgUrl": "/research-dashboard/figures/43_injected_error_awareness.svg"
+  },
+  {
+    "slug": "44_reported_other_ai_error_types",
+    "title": "Other AI Error Types Reported in Interviews",
+    "description": "Interview-coded non-injected AI issues reported by participants. Categories are not mutually exclusive.",
+    "pngUrl": "/research-dashboard/figures/44_reported_other_ai_error_types.png",
+    "pdfUrl": "/research-dashboard/figures/44_reported_other_ai_error_types.pdf",
+    "svgUrl": "/research-dashboard/figures/44_reported_other_ai_error_types.svg"
+  },
+  {
+    "slug": "61_overall_quality_rating_distribution",
+    "title": "Overall-Quality Rating Distribution by Evaluator",
+    "description": "Raw 1-5 overall-quality ratings assigned to the same complete set of poems by each official evaluator. Labels show poem counts.",
+    "pngUrl": "/research-dashboard/figures/61_overall_quality_rating_distribution.png",
+    "pdfUrl": "/research-dashboard/figures/61_overall_quality_rating_distribution.pdf",
+    "svgUrl": "/research-dashboard/figures/61_overall_quality_rating_distribution.svg"
+  },
+  {
+    "slug": "62_overall_quality_reliability_summary",
+    "title": "Overall-Quality Inter-Rater Reliability and Agreement",
+    "description": "Absolute-agreement ICC values for a single evaluator and the averaged three-evaluator score, alongside pairwise quadratic-weighted Kappa, exact agreement, and within-one-point agreement.",
+    "pngUrl": "/research-dashboard/figures/62_overall_quality_reliability_summary.png",
+    "pdfUrl": "/research-dashboard/figures/62_overall_quality_reliability_summary.pdf",
+    "svgUrl": "/research-dashboard/figures/62_overall_quality_reliability_summary.svg"
+  },
+  {
+    "slug": "63_pairwise_overall_quality_rating_matrices",
+    "title": "Raw Overall-Quality Rating Combinations",
+    "description": "Cross-tabulations of raw 1-5 overall-quality ratings for every evaluator pair. Diagonal cells show exact agreement; off-diagonal cells show the direction and magnitude of disagreements.",
+    "pngUrl": "/research-dashboard/figures/63_pairwise_overall_quality_rating_matrices.png",
+    "pdfUrl": "/research-dashboard/figures/63_pairwise_overall_quality_rating_matrices.pdf",
+    "svgUrl": "/research-dashboard/figures/63_pairwise_overall_quality_rating_matrices.svg"
+  },
+  {
+    "slug": "64_evaluator_tendency_and_disagreement",
+    "title": "Evaluator Tendency and Disagreement Magnitude",
+    "description": "Relative strictness or generosity of each evaluator compared with the other two evaluators, alongside the distribution of rating ranges across all three evaluators for the same poem.",
+    "pngUrl": "/research-dashboard/figures/64_evaluator_tendency_and_disagreement.png",
+    "pdfUrl": "/research-dashboard/figures/64_evaluator_tendency_and_disagreement.pdf",
+    "svgUrl": "/research-dashboard/figures/64_evaluator_tendency_and_disagreement.svg"
+  },
+  {
+    "slug": "51_participant_age_distribution",
     "title": "Participant Age Distribution",
     "description": "Age distribution of study participants with mean and median marked.",
-    "pngUrl": "/research-dashboard/figures/41_participant_age_distribution.png",
-    "pdfUrl": "/research-dashboard/figures/41_participant_age_distribution.pdf",
-    "svgUrl": "/research-dashboard/figures/41_participant_age_distribution.svg"
+    "pngUrl": "/research-dashboard/figures/51_participant_age_distribution.png",
+    "pdfUrl": "/research-dashboard/figures/51_participant_age_distribution.pdf",
+    "svgUrl": "/research-dashboard/figures/51_participant_age_distribution.svg"
   },
   {
-    "slug": "42_participant_gender_distribution",
+    "slug": "52_participant_gender_distribution",
     "title": "Participant Gender Distribution",
     "description": "Participant distribution by participant gender distribution shown as a pie chart with counts and percentages.",
-    "pngUrl": "/research-dashboard/figures/42_participant_gender_distribution.png",
-    "pdfUrl": "/research-dashboard/figures/42_participant_gender_distribution.pdf",
-    "svgUrl": "/research-dashboard/figures/42_participant_gender_distribution.svg"
+    "pngUrl": "/research-dashboard/figures/52_participant_gender_distribution.png",
+    "pdfUrl": "/research-dashboard/figures/52_participant_gender_distribution.pdf",
+    "svgUrl": "/research-dashboard/figures/52_participant_gender_distribution.svg"
   },
   {
-    "slug": "43_participant_education_distribution",
+    "slug": "53_participant_education_distribution",
     "title": "Participant Education Distribution",
     "description": "Participant distribution by participant education distribution shown as percentages and counts.",
-    "pngUrl": "/research-dashboard/figures/43_participant_education_distribution.png",
-    "pdfUrl": "/research-dashboard/figures/43_participant_education_distribution.pdf",
-    "svgUrl": "/research-dashboard/figures/43_participant_education_distribution.svg"
+    "pngUrl": "/research-dashboard/figures/53_participant_education_distribution.png",
+    "pdfUrl": "/research-dashboard/figures/53_participant_education_distribution.pdf",
+    "svgUrl": "/research-dashboard/figures/53_participant_education_distribution.svg"
   },
   {
-    "slug": "44_participant_native_language_distribution",
+    "slug": "54_participant_native_language_distribution",
     "title": "Participant Native Language Distribution",
     "description": "Participant distribution by participant native language distribution shown as percentages and counts.",
-    "pngUrl": "/research-dashboard/figures/44_participant_native_language_distribution.png",
-    "pdfUrl": "/research-dashboard/figures/44_participant_native_language_distribution.pdf",
-    "svgUrl": "/research-dashboard/figures/44_participant_native_language_distribution.svg"
+    "pngUrl": "/research-dashboard/figures/54_participant_native_language_distribution.png",
+    "pdfUrl": "/research-dashboard/figures/54_participant_native_language_distribution.pdf",
+    "svgUrl": "/research-dashboard/figures/54_participant_native_language_distribution.svg"
   },
   {
-    "slug": "45_participant_english_level_distribution",
+    "slug": "55_participant_english_level_distribution",
     "title": "Participant English Level Distribution",
     "description": "Participant distribution by participant english level distribution shown as a pie chart with counts and percentages.",
-    "pngUrl": "/research-dashboard/figures/45_participant_english_level_distribution.png",
-    "pdfUrl": "/research-dashboard/figures/45_participant_english_level_distribution.pdf",
-    "svgUrl": "/research-dashboard/figures/45_participant_english_level_distribution.svg"
+    "pngUrl": "/research-dashboard/figures/55_participant_english_level_distribution.png",
+    "pdfUrl": "/research-dashboard/figures/55_participant_english_level_distribution.pdf",
+    "svgUrl": "/research-dashboard/figures/55_participant_english_level_distribution.svg"
   },
   {
-    "slug": "46_participant_ai_attitude_means",
+    "slug": "56_participant_ai_attitude_means",
     "title": "Participant Writing Confidence and AI Attitudes",
     "description": "Mean ratings for writing confidence and attitudes toward AI, shown with participant counts.",
-    "pngUrl": "/research-dashboard/figures/46_participant_ai_attitude_means.png",
-    "pdfUrl": "/research-dashboard/figures/46_participant_ai_attitude_means.pdf",
-    "svgUrl": "/research-dashboard/figures/46_participant_ai_attitude_means.svg"
+    "pngUrl": "/research-dashboard/figures/56_participant_ai_attitude_means.png",
+    "pdfUrl": "/research-dashboard/figures/56_participant_ai_attitude_means.pdf",
+    "svgUrl": "/research-dashboard/figures/56_participant_ai_attitude_means.svg"
   }
 ]

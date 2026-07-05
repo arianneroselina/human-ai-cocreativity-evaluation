@@ -1,0 +1,40 @@
+Quality mixed-effects model: Main rounds
+
+Outcome: meanOverallQuality
+Model: quality ~ categorical round + categorical workflow
+Random effect: participant-specific intercept
+Workflow reference: human
+Round reference: 5
+Observations: 72
+Participants: 24
+Fit method: powell
+Converged: True
+
+Interpretation note:
+Practice workflows were assigned. Main-round workflows were self-selected, so Main-round workflow estimates are descriptive associations rather than causal effects.
+
+Fit warnings:
+- The MLE may be on the boundary of the parameter space.
+
+Statsmodels summary
+========================================================================
+                             Mixed Linear Model Regression Results
+================================================================================================
+Model:                        MixedLM           Dependent Variable:           meanOverallQuality
+No. Observations:             72                Method:                       REML              
+No. Groups:                   24                Scale:                        0.3106            
+Min. group size:              3                 Log-Likelihood:               -63.4045          
+Max. group size:              3                 Converged:                    Yes               
+Mean group size:              3.0                                                               
+------------------------------------------------------------------------------------------------
+                                                      Coef.  Std.Err.   z    P>|z| [0.025 0.975]
+------------------------------------------------------------------------------------------------
+Intercept                                              2.924    0.171 17.110 0.000  2.589  3.259
+C(roundIndex, Treatment(reference=5))[T.6]            -0.169    0.167 -1.010 0.312 -0.496  0.159
+C(roundIndex, Treatment(reference=5))[T.7]            -0.069    0.161 -0.429 0.668 -0.385  0.247
+C(workflow, Treatment(reference='human'))[T.ai]        0.753    0.192  3.924 0.000  0.377  1.129
+C(workflow, Treatment(reference='human'))[T.human_ai]  0.421    0.198  2.122 0.034  0.032  0.809
+C(workflow, Treatment(reference='human'))[T.ai_human]  0.994    0.190  5.239 0.000  0.622  1.365
+Group Var                                              0.000    0.140                           
+================================================================================================
+
