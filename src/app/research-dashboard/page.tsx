@@ -85,8 +85,8 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       title: "Workflow Behavior",
       description: "Workflow choices, transitions, and final preferences.",
       figures: figures.filter((figure) =>
-        ["01_", "02_", "03_", "04_", "05_", "05b_", "06_", "07_", "08_", "09_"].some((prefix) =>
-          figure.slug.startsWith(prefix)
+        ["01_", "02_", "03_", "04_", "05_", "05b_", "06_", "07_", "08_", "08b_", "09_"].some(
+          (prefix) => figure.slug.startsWith(prefix)
         )
       ),
     },

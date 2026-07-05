@@ -9,8 +9,9 @@ from scripts.config import (
     PARTICIPANT_COLUMN_ALIASES,
     PARTICIPANT_LIKERT_COLUMNS,
     INPUTS_DIR,
+    INTERVIEW_NOTES_PATH,
 )
-from scripts.utils import ensure_numeric
+from scripts.utils import ensure_numeric, parse_bool_or_none
 
 
 def load_master_dataset():
@@ -147,6 +148,98 @@ def load_participant_info():
     df.to_csv(TABLE_DIR / "participant_info_clean.csv", index=False)
 
     return df
+
+
+def load_participant_interview_notes(
+    round_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Load one interview-note record plus participant-level study metadata."""
+    if not INTERVIEW_NOTES_PATH.exists():
+        print(
+            "Skipping interview-note analyses; notes file not found: "
+            f"{INTERVIEW_NOTES_PATH}"
+        )
+        return pd.DataFrame()
+
+    required_columns = {"participantId", "errorExposed"}
+
+    if round_df.empty or not required_columns.issubset(round_df.columns):
+        print(
+            "Skipping interview-note analyses; round data is missing "
+            "participantId or errorExposed."
+        )
+        return pd.DataFrame()
+
+    try:
+        notes = pd.read_csv(INTERVIEW_NOTES_PATH)
+    except (OSError, pd.errors.ParserError) as error:
+        print(f"Unable to load interview notes: {error}")
+        return pd.DataFrame()
+
+    if "participantId" not in notes.columns:
+        print("Skipping interview-note analyses; notes file is missing participantId.")
+        return pd.DataFrame()
+
+    notes = notes.dropna(subset=["participantId"]).copy()
+    notes["participantId"] = notes["participantId"].astype(str)
+
+    # Keep one final interview-note record per participant.
+    notes = notes.drop_duplicates(
+        subset=["participantId"],
+        keep="last",
+    )
+
+    metadata_columns = ["participantId", "errorExposed"]
+    has_session_id = "sessionId" in round_df.columns
+
+    if has_session_id:
+        metadata_columns.append("sessionId")
+
+    participant_metadata = (
+        round_df[metadata_columns].dropna(subset=["participantId"]).copy()
+    )
+    participant_metadata["participantId"] = participant_metadata[
+        "participantId"
+    ].astype(str)
+    participant_metadata["errorExposed"] = participant_metadata["errorExposed"].apply(
+        parse_bool_or_none
+    )
+    participant_metadata = participant_metadata.dropna(subset=["errorExposed"])
+
+    aggregation = {
+        "errorExposed": "any",
+    }
+
+    if has_session_id:
+        participant_metadata["sessionId"] = participant_metadata["sessionId"].astype(
+            "string"
+        )
+        aggregation["sessionId"] = "first"
+
+    participant_metadata = participant_metadata.groupby(
+        "participantId",
+        as_index=False,
+    ).agg(aggregation)
+
+    # Round-level metadata is the canonical source for these fields.
+    notes = notes.drop(
+        columns=["errorExposed", "sessionId"],
+        errors="ignore",
+    )
+
+    notes = notes.merge(
+        participant_metadata,
+        on="participantId",
+        how="left",
+        validate="one_to_one",
+    )
+
+    if "injectedErrorExperience" in notes.columns:
+        notes["injectedErrorExperience"] = (
+            notes["injectedErrorExperience"].astype("string").str.strip().str.lower()
+        )
+
+    return notes
 
 
 def normalize_column_name(column):

@@ -36,6 +36,7 @@ from scripts.dashboard_figures.helpers import (
     round_display_name,
     phase_data,
 )
+from scripts.dashboard_figures.loaders import load_participant_interview_notes
 from scripts.dashboard_figures.style import (
     BAR_EDGE_COLOR,
     apply_standard_axes_style,
@@ -182,6 +183,70 @@ def _save_transition_heatmap(
     )
 
     save_figure(fig, slug, title, description)
+
+
+def _reported_ai_error_groups(
+    round_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Return one reported-AI-error group per participant session."""
+    notes = load_participant_interview_notes(round_df)
+
+    if notes.empty or "sessionId" not in notes.columns:
+        return pd.DataFrame()
+
+    notes = notes.dropna(subset=["sessionId"]).copy()
+    notes["sessionId"] = notes["sessionId"].astype(str)
+
+    injected_error_count = (
+        notes["injectedErrorExperience"].eq("noticed").astype(int)
+        if "injectedErrorExperience" in notes.columns
+        else pd.Series(0, index=notes.index, dtype=int)
+    )
+
+    if "reportedOtherAiErrorTypes" in notes.columns:
+        other_error_counts = (
+            notes[["participantId", "reportedOtherAiErrorTypes"]]
+            .dropna(subset=["reportedOtherAiErrorTypes"])
+            .assign(
+                errorType=lambda data: (
+                    data["reportedOtherAiErrorTypes"]
+                    .astype("string")
+                    .str.lower()
+                    .str.split(";")
+                )
+            )
+            .explode("errorType")
+            .assign(errorType=lambda data: data["errorType"].str.strip())
+            .loc[lambda data: data["errorType"].notna() & data["errorType"].ne("")]
+            .groupby("participantId")["errorType"]
+            .nunique()
+        )
+
+        notes["otherAiErrorCount"] = (
+            notes["participantId"].map(other_error_counts).fillna(0).astype(int)
+        )
+    else:
+        notes["otherAiErrorCount"] = 0
+
+    notes["reportedAiErrorCount"] = injected_error_count + notes["otherAiErrorCount"]
+
+    notes["errorGroup"] = pd.cut(
+        notes["reportedAiErrorCount"],
+        bins=[-1, 0, 1, np.inf],
+        labels=[
+            "No reported AI errors",
+            "1 reported AI error",
+            "2+ reported AI errors",
+        ],
+    )
+
+    return notes[
+        [
+            "sessionId",
+            "reportedAiErrorCount",
+            "errorGroup",
+        ]
+    ].dropna(subset=["errorGroup"])
 
 
 # -----------------------------------------------------------------------------
@@ -1034,7 +1099,7 @@ def plot_workflow_switching_behavior(main_df):
 
 
 # -----------------------------------------------------------------------------
-# 08–09: Stated preferences versus revealed behaviour
+# 08: Stated preferences and grouped by reported AI errors
 # -----------------------------------------------------------------------------
 
 
@@ -1219,6 +1284,121 @@ def plot_workflow_preference_ranking(
         "Distribution of first through fourth preference rankings (N={valid_participants}). Lower mean rank "
         "indicates stronger stated preference.",
     )
+
+
+def plot_workflow_ranking_by_reported_ai_errors(
+    ranking_rows: pd.DataFrame,
+    prepared: pd.DataFrame,
+) -> None:
+    """Show final workflow rankings by reported AI-error count."""
+    slug = "08b_workflow_ranking_by_reported_ai_errors"
+
+    error_groups = _reported_ai_error_groups(prepared)
+    if ranking_rows.empty or error_groups.empty:
+        return
+
+    ranking_df = ranking_rows.copy()
+    ranking_df["sessionId"] = ranking_df["sessionId"].astype(str)
+
+    ranking_df = ranking_df.merge(
+        error_groups,
+        on="sessionId",
+        how="inner",
+        validate="many_to_one",
+    )
+
+    if ranking_df.empty:
+        return
+
+    group_order = [
+        "No reported AI errors",
+        "1 reported AI error",
+        "2+ reported AI errors",
+    ]
+    observed_groups = [
+        group for group in group_order if group in set(ranking_df["errorGroup"])
+    ]
+
+    if not observed_groups:
+        return
+
+    group_sizes = {
+        group: ranking_df.loc[
+            ranking_df["errorGroup"].eq(group),
+            "sessionId",
+        ].nunique()
+        for group in observed_groups
+    }
+    max_participant_count = max(group_sizes.values())
+
+    fig, axes = plt.subplots(
+        1,
+        len(observed_groups),
+        figsize=(5.0 * len(observed_groups), 5.2),
+        sharex=True,
+        sharey=True,
+        layout="constrained",
+        squeeze=False,
+    )
+    axes = axes.flatten()
+
+    for ax, group in zip(axes, observed_groups):
+        group_df = ranking_df[ranking_df["errorGroup"].eq(group)]
+        participant_count = group_sizes[group]
+
+        summary = _ranking_summary(group_df)
+        positions = np.arange(len(WORKFLOW_ORDER))
+        left = np.zeros(len(WORKFLOW_ORDER))
+
+        for rank in range(1, len(WORKFLOW_ORDER) + 1):
+            values = summary[rank].to_numpy()
+
+            ax.barh(
+                positions,
+                values,
+                left=left,
+                label=f"Rank {rank}",
+                color=RANK_COLORS[rank - 1],
+                edgecolor=BAR_EDGE_COLOR,
+            )
+            left += values
+
+        ax.set_title(f"{group}\n(n={participant_count})")
+        ax.set_xlabel("Participants")
+        ax.set_xlim(0, max_participant_count)
+
+        ax.set_yticks(positions)
+        ax.set_yticklabels(
+            [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER]
+        )
+        ax.invert_yaxis()
+
+        apply_standard_axes_style(ax, grid_axis="x")
+
+    axes[-1].legend(
+        title="Assigned rank",
+        bbox_to_anchor=(1.02, 1),
+        loc="upper left",
+    )
+
+    fig.suptitle(
+        "Final Workflow Ranking by Reported AI Errors",
+        fontsize=13,
+    )
+
+    save_figure(
+        fig,
+        slug,
+        "Final Workflow Ranking by Reported AI Errors",
+        "Final workflow rankings grouped by the number of AI errors participants "
+        "reported noticing. The injected error contributes only when participants "
+        "reported noticing it; other reported AI-error types are counted once each.",
+    )
+
+
+# -----------------------------------------------------------------------------
+# 09: Stated preferences versus revealed behaviour
+# -----------------------------------------------------------------------------
 
 
 def _plot_choice_crosstab(ax, matrix, title, row_label, column_label):
@@ -1458,4 +1638,5 @@ def plot_workflow(df, feedback_df):
     plot_workflow_retention(main_df)
     plot_workflow_switching_behavior(main_df)
     plot_workflow_preference_ranking(ranking_rows, audit_df)
+    plot_workflow_ranking_by_reported_ai_errors(ranking_rows, df)
     plot_stated_vs_revealed_workflow_behavior(ranking_rows, main_df)

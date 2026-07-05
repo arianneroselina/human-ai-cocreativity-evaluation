@@ -29,77 +29,13 @@ from scripts.dashboard_figures.helpers import (
     workflow_display_name,
     round_display_name,
 )
+from scripts.dashboard_figures.loaders import load_participant_interview_notes
 from scripts.dashboard_figures.style import BAR_EDGE_COLOR, apply_standard_axes_style
 from scripts.utils import (
     require_columns,
     save_figure,
     save_table,
 )
-
-
-def _load_and_prepare_notes(round_df: pd.DataFrame) -> pd.DataFrame:
-    """Load one interview-note row and one exposure status per participant."""
-    if not INTERVIEW_NOTES_PATH.exists():
-        print(
-            f"Skipping interview-coded error figures; notes file not found: "
-            f"{INTERVIEW_NOTES_PATH}"
-        )
-        return pd.DataFrame()
-
-    try:
-        notes = pd.read_csv(INTERVIEW_NOTES_PATH)
-    except (OSError, pd.errors.ParserError) as error:
-        print(f"Unable to load interview error notes: {error}")
-        return pd.DataFrame()
-
-    required_columns = {"participantId", "errorExposed"}
-
-    if "participantId" not in notes.columns:
-        print("Skipping interview-coded error figures; missing participantId.")
-        return pd.DataFrame()
-
-    if not required_columns.issubset(round_df.columns):
-        print(
-            "Skipping interview-coded error figures; round data is missing "
-            "participantId or errorExposed."
-        )
-        return pd.DataFrame()
-
-    notes = notes.copy()
-    notes["participantId"] = notes["participantId"].astype(str)
-
-    # One interview-note record per participant.
-    notes = notes.drop_duplicates(subset=["participantId"], keep="last")
-
-    # One exposure status per participant across all their round records.
-    participant_exposure = (
-        round_df[["participantId", "errorExposed"]]
-        .dropna(subset=["participantId", "errorExposed"])
-        .copy()
-    )
-
-    participant_exposure["participantId"] = participant_exposure[
-        "participantId"
-    ].astype(str)
-
-    participant_exposure = participant_exposure.groupby(
-        "participantId",
-        as_index=False,
-    ).agg(errorExposed=("errorExposed", "any"))
-
-    notes = notes.merge(
-        participant_exposure,
-        on="participantId",
-        how="left",
-        validate="one_to_one",
-    )
-
-    if "injectedErrorExperience" in notes.columns:
-        notes["injectedErrorExperience"] = (
-            notes["injectedErrorExperience"].astype("string").str.strip().str.lower()
-        )
-
-    return notes
 
 
 # ---------------------------------------------------------------------------
@@ -322,7 +258,7 @@ def plot_injected_error_awareness(prepared) -> None:
     """Show whether exposed interview respondents noticed the injected error."""
     slug = "43_injected_error_awareness"
 
-    notes = _load_and_prepare_notes(prepared)
+    notes = load_participant_interview_notes(prepared)
     required = {"injectedErrorExperience"}
     if notes.empty or not require_columns(
         notes, required, "injected-error awareness notes"
@@ -398,7 +334,7 @@ def plot_other_ai_error_types(prepared) -> None:
     """Show non-injected AI issues reported by interview respondents."""
     slug = "44_reported_other_ai_error_types"
 
-    notes = _load_and_prepare_notes(prepared)
+    notes = load_participant_interview_notes(prepared)
     required = {"reportedOtherAiErrorTypes"}
     if notes.empty or not require_columns(
         notes, required, "other AI error interview notes"

@@ -199,8 +199,8 @@ def _line_count_error(value) -> bool | None:
 
 
 def _failure_profile(
-        passed_numeric: float,
-        requirement_results,
+    passed_numeric: float,
+    requirement_results,
 ) -> str | None:
     """Classify each round into one mutually exclusive failure profile."""
     if pd.isna(passed_numeric):
@@ -219,8 +219,7 @@ def _failure_profile(
         return "Failure details unavailable"
 
     line_count_failures = sum(
-        rule_id.startswith("lines-")
-        for rule_id in failed_rule_ids
+        rule_id.startswith("lines-") for rule_id in failed_rule_ids
     )
 
     if len(failed_rule_ids) == 1:
@@ -256,6 +255,7 @@ def _explode_requirement_results(dataframe: pd.DataFrame) -> pd.DataFrame:
             )
 
     return pd.DataFrame(rows)
+
 
 # ---------------------------------------------------------------------------
 # 21: Compare constraint pass rates by workflow in main rounds
@@ -406,9 +406,7 @@ def plot_main_constraint_failure_profile_by_workflow(main_df) -> None:
     """Show why Main-round outputs did not fully meet all constraints."""
     slug = "22_main_constraint_failure_profile_by_workflow"
 
-    profile_df = main_df.dropna(
-        subset=["passedNumeric", "workflow"]
-    ).copy()
+    profile_df = main_df.dropna(subset=["passedNumeric", "workflow"]).copy()
 
     profile_df["failureProfile"] = [
         _failure_profile(
@@ -437,16 +435,13 @@ def plot_main_constraint_failure_profile_by_workflow(main_df) -> None:
     if not workflow_order or not observed_profiles:
         return
 
-    counts = (
-        pd.crosstab(
-            profile_df["workflow"],
-            profile_df["failureProfile"],
-        )
-        .reindex(
-            index=workflow_order,
-            columns=observed_profiles,
-            fill_value=0,
-        )
+    counts = pd.crosstab(
+        profile_df["workflow"],
+        profile_df["failureProfile"],
+    ).reindex(
+        index=workflow_order,
+        columns=observed_profiles,
+        fill_value=0,
     )
 
     counts = counts.loc[counts.sum(axis=1).gt(0)]
@@ -465,12 +460,8 @@ def plot_main_constraint_failure_profile_by_workflow(main_df) -> None:
         .reset_index()
     )
     summary["totalRounds"] = summary["workflow"].map(counts.sum(axis=1))
-    summary["percentage"] = (
-            summary["rounds"] / summary["totalRounds"] * 100
-    )
-    summary["workflowLabel"] = summary["workflow"].map(
-        workflow_display_name
-    )
+    summary["percentage"] = summary["rounds"] / summary["totalRounds"] * 100
+    summary["workflowLabel"] = summary["workflow"].map(workflow_display_name)
 
     save_table(summary, slug, index=False)
 
@@ -494,10 +485,10 @@ def plot_main_constraint_failure_profile_by_workflow(main_df) -> None:
         )
 
         for position, value, count, start in zip(
-                positions,
-                values,
-                round_counts,
-                left,
+            positions,
+            values,
+            round_counts,
+            left,
         ):
             if value >= 9:
                 ax.text(
@@ -508,7 +499,7 @@ def plot_main_constraint_failure_profile_by_workflow(main_df) -> None:
                     va="center",
                     fontsize=8,
                     fontweight="bold",
-                    )
+                )
 
         left += values
 

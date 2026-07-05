@@ -72,6 +72,14 @@
     "svgUrl": "/research-dashboard/figures/08_workflow_preference_rank_distribution.svg"
   },
   {
+    "slug": "08b_workflow_ranking_by_reported_ai_errors",
+    "title": "Final Workflow Ranking by Reported AI Errors",
+    "description": "Final workflow rankings grouped by the number of AI errors participants reported noticing. The injected error contributes only when participants reported noticing it; other reported AI-error types are counted once each.",
+    "pngUrl": "/research-dashboard/figures/08b_workflow_ranking_by_reported_ai_errors.png",
+    "pdfUrl": "/research-dashboard/figures/08b_workflow_ranking_by_reported_ai_errors.pdf",
+    "svgUrl": "/research-dashboard/figures/08b_workflow_ranking_by_reported_ai_errors.svg"
+  },
+  {
     "slug": "09_stated_vs_revealed_workflow_behavior",
     "title": "Stated Workflow Preference Versus Revealed Workflow Behaviour",
     "description": "Rows show the participant's stated top-ranked workflow and columns show their actual first or uniquely most-used main-round workflow. Participants with a tie for most-used workflow are excluded only from the modal-choice panel.",
