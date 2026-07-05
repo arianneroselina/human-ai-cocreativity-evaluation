@@ -13,7 +13,6 @@ Figures
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -59,6 +58,21 @@ CONSTRAINT_TYPE_CATEGORIES = {
     "maxwpl-": "Words per line",
 }
 
+FAILURE_PROFILE_ORDER = [
+    "All constraints passed",
+    "Line-count rule only",
+    "One other rule only",
+    "Multiple rules failed",
+    "Failure details unavailable",
+]
+
+FAILURE_PROFILE_COLORS = {
+    "All constraints passed": "#009E73",
+    "Line-count rule only": "#E69F00",
+    "One other rule only": "#56B4E9",
+    "Multiple rules failed": "#D55E00",
+    "Failure details unavailable": "#999999",
+}
 
 # ---------------------------------------------------------------------------
 # Shared preparation
@@ -184,6 +198,40 @@ def _line_count_error(value) -> bool | None:
     return None
 
 
+def _failure_profile(
+        passed_numeric: float,
+        requirement_results,
+) -> str | None:
+    """Classify each round into one mutually exclusive failure profile."""
+    if pd.isna(passed_numeric):
+        return None
+
+    if passed_numeric == 1:
+        return "All constraints passed"
+
+    failed_rule_ids = []
+
+    for item in _parse_requirement_results(requirement_results):
+        if parse_bool_or_none(item.get("passed")) is False:
+            failed_rule_ids.append(str(item.get("id", "")))
+
+    if not failed_rule_ids:
+        return "Failure details unavailable"
+
+    line_count_failures = sum(
+        rule_id.startswith("lines-")
+        for rule_id in failed_rule_ids
+    )
+
+    if len(failed_rule_ids) == 1:
+        if line_count_failures == 1:
+            return "Line-count rule only"
+
+        return "One other rule only"
+
+    return "Multiple rules failed"
+
+
 def _explode_requirement_results(dataframe: pd.DataFrame) -> pd.DataFrame:
     """Create one row per individual requirement check."""
     rows = []
@@ -208,32 +256,6 @@ def _explode_requirement_results(dataframe: pd.DataFrame) -> pd.DataFrame:
             )
 
     return pd.DataFrame(rows)
-
-
-def _draw_raw_points(
-    ax,
-    x_positions: Iterable[float],
-    values: Iterable[float],
-    color: str,
-    seed: int,
-    alpha: float = 0.45,
-) -> None:
-    """Draw deterministic horizontally jittered points."""
-    values = np.asarray(list(values), dtype=float)
-    positions = np.asarray(list(x_positions), dtype=float)
-    rng = np.random.default_rng(seed)
-    jitter = rng.normal(0, 0.055, size=len(values))
-    ax.scatter(
-        positions + jitter,
-        values,
-        s=22,
-        color=color,
-        alpha=alpha,
-        edgecolor="white",
-        linewidth=0.4,
-        zorder=3,
-    )
-
 
 # ---------------------------------------------------------------------------
 # 21: Compare constraint pass rates by workflow in main rounds
@@ -376,114 +398,168 @@ def plot_main_constraint_pass_rate_by_workflow(main_df) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 22: Score distribution by workflow in main rounds
+# 22: Constraint-failure profiles by workflow in main rounds
 # ---------------------------------------------------------------------------
 
 
-def plot_main_constraint_score_distribution(main_df) -> None:
-    """Show how close each workflow came to full fulfillment in main rounds."""
-    slug = "22_main_constraint_score_distribution_by_workflow"
+def plot_main_constraint_failure_profile_by_workflow(main_df) -> None:
+    """Show why Main-round outputs did not fully meet all constraints."""
+    slug = "22_main_constraint_failure_profile_by_workflow"
 
-    main_df = main_df.dropna(subset=["constraintScore"]).copy()
-    if main_df.empty:
+    profile_df = main_df.dropna(
+        subset=["passedNumeric", "workflow"]
+    ).copy()
+
+    profile_df["failureProfile"] = [
+        _failure_profile(
+            row.passedNumeric,
+            row.requirementResults,
+        )
+        for row in profile_df.itertuples(index=False)
+    ]
+
+    profile_df = profile_df.dropna(subset=["failureProfile"]).copy()
+    if profile_df.empty:
         return
 
     workflow_order = [
-        workflow for workflow in WORKFLOW_ORDER if workflow in set(main_df["workflow"])
+        workflow
+        for workflow in WORKFLOW_ORDER
+        if workflow in set(profile_df["workflow"])
     ]
-    if not workflow_order:
+
+    observed_profiles = [
+        profile
+        for profile in FAILURE_PROFILE_ORDER
+        if profile in set(profile_df["failureProfile"])
+    ]
+
+    if not workflow_order or not observed_profiles:
         return
 
-    summary = (
-        main_df.groupby("workflow")["constraintScore"]
-        .agg(
-            mean="mean",
-            median="median",
-            std="std",
-            minimum="min",
-            maximum="max",
-            count="count",
+    counts = (
+        pd.crosstab(
+            profile_df["workflow"],
+            profile_df["failureProfile"],
         )
-        .reindex(workflow_order)
+        .reindex(
+            index=workflow_order,
+            columns=observed_profiles,
+            fill_value=0,
+        )
+    )
+
+    counts = counts.loc[counts.sum(axis=1).gt(0)]
+    if counts.empty:
+        return
+
+    percentages = counts.div(counts.sum(axis=1), axis=0) * 100
+
+    summary = (
+        counts.rename_axis(
+            index="workflow",
+            columns="failureProfile",
+        )
+        .stack()
+        .rename("rounds")
         .reset_index()
     )
-    summary["workflowLabel"] = summary["workflow"].map(workflow_display_name)
+    summary["totalRounds"] = summary["workflow"].map(counts.sum(axis=1))
+    summary["percentage"] = (
+            summary["rounds"] / summary["totalRounds"] * 100
+    )
+    summary["workflowLabel"] = summary["workflow"].map(
+        workflow_display_name
+    )
+
     save_table(summary, slug, index=False)
 
-    figure_data = [
-        main_df.loc[
-            main_df["workflow"].eq(workflow),
-            "constraintScore",
-        ].to_numpy(dtype=float)
-        for workflow in workflow_order
-    ]
+    fig, ax = plt.subplots(figsize=(10.0, 5.2))
 
-    fig, ax = plt.subplots(figsize=(8.3, 5.0))
-    boxplot = ax.boxplot(
-        figure_data,
-        tick_labels=[workflow_display_name(workflow) for workflow in workflow_order],
-        patch_artist=True,
-        medianprops={"color": "black", "linewidth": 1.4},
-        showmeans=True,
-        meanprops={
-            "marker": "D",
-            "markerfacecolor": "black",
-            "markeredgecolor": "white",
-            "markersize": 6,
-        },
-    )
+    positions = np.arange(len(counts))
+    left = np.zeros(len(counts), dtype=float)
 
-    for patch, workflow in zip(boxplot["boxes"], workflow_order):
-        patch.set_facecolor(WORKFLOW_COLORS[workflow])
-        patch.set_alpha(0.65)
+    for profile in observed_profiles:
+        values = percentages[profile].to_numpy(dtype=float)
+        round_counts = counts[profile].to_numpy(dtype=int)
 
-    for index, (workflow, values) in enumerate(
-        zip(workflow_order, figure_data),
-        start=1,
-    ):
-        _draw_raw_points(
-            ax,
-            [index] * len(values),
+        ax.barh(
+            positions,
             values,
-            WORKFLOW_COLORS[workflow],
-            seed=index + 31,
-        )
-        ax.text(
-            index,
-            2.5,
-            f"n={len(values)}",
-            ha="center",
-            va="bottom",
-            fontsize=8,
+            left=left,
+            color=FAILURE_PROFILE_COLORS[profile],
+            edgecolor="white",
+            linewidth=0.8,
+            label=profile,
         )
 
-    ax.axhline(
-        100,
-        color="black",
-        linestyle="--",
-        linewidth=1,
-        alpha=0.65,
+        for position, value, count, start in zip(
+                positions,
+                values,
+                round_counts,
+                left,
+        ):
+            if value >= 9:
+                ax.text(
+                    start + value / 2,
+                    position,
+                    f"{count}\n{value:.0f}%",
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                    fontweight="bold",
+                    )
+
+        left += values
+
+    for position, total in enumerate(counts.sum(axis=1)):
+        ax.text(
+            102,
+            position,
+            f"n={int(total)}",
+            ha="left",
+            va="center",
+            fontsize=8.5,
+        )
+
+    ax.set_yticks(positions)
+    ax.set_yticklabels(
+        [workflow_display_name(workflow) for workflow in counts.index],
+        fontsize=10,
     )
-    ax.text(
-        len(workflow_order) + 0.25,
-        100,
-        "All constraints passed",
-        va="center",
-        fontsize=8,
+    ax.invert_yaxis()
+
+    ax.set_xlim(0, 112)
+    ax.set_xticks([0, 25, 50, 75, 100])
+    ax.set_xticklabels(["0%", "25%", "50%", "75%", "100%"])
+    ax.set_xlabel("Share of Main-round outputs (%)")
+    ax.set_title("Constraint Failure Profiles by Workflow in Main Rounds")
+
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.19),
+        ncol=2,
+        frameon=False,
+        fontsize=8.5,
     )
-    ax.set_ylim(0, 111)
-    ax.set_xlabel("Assigned workflow")
-    ax.set_ylabel("Constraint score (0–100)")
-    ax.set_title("Constraint Score Distribution by Workflow in Main Rounds")
-    ax.tick_params(axis="x", rotation=12)
-    apply_standard_axes_style(ax, grid_axis="y")
+
+    apply_standard_axes_style(ax, grid_axis="x")
+
+    fig.subplots_adjust(
+        left=0.21,
+        right=0.95,
+        top=0.86,
+        bottom=0.28,
+    )
 
     save_figure(
         fig,
         slug,
-        "Constraint Score Distribution by Workflow in Main Rounds",
-        "Distribution of partial constraint fulfillment under assigned workflows. "
-        "A score of 100 indicates that all constraints were fulfilled.",
+        "Constraint Failure Profiles by Workflow in Main Rounds",
+        "Each bar represents all Main-round outputs within one selected workflow. "
+        "Categories are mutually exclusive. “Line-count rule only” means that "
+        "the line-count check was the sole failed requirement; “Multiple rules "
+        "failed” can include the line-count rule alongside other failed checks.",
     )
 
 
@@ -914,7 +990,7 @@ def plot_constraints(df: pd.DataFrame) -> None:
         return
 
     plot_main_constraint_pass_rate_by_workflow(main_df)
-    plot_main_constraint_score_distribution(main_df)
+    plot_main_constraint_failure_profile_by_workflow(main_df)
     plot_main_failure_breakdown_by_constraint_type(main_df)
     plot_main_constraint_fulfillment_by_exposure(main_df)
     plot_injected_error_round_line_count_failures(main_df)

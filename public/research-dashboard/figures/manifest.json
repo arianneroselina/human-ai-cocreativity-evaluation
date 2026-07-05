@@ -176,12 +176,12 @@
     "svgUrl": "/research-dashboard/figures/21_main_constraint_pass_rate_by_workflow.svg"
   },
   {
-    "slug": "22_main_constraint_score_distribution_by_workflow",
-    "title": "Constraint Score Distribution by Workflow in Main Rounds",
-    "description": "Distribution of partial constraint fulfillment under assigned workflows. A score of 100 indicates that all constraints were fulfilled.",
-    "pngUrl": "/research-dashboard/figures/22_main_constraint_score_distribution_by_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/22_main_constraint_score_distribution_by_workflow.pdf",
-    "svgUrl": "/research-dashboard/figures/22_main_constraint_score_distribution_by_workflow.svg"
+    "slug": "22_main_constraint_failure_profile_by_workflow",
+    "title": "Constraint Failure Profiles by Workflow in Main Rounds",
+    "description": "Each bar represents all Main-round outputs within one selected workflow. Categories are mutually exclusive. “Line-count rule only” means that the line-count check was the sole failed requirement; “Multiple rules failed” can include the line-count rule alongside other failed checks.",
+    "pngUrl": "/research-dashboard/figures/22_main_constraint_failure_profile_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/22_main_constraint_failure_profile_by_workflow.pdf",
+    "svgUrl": "/research-dashboard/figures/22_main_constraint_failure_profile_by_workflow.svg"
   },
   {
     "slug": "23_main_failure_breakdown_by_constraint_type",
