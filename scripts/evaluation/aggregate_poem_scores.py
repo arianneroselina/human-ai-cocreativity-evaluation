@@ -54,34 +54,13 @@ with psycopg.connect(PRISMA_DATABASE_URL, row_factory=dict_row) as conn:
         cur.execute(query)
         rows = cur.fetchall()
 
-processed_rows = []
-
-for row in rows:
-    means = [
-        row["meanFluency"],
-        row["meanThemeAlignment"],
-        row["meanMeaningfulness"],
-        row["meanPoeticness"],
-        row["meanOverallQuality"],
-    ]
-
-    valid_means = [value for value in means if value is not None]
-
-    row["qualityComposite"] = (
-        sum(valid_means) / len(valid_means) if valid_means else None
-    )
-
-    row["isFullyRated"] = row["ratingCount"] == EXPECTED_EVALUATORS
-
-    processed_rows.append(row)
-
-if not processed_rows:
+if not rows:
     print("No poem scores found. CSV was not created.")
     raise SystemExit(0)
 
 with POEM_SCORES_PATH.open("w", newline="", encoding="utf-8") as f:
-    writer = csv.DictWriter(f, fieldnames=list(processed_rows[0].keys()))
+    writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
     writer.writeheader()
-    writer.writerows(processed_rows)
+    writer.writerows(rows)
 
-print(f"Exported {len(processed_rows)} poem scores to {POEM_SCORES_PATH}")
+print(f"Exported {len(rows)} poem scores to {POEM_SCORES_PATH}")

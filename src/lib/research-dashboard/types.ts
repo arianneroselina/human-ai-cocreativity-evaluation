@@ -35,7 +35,6 @@ export type QualityByWorkflowRow = {
   meanMeaningfulness: number | null;
   meanPoeticness: number | null;
   meanOverallQuality: number | null;
-  qualityComposite: number | null;
 };
 
 export type SubjectiveByWorkflowRow = {
@@ -70,7 +69,7 @@ export type QualityTimePoint = {
   participantId: number | null;
   roundIndex: number | null;
   timeMinutes: number;
-  qualityComposite: number;
+  meanOverallQuality: number;
 };
 
 export type FinalRankingRow = {

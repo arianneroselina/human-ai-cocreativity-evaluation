@@ -1,3 +1,13 @@
+"""Participant demographics and AI attitudes (figures 51-56).
+
+51  Age distribution (histogram)
+52  Gender distribution (pie)
+53  Education distribution (pie)
+54  Native language distribution (bar)
+55  English level distribution (bar)
+56  AI attitude Likert means (bar)
+"""
+
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -36,9 +46,9 @@ def export_category_distribution(counts, slug):
 
 
 def plot_participant_age_distribution(participant_df):
-    slug = "41_participant_age_distribution"
+    slug = "51_participant_age_distribution"
 
-    if participant_df.empty or "age" not in participant_df.columns:
+    if "age" not in participant_df.columns:
         return
 
     age = pd.to_numeric(participant_df["age"], errors="coerce").dropna()
@@ -97,7 +107,7 @@ def plot_participant_age_distribution(participant_df):
 
 
 def plot_participant_pie_distribution(participant_df, column, label, slug):
-    if participant_df.empty or column not in participant_df.columns:
+    if column not in participant_df.columns:
         return
 
     counts = participant_df[column].dropna().value_counts()
@@ -144,7 +154,7 @@ def plot_participant_pie_distribution(participant_df, column, label, slug):
 
 
 def plot_participant_bar_distribution(participant_df, column, label, slug):
-    if participant_df.empty or column not in participant_df.columns:
+    if column not in participant_df.columns:
         return
 
     counts = participant_df[column].dropna().value_counts()
@@ -184,13 +194,9 @@ def plot_participant_bar_distribution(participant_df, column, label, slug):
 
 
 def plot_participant_likert_means(participant_df):
-    slug = "46_participant_ai_attitude_means"
-
-    if participant_df.empty:
-        return
+    slug = "56_participant_ai_attitude_means"
 
     rows = []
-
     for column, label in PARTICIPANT_LIKERT_COLUMNS.items():
         if column not in participant_df.columns:
             continue
@@ -224,7 +230,7 @@ def plot_participant_likert_means(participant_df):
     )
 
     ax.set_title("Participant Writing Confidence and AI Attitudes")
-    ax.set_xlabel("Mean rating (1–5)")
+    ax.set_xlabel("Mean rating (1-5)")
     ax.set_ylabel("")
     ax.set_xlim(1, 5)
 
@@ -255,28 +261,28 @@ def plot_participant_info(participant_df):
         participant_df,
         "gender",
         "Participant Gender Distribution",
-        "42_participant_gender_distribution",
+        "52_participant_gender_distribution",
     )
 
     plot_participant_bar_distribution(
         participant_df,
         "education",
         "Participant Education Distribution",
-        "43_participant_education_distribution",
+        "53_participant_education_distribution",
     )
 
     plot_participant_bar_distribution(
         participant_df,
         "nativeLanguage",
         "Participant Native Language Distribution",
-        "44_participant_native_language_distribution",
+        "54_participant_native_language_distribution",
     )
 
     plot_participant_pie_distribution(
         participant_df,
         "englishLevel",
         "Participant English Level Distribution",
-        "45_participant_english_level_distribution",
+        "55_participant_english_level_distribution",
     )
 
     plot_participant_likert_means(participant_df)

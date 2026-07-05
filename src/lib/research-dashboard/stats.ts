@@ -126,7 +126,6 @@ export function getQualityByWorkflow(rows: AnyRow[]): QualityByWorkflowRow[] {
       meanMeaningfulness: mean(workflowRows.map((row) => toNumber(row.meanMeaningfulness))),
       meanPoeticness: mean(workflowRows.map((row) => toNumber(row.meanPoeticness))),
       meanOverallQuality: mean(workflowRows.map((row) => toNumber(row.meanOverallQuality))),
-      qualityComposite: mean(workflowRows.map((row) => toNumber(row.qualityComposite))),
     }))
     .sort((a, b) => a.workflow.localeCompare(b.workflow));
 }
@@ -217,9 +216,9 @@ export function getQualityTimePoints(rows: AnyRow[]): QualityTimePoint[] {
   return rows
     .map((row) => {
       const timeMinutes = toNumber(row.effectiveTimeMinutes) ?? (toNumber(row.timeMs) ?? 0) / 60000;
-      const qualityComposite = toNumber(row.qualityComposite);
+      const meanOverallQuality = toNumber(row.meanOverallQuality);
 
-      if (!timeMinutes || qualityComposite === null) return null;
+      if (!timeMinutes || meanOverallQuality === null) return null;
 
       return {
         poemId: String(row.roundId ?? row.poemId ?? ""),
@@ -227,7 +226,7 @@ export function getQualityTimePoints(rows: AnyRow[]): QualityTimePoint[] {
         participantId: toNumber(row.participantId),
         roundIndex: toNumber(row.roundIndex),
         timeMinutes,
-        qualityComposite,
+        meanOverallQuality,
       };
     })
     .filter((row): row is QualityTimePoint => row !== null);

@@ -1,10 +1,30 @@
+import pandas as pd
+
 from scripts.config import (
     MAIN_ROUND_INDICES,
     WORKFLOW_LABELS,
     ROUND_LABELS,
-    EXPOSURE_LABELS, EVALUATOR_LABELS,
+    EXPOSURE_LABELS,
+    EVALUATOR_LABELS,
+    WORKFLOW_ORDER,
 )
-from scripts.utils import parse_bool
+from scripts.utils import parse_bool, require_columns
+
+
+def workflow_display_name(workflow):
+    return WORKFLOW_LABELS.get(workflow, workflow)
+
+
+def round_display_name(round_index):
+    return ROUND_LABELS.get(round_index, f"Round {round_index}")
+
+
+def exposure_display_name(exposed: bool) -> str:
+    return EXPOSURE_LABELS.get(exposed, str(exposed))
+
+
+def evaluator_display_name(evaluator_id: str) -> str:
+    return EVALUATOR_LABELS.get(str(evaluator_id), str(evaluator_id))
 
 
 def get_main_rounds(df):
@@ -32,20 +52,61 @@ def get_complete_main_round_participants(df):
     return df[df["participantId"].isin(complete_ids)].copy()
 
 
-def workflow_display_name(workflow):
-    return WORKFLOW_LABELS.get(workflow, workflow)
+def drop_duplicate_participant_rounds(
+    df: pd.DataFrame,
+    participant_column: str = "participantId",
+    round_column: str = "roundIndex",
+) -> pd.DataFrame:
+    """Keep the first row for each participant-round combination."""
+    required_columns = {participant_column, round_column}
+
+    if not required_columns.issubset(df.columns):
+        return df
+
+    return df.drop_duplicates(
+        subset=[participant_column, round_column],
+        keep="first",
+    )
 
 
-def round_display_name(round_index):
-    return ROUND_LABELS.get(round_index, f"Round {round_index}")
+def prepare_round_data(df: pd.DataFrame) -> pd.DataFrame:
+    """Deduplicate and normalise valid participant-round workflow records."""
+    required = {"participantId", "roundIndex", "workflow"}
+
+    if df.empty or not require_columns(df, required, "round-level data"):
+        return pd.DataFrame(columns=sorted(required))
+
+    prepared = drop_duplicate_participant_rounds(df.copy())
+    prepared["roundIndex"] = pd.to_numeric(
+        prepared["roundIndex"],
+        errors="coerce",
+    )
+    prepared = prepared.dropna(
+        subset=["participantId", "roundIndex", "workflow"],
+    )
+    prepared["roundIndex"] = prepared["roundIndex"].astype(int)
+
+    return prepared[prepared["workflow"].isin(WORKFLOW_ORDER)].copy()
 
 
-def exposure_display_name(group: str) -> str:
-    return EXPOSURE_LABELS.get(group, str(group).replace("_", " ").title())
+def phase_data(df: pd.DataFrame, phase: str) -> pd.DataFrame:
+    """Return observations belonging to the requested phase."""
+    if phase not in {"practice", "main"}:
+        raise ValueError("phase must be either 'practice' or 'main'")
+
+    if "phase" not in df.columns:
+        return pd.DataFrame(columns=df.columns)
+
+    return df.loc[df["phase"].eq(phase)].copy()
 
 
-def evaluator_display_name(evaluator_id: str) -> str:
-    return EVALUATOR_LABELS.get(str(evaluator_id), str(evaluator_id))
+def ordered_exposure_groups(dataframe: pd.DataFrame) -> list[bool]:
+    """Return available error-exposure values in a consistent order."""
+    if "errorExposed" not in dataframe.columns:
+        return []
+
+    available = set(dataframe["errorExposed"].dropna())
+    return [exposed for exposed in [True, False] if exposed in available]
 
 
 def shade_main_rounds(

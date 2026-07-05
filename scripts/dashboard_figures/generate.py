@@ -6,6 +6,8 @@ tables, and the dashboard manifest.
 
 import matplotlib
 
+from scripts.dashboard_figures.helpers import prepare_round_data
+
 # Must be set before importing modules that may import pyplot.
 matplotlib.use("Agg")
 
@@ -37,17 +39,18 @@ def main() -> None:
     reset_manifest()
 
     round_df = load_master_dataset()
+    prepared_round_df = prepare_round_data(round_df)
     feedback_df = load_final_feedback()
     participant_info_df = load_participant_info()
 
-    plot_workflow(round_df, feedback_df)
-    plot_experience(round_df)
-    plot_quality(round_df)
-    plot_constraints(round_df)
-    plot_error_exposure(round_df)
+    plot_workflow(prepared_round_df, feedback_df)
+    plot_experience(prepared_round_df)
+    plot_quality(prepared_round_df)
+    plot_constraints(prepared_round_df)
+    plot_error_exposure(prepared_round_df)
     plot_evaluators()
     plot_participant_info(participant_info_df)
-    generate_feedback_summaries(round_df, feedback_df)
+    generate_feedback_summaries(prepared_round_df, feedback_df)
 
     save_manifest()
 

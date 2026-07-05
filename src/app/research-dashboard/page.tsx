@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { getDashboardFigures } from "@/lib/research-dashboard/figures";
 import { getResearchDashboardData } from "@/lib/research-dashboard/data";
 import { getWorkflowFeedbackSummaries } from "@/lib/research-dashboard/feedbackSummary";
+import { getAnalysisFiles } from "@/lib/research-dashboard/analysisFiles";
+import AnalysisFileList from "./components/AnalysisFileList";
 import DataTable from "./components/DataTable";
 import FigureGallery from "./components/FigureGallery";
 import StatCard from "./components/StatCard";
@@ -83,15 +85,29 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       title: "Workflow Behavior",
       description: "Workflow choices, transitions, and final preferences.",
       figures: figures.filter((figure) =>
-        ["01_", "02_", "03_", "04_"].some((prefix) => figure.slug.startsWith(prefix))
+        ["01_", "02_", "03_", "04_", "05_", "05b_", "06_", "07_", "08_", "09_"].some((prefix) =>
+          figure.slug.startsWith(prefix)
+        )
       ),
     },
     {
       id: "quality-figures",
-      title: "Output Quality by Evaluators",
-      description: "Evaluator-rated quality, quality dimensions, and efficiency.",
+      title: "Output Quality",
+      description:
+        "Quality by round and workflow, dimensions, efficiency, error-exposure interaction, and learning/fatigue effects.",
       figures: figures.filter((figure) =>
-        ["11_", "12_", "13_", "14_", "14b_"].some((prefix) => figure.slug.startsWith(prefix))
+        ["11_", "12_", "13_", "14_", "15_", "16_", "17_", "17b_"].some((prefix) =>
+          figure.slug.startsWith(prefix)
+        )
+      ),
+    },
+    {
+      id: "evaluator-figures",
+      title: "Evaluator Agreement",
+      description:
+        "Inter-rater agreement (ICC, Cohen's Kappa) and individual evaluator rating patterns.",
+      figures: figures.filter((figure) =>
+        ["61_", "62_", "63_", "64_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
     {
@@ -99,7 +115,7 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       title: "Constraint Fulfillment",
       description: "Whether submitted poems fulfilled the task constraints.",
       figures: figures.filter((figure) =>
-        ["16_", "17_", "18_"].some((prefix) => figure.slug.startsWith(prefix))
+        ["21_", "22_", "23_", "24_", "25_", "26_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
     {
@@ -107,7 +123,7 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       title: "Participant Experience",
       description: "Satisfaction, frustration, AI performance ratings, and perceived task load.",
       figures: figures.filter((figure) =>
-        ["21_", "22_", "23_"].some((prefix) => figure.slug.startsWith(prefix))
+        ["31_", "32_", "33_", "34_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
     {
@@ -116,7 +132,7 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       description:
         "Round-5 error exposure, line-count error, post-error behavior, and subjective reactions.",
       figures: figures.filter((figure) =>
-        ["31_", "32_", "33_"].some((prefix) => figure.slug.startsWith(prefix))
+        ["41_", "42_", "43_", "44_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
     {
@@ -124,7 +140,7 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       title: "Participant Information",
       description: "Age, gender, education, language, and AI attitude distributions.",
       figures: figures.filter((figure) =>
-        ["41_", "42_", "43_", "44_", "45_", "46_"].some((prefix) => figure.slug.startsWith(prefix))
+        ["51_", "52_", "53_", "54_", "55_", "56_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
   ].filter((group) => group.figures.length > 0);
@@ -135,6 +151,7 @@ export default async function ResearchDashboardPage() {
   const figures = getDashboardFigures();
   const figureGroups = groupFigures(figures);
   const feedbackSummaries = getWorkflowFeedbackSummaries();
+  const analysisFiles = getAnalysisFiles();
 
   const overviewStats = [
     { title: "Total Poems", value: data.totalPoems },
@@ -154,7 +171,6 @@ export default async function ResearchDashboardPage() {
       title: "Fully Rated Poems",
       value: `${data.fullyRatedPoems}/${data.nonEmptyPoems}`,
     },
-    { title: "Incomplete Poems", value: data.incompletePoems.length },
   ];
 
   return (
@@ -195,8 +211,8 @@ export default async function ResearchDashboardPage() {
         <nav className="sticky top-4 z-20 flex flex-wrap gap-2 rounded-2xl border border-gray-200 bg-white/90 p-3 shadow-sm backdrop-blur">
           <NavLink href="#overview">Overview</NavLink>
           <NavLink href="#progress">Evaluator Progress</NavLink>
-          <NavLink href="#incomplete">Incomplete Poems</NavLink>
           <NavLink href="#figures">Data Visualization</NavLink>
+          <NavLink href="#statistical-analysis">Statistical Analysis</NavLink>
           <NavLink href="#feedback-summaries">Feedback Summaries</NavLink>
         </nav>
 
@@ -251,44 +267,6 @@ export default async function ResearchDashboardPage() {
           />
         </FoldableSection>
 
-        <FoldableSection
-          id="incomplete"
-          title="Incomplete Poems"
-          badge={data.incompletePoems.length}
-          description="Poems that do not yet have exactly three evaluator ratings."
-        >
-          <DataTable
-            rows={data.incompletePoems}
-            emptyText="All poems are fully rated."
-            columns={[
-              {
-                header: "Poem ID",
-                render: (row) => <span className="font-mono text-xs">{row.poemId}</span>,
-              },
-              {
-                header: "Participant",
-                render: (row) => row.participantId ?? "-",
-              },
-              {
-                header: "Round",
-                render: (row) => row.roundIndex ?? "-",
-              },
-              {
-                header: "Task",
-                render: (row) => row.taskId,
-              },
-              {
-                header: "Workflow",
-                render: (row) => row.workflow,
-              },
-              {
-                header: "Ratings",
-                render: (row) => `${row.ratingCount}/3`,
-              },
-            ]}
-          />
-        </FoldableSection>
-
         <section id="figures" className="scroll-mt-24 space-y-4">
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="text-2xl font-bold text-gray-900">Data Visualization</h2>
@@ -312,6 +290,16 @@ export default async function ResearchDashboardPage() {
             </FoldableSection>
           ))}
         </section>
+
+        <FoldableSection
+          id="statistical-analysis"
+          title="Statistical Analysis"
+          badge={`${analysisFiles.length} files`}
+          description="Detailed model outputs and supplementary diagnostics, including phase-specific mixed-effects models, model cell counts, fixed effects, and poem-level evaluator disagreements."
+          defaultOpen
+        >
+          <AnalysisFileList files={analysisFiles} />
+        </FoldableSection>
 
         <FoldableSection
           id="feedback-summaries"

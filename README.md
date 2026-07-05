@@ -73,7 +73,7 @@ The platform uses a blind single-poem rating approach:
 - the topic is shown for context
 - authorship and workflow condition are hidden
 - evaluators rate multiple quality dimensions
-- ratings use a 1–5 scale
+- ratings use a 1-5 scale
 
 This reduces authorship/workflow bias and allows each poem to be evaluated independently.
 
@@ -155,6 +155,7 @@ aggregate-scores
 create-master
 create-dashboard-dataset
 generate-figures
+analyze-quality
 ```
 
 The important deploy-safe outputs are:

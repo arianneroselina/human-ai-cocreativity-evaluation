@@ -77,23 +77,6 @@ def parse_bool_or_none(value):
     return None
 
 
-def drop_duplicate_participant_rounds(
-    df: pd.DataFrame,
-    participant_column: str = "participantId",
-    round_column: str = "roundIndex",
-) -> pd.DataFrame:
-    """Keep the first row for each participant-round combination."""
-    required_columns = {participant_column, round_column}
-
-    if not required_columns.issubset(df.columns):
-        return df
-
-    return df.drop_duplicates(
-        subset=[participant_column, round_column],
-        keep="first",
-    )
-
-
 def format_count_percentage(
     count: int | float,
     total: int | float,
@@ -157,7 +140,11 @@ def save_manifest() -> Path:
     return manifest_path
 
 
-def save_analysis_table( table: pd.DataFrame | pd.Series, slug: str, index: bool = True, ) -> Path:
+def save_analysis_table(
+    table: pd.DataFrame | pd.Series,
+    slug: str,
+    index: bool = True,
+) -> Path:
     """Export a supplementary statistical-analysis table as CSV."""
     ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
     analysis_path = ANALYSIS_DIR / f"{slug}.csv"

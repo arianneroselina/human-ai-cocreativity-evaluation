@@ -19,7 +19,6 @@ DASHBOARD_COLUMNS = [
     "meanMeaningfulness",
     "meanPoeticness",
     "meanOverallQuality",
-    "qualityComposite",
     "satisfactionResult",
     "frustration",
     "effort",
@@ -28,8 +27,7 @@ DASHBOARD_COLUMNS = [
     "aiUnderstanding",
     "aiCollaboration",
     "aiCreativitySupport",
-    "errorExposureGroup",
-    "isMainRound",
+    "errorExposed",
 ]
 
 

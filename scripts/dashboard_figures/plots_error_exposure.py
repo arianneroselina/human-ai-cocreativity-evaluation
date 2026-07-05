@@ -1,466 +1,517 @@
-import matplotlib.pyplot as plt
+"""Injected AI-error exposure analysis.
+
+41  Main Round 1 workflow choice and actual injected-error exposure
+42  Workflow choices in Main Rounds 2-3 by Round-5 exposure group
+43  Awareness of the injected error among exposed interview respondents
+44  Other AI error types reported in interviews
+
+Exposure is determined by the workflow voluntarily selected in Main Round 1.
+Post-error comparisons are therefore descriptive, not randomized causal effects.
+"""
+
+from __future__ import annotations
+
+import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
 from scripts.config import (
     ERROR_ROUND_INDEX,
-    EXPOSURE_LABELS,
-    TABLE_DIR,
+    WORKFLOW_COLORS,
     WORKFLOW_ORDER,
+    AWARENESS_LABELS,
+    INTERVIEW_NOTES_PATH,
+    OTHER_AI_ERROR_LABELS,
 )
+from scripts.dashboard_figures.helpers import (
+    exposure_display_name,
+    workflow_display_name,
+    round_display_name,
+)
+from scripts.dashboard_figures.style import BAR_EDGE_COLOR, apply_standard_axes_style
 from scripts.utils import (
-    is_ai_supported_row,
-    parse_bool,
+    require_columns,
     save_figure,
-    workflow_label,
+    save_table,
 )
 
 
-def exposure_label(value):
-    fallback_labels = {
-        "error_exposed": "Error exposed",
-        "not_exposed": "Not exposed",
-        "not_error_exposed": "Not exposed",
-        "ai_supported_exposure_unknown": "AI-supported, exposure unknown",
-        "unknown": "Unknown",
-    }
-
-    value_str = str(value)
-
-    return EXPOSURE_LABELS.get(
-        value_str,
-        fallback_labels.get(value_str, value_str),
-    )
-
-
-def order_workflow_labels(labels):
-    ordered_labels = [
-        workflow_label(workflow)
-        for workflow in WORKFLOW_ORDER
-        if workflow_label(workflow) in labels
-    ]
-
-    remaining_labels = [label for label in labels if label not in ordered_labels]
-
-    return ordered_labels + remaining_labels
-
-
-def order_exposure_labels(labels):
-    preferred_order = [
-        "Error exposed",
-        "Not exposed",
-        "AI-supported, exposure unknown",
-        "Unknown",
-    ]
-
-    ordered_labels = [label for label in preferred_order if label in labels]
-
-    remaining_labels = [label for label in labels if label not in ordered_labels]
-
-    return ordered_labels + remaining_labels
-
-
-def load_interview_error_notes():
-    path = "inputs/interview_error_notes.csv"
-
-    try:
-        return pd.read_csv(path)
-    except FileNotFoundError:
+def _load_and_prepare_notes(round_df: pd.DataFrame) -> pd.DataFrame:
+    """Load one interview-note row and one exposure status per participant."""
+    if not INTERVIEW_NOTES_PATH.exists():
+        print(
+            f"Skipping interview-coded error figures; notes file not found: "
+            f"{INTERVIEW_NOTES_PATH}"
+        )
         return pd.DataFrame()
 
+    try:
+        notes = pd.read_csv(INTERVIEW_NOTES_PATH)
+    except (OSError, pd.errors.ParserError) as error:
+        print(f"Unable to load interview error notes: {error}")
+        return pd.DataFrame()
 
-def derive_error_exposure_group(row):
-    """
-    Returns the participant's error exposure group.
+    required_columns = {"participantId", "errorExposed"}
 
-    Priority:
-    1. Use errorExposureGroup if available.
-    2. Otherwise use errorExposed if available.
-    3. As a fallback in the injected-error round, mark AI-supported workflows
-       as exposure unknown instead of claiming actual exposure.
-    """
-    if "errorExposureGroup" in row.index:
-        value = row.get("errorExposureGroup")
+    if "participantId" not in notes.columns:
+        print("Skipping interview-coded error figures; missing participantId.")
+        return pd.DataFrame()
 
-        if not pd.isna(value) and str(value).strip():
-            return str(value)
+    if not required_columns.issubset(round_df.columns):
+        print(
+            "Skipping interview-coded error figures; round data is missing "
+            "participantId or errorExposed."
+        )
+        return pd.DataFrame()
 
-    if "errorExposed" in row.index:
-        return "error_exposed" if parse_bool(row.get("errorExposed")) else "not_exposed"
+    notes = notes.copy()
+    notes["participantId"] = notes["participantId"].astype(str)
 
-    if row.get("roundIndex") == ERROR_ROUND_INDEX and is_ai_supported_row(row):
-        return "ai_supported_exposure_unknown"
+    # One interview-note record per participant.
+    notes = notes.drop_duplicates(subset=["participantId"], keep="last")
 
-    return "unknown"
-
-
-def drop_duplicate_participant_rounds(df):
-    if "participantId" not in df.columns:
-        return df
-
-    return df.drop_duplicates(
-        subset=["participantId", "roundIndex"],
-        keep="first",
+    # One exposure status per participant across all their round records.
+    participant_exposure = (
+        round_df[["participantId", "errorExposed"]]
+        .dropna(subset=["participantId", "errorExposed"])
+        .copy()
     )
 
+    participant_exposure["participantId"] = participant_exposure[
+        "participantId"
+    ].astype(str)
 
-def plot_round5_workflow_exposure(df: pd.DataFrame):
-    """
-    Shows which workflow participants selected in round 5 and whether that
-    resulted in actual AI-error exposure.
-    """
-    slug = "31_round5_workflow_exposure"
+    participant_exposure = participant_exposure.groupby(
+        "participantId",
+        as_index=False,
+    ).agg(errorExposed=("errorExposed", "any"))
 
-    required_columns = {"roundIndex", "workflow"}
-
-    if not required_columns.issubset(df.columns):
-        return
-
-    round5_df = df[df["roundIndex"] == ERROR_ROUND_INDEX].copy()
-    round5_df = round5_df.dropna(subset=["roundIndex", "workflow"])
-    round5_df = drop_duplicate_participant_rounds(round5_df)
-
-    if round5_df.empty:
-        return
-
-    round5_df["derivedErrorExposureGroup"] = round5_df.apply(
-        derive_error_exposure_group,
-        axis=1,
+    notes = notes.merge(
+        participant_exposure,
+        on="participantId",
+        how="left",
+        validate="one_to_one",
     )
+
+    if "injectedErrorExperience" in notes.columns:
+        notes["injectedErrorExperience"] = (
+            notes["injectedErrorExperience"].astype("string").str.strip().str.lower()
+        )
+
+    return notes
+
+
+# ---------------------------------------------------------------------------
+# 41: Workflow choice in Main Round 1
+# ---------------------------------------------------------------------------
+
+
+def plot_round5_workflow_choice(prepared) -> None:
+    """Show voluntary workflow choices in the first Main round."""
+    slug = "41_main_round1_workflow_choice"
+
+    round5 = prepared[prepared["roundIndex"].eq(ERROR_ROUND_INDEX)].copy()
+    if round5.empty:
+        return
 
     summary = (
-        round5_df.groupby(["workflow", "derivedErrorExposureGroup"])
+        round5.groupby("workflow")
         .size()
-        .reset_index(name="count")
-    )
-
-    summary["workflowLabel"] = summary["workflow"].map(workflow_label)
-    summary["groupLabel"] = summary["derivedErrorExposureGroup"].map(exposure_label)
-
-    summary.to_csv(TABLE_DIR / f"{slug}.csv", index=False)
-
-    pivot = summary.pivot(
-        index="workflowLabel", columns="groupLabel", values="count"
-    ).fillna(0)
-
-    pivot = pivot.reindex(order_workflow_labels(pivot.index))
-    pivot = pivot[order_exposure_labels(pivot.columns)]
-
-    fig, ax = plt.subplots(figsize=(7.6, 4.4))
-
-    pivot.plot(kind="bar", ax=ax)
-
-    ax.set_title("Round-5 Workflow and Actual Error Exposure")
-    ax.set_xlabel("Workflow selected in round 5")
-    ax.set_ylabel("Number of participants")
-    ax.tick_params(axis="x", rotation=0)
-    ax.legend(title="Exposure group")
-    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-
-    for container in ax.containers:
-        labels = [
-            f"{int(bar.get_height())}" if bar.get_height() > 0 else ""
-            for bar in container
-        ]
-
-        ax.bar_label(
-            container,
-            labels=labels,
-            padding=3,
-            fontsize=8,
-        )
-
-    save_figure(
-        fig,
-        slug,
-        "Round-5 Workflow and Error Exposure",
-        "Participants were exposed to the injected AI error only if actual exposure was recorded in round 5.",
-    )
-
-
-def plot_post_error_workflow_choices_by_exposure(df: pd.DataFrame):
-    """
-    Shows exact workflow choices after the possible AI-error round.
-    """
-    slug = "32_post_error_workflow_choices_by_exposure"
-
-    required_columns = {"roundIndex", "workflow"}
-
-    if not required_columns.issubset(df.columns):
-        return
-
-    choice_df = df[df["roundIndex"] > ERROR_ROUND_INDEX].copy()
-    choice_df = choice_df.dropna(subset=["roundIndex", "workflow"])
-    choice_df = drop_duplicate_participant_rounds(choice_df)
-
-    if choice_df.empty:
-        return
-
-    choice_df["derivedErrorExposureGroup"] = choice_df.apply(
-        derive_error_exposure_group,
-        axis=1,
-    )
-
-    summary = (
-        choice_df.groupby(["derivedErrorExposureGroup", "workflow"])
-        .size()
-        .reset_index(name="count")
-    )
-
-    if summary.empty:
-        return
-
-    summary["groupTotal"] = summary.groupby("derivedErrorExposureGroup")[
-        "count"
-    ].transform("sum")
-
-    summary["percent"] = summary["count"] / summary["groupTotal"] * 100
-
-    summary["groupLabel"] = summary["derivedErrorExposureGroup"].map(exposure_label)
-    summary["workflowLabel"] = summary["workflow"].map(workflow_label)
-
-    summary.to_csv(TABLE_DIR / f"{slug}.csv", index=False)
-
-    pivot = summary.pivot(
-        index="groupLabel", columns="workflowLabel", values="percent"
-    ).fillna(0)
-
-    pivot = pivot.reindex(order_exposure_labels(pivot.index))
-    pivot = pivot[order_workflow_labels(pivot.columns)]
-
-    fig, ax = plt.subplots(figsize=(8.4, 4.8))
-
-    pivot.plot(kind="bar", ax=ax)
-
-    ax.set_title("Post-Error Workflow Choices by Error Exposure")
-    ax.set_xlabel("Exposure group")
-    ax.set_ylabel("Share of workflow choices in rounds 6–7 (%)")
-    ax.tick_params(axis="x", rotation=0)
-    ax.legend(title="Chosen workflow")
-    ax.set_ylim(0, 100)
-
-    for container in ax.containers:
-        labels = [
-            f"{bar.get_height():.1f}%" if bar.get_height() > 0 else ""
-            for bar in container
-        ]
-
-        ax.bar_label(
-            container,
-            labels=labels,
-            padding=3,
-            fontsize=8,
-        )
-
-    save_figure(
-        fig,
-        slug,
-        "Post-Error Workflow Choices by Error Exposure",
-        "Distribution of workflow choices in rounds 6–7, split by whether participants were exposed to the injected AI error in round 5.",
-    )
-
-
-def plot_interview_coded_ai_error_summary():
-    """
-    Merges the interview-coded injected-error awareness summary and
-    non-injected AI error type summary into one readable figure.
-
-    Left subplot:
-    - Mutually exclusive injected-error awareness categories.
-
-    Right subplot:
-    - Non-mutually-exclusive reported AI error types.
-    """
-    slug = "33_interview_coded_ai_error_summary"
-
-    notes_df = load_interview_error_notes()
-
-    if notes_df.empty:
-        return
-
-    required_columns = {
-        "injectedErrorExperience",
-        "reportedOtherAiErrors",
-        "reportedOtherAiErrorTypes",
-    }
-
-    if not required_columns.issubset(notes_df.columns):
-        return
-
-    injected_labels = {
-        "noticed": "Noticed injected AI error",
-        "not_noticed": "Did not notice injected AI error",
-        "not_exposed": "Not exposed to injected AI error",
-    }
-
-    awareness_summary = (
-        notes_df["injectedErrorExperience"]
-        .map(injected_labels)
-        .value_counts()
-        .reindex(
-            [
-                "Noticed injected AI error",
-                "Did not notice injected AI error",
-                "Not exposed to injected AI error",
-            ],
-            fill_value=0,
-        )
+        .reindex(WORKFLOW_ORDER, fill_value=0)
+        .rename("participantCount")
         .reset_index()
     )
 
-    awareness_summary.columns = ["category", "participantCount"]
-    awareness_summary["percentage"] = (
-        awareness_summary["participantCount"] / len(notes_df) * 100
-    ).round(2)
+    summary = summary[summary["participantCount"].gt(0)].copy()
 
-    other_ai_error_count = int(
-        notes_df["reportedOtherAiErrors"].apply(parse_bool).sum()
+    total_participants = int(summary["participantCount"].sum())
+    if total_participants == 0:
+        return
+
+    summary["workflowLabel"] = summary["workflow"].map(workflow_display_name)
+    summary["percentage"] = summary["participantCount"] / total_participants * 100
+
+    save_table(summary, slug, index=False)
+
+    fig, ax = plt.subplots(figsize=(8.0, 4.8))
+
+    bars = ax.bar(
+        summary["workflowLabel"],
+        summary["participantCount"],
+        color=[WORKFLOW_COLORS[workflow] for workflow in summary["workflow"]],
+        edgecolor=BAR_EDGE_COLOR,
+        linewidth=0.8,
+        zorder=2,
     )
 
-    awareness_summary.loc[len(awareness_summary)] = {
-        "category": "Reported other AI errors",
-        "participantCount": other_ai_error_count,
-        "percentage": round(other_ai_error_count / len(notes_df) * 100, 2),
-    }
-
-    error_type_rows = []
-
-    for _, row in notes_df.iterrows():
-        raw_types = row.get("reportedOtherAiErrorTypes")
-
-        if pd.isna(raw_types) or not str(raw_types).strip():
-            continue
-
-        for error_type in str(raw_types).split(";"):
-            cleaned_error_type = error_type.strip()
-
-            if not cleaned_error_type:
-                continue
-
-            error_type_rows.append(
-                {
-                    "errorType": cleaned_error_type,
-                    "participantId": row.get("participantId"),
-                }
-            )
-
-    labels = {
-        "counting_constraints": "Counting constraints",
-        "requirement_following": "Requirement following",
-        "formatting": "Formatting",
-        "time_conversion": "Time conversion",
-        "required_words": "Required words",
-        "case_sensitivity": "Case sensitivity",
-        "quality_degradation": "Quality degradation",
-    }
-
-    if error_type_rows:
-        error_type_df = pd.DataFrame(error_type_rows)
-
-        error_type_df["errorTypeLabel"] = (
-            error_type_df["errorType"].map(labels).fillna(error_type_df["errorType"])
+    for bar, (_, row) in zip(bars, summary.iterrows()):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.45,
+            f"{int(row['participantCount'])}\n({row['percentage']:.1f}%)",
+            ha="center",
+            va="bottom",
+            fontsize=9,
         )
 
-        error_type_summary = (
-            error_type_df.groupby("errorTypeLabel")["participantId"]
-            .nunique()
-            .reset_index(name="participantCount")
-            .sort_values("participantCount", ascending=True)
-        )
-
-        error_type_summary["percentage"] = (
-            error_type_summary["participantCount"] / len(notes_df) * 100
-        ).round(2)
-    else:
-        error_type_summary = pd.DataFrame(
-            columns=["errorTypeLabel", "participantCount", "percentage"]
-        )
-
-    awareness_summary.to_csv(
-        TABLE_DIR / f"{slug}_awareness.csv",
-        index=False,
-    )
-
-    error_type_summary.to_csv(
-        TABLE_DIR / f"{slug}_error_types.csv",
-        index=False,
-    )
-
-    fig, axes = plt.subplots(
-        1,
-        2,
-        figsize=(14.0, 5.2),
-    )
-
-    awareness_plot_df = awareness_summary.iloc[::-1]
-
-    awareness_bars = axes[0].barh(
-        awareness_plot_df["category"],
-        awareness_plot_df["participantCount"],
-    )
-
-    axes[0].set_title("Injected AI-error awareness")
-    axes[0].set_xlabel("Number of participants")
-    axes[0].set_ylabel("")
-    axes[0].xaxis.set_major_locator(MaxNLocator(integer=True))
-
-    axes[0].bar_label(
-        awareness_bars,
-        labels=[
-            f"{int(row['participantCount'])} ({row['percentage']:.1f}%)"
-            for _, row in awareness_plot_df.iterrows()
-        ],
-        padding=3,
-        fontsize=8,
-    )
-
-    if not error_type_summary.empty:
-        error_type_bars = axes[1].barh(
-            error_type_summary["errorTypeLabel"],
-            error_type_summary["participantCount"],
-        )
-
-        axes[1].bar_label(
-            error_type_bars,
-            labels=[
-                f"{int(row['participantCount'])} ({row['percentage']:.1f}%)"
-                for _, row in error_type_summary.iterrows()
-            ],
-            padding=3,
-            fontsize=8,
-        )
-
-    axes[1].set_title("Reported non-injected AI error types")
-    axes[1].set_xlabel("Number of participants")
-    axes[1].set_ylabel("")
-    axes[1].xaxis.set_major_locator(MaxNLocator(integer=True))
-
-    fig.suptitle(
-        "Interview-coded AI Error Summary",
-        fontsize=14,
-    )
+    ax.set_ylim(0, summary["participantCount"].max() + 5)
+    ax.set_xlabel("Workflow selected")
+    ax.set_ylabel("Participants")
+    ax.set_title("Workflow Choices in Main Round 1")
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    apply_standard_axes_style(ax, grid_axis="y")
 
     fig.text(
-        0.5,
         0.01,
-        "Note: Awareness categories describe injected-error experience. Reported non-injected AI error types are not mutually exclusive.",
-        ha="center",
+        0.01,
+        (
+            f"n = {total_participants}. AI-supported selections in this round "
+            "were the opportunity for participants to encounter the injected error."
+        ),
+        ha="left",
         va="bottom",
-        fontsize=9,
-        color="dimgray",
+        fontsize=8.3,
+        color="#4A4A4A",
     )
 
-    fig.tight_layout(rect=[0, 0.05, 1, 0.92])
+    fig.tight_layout(rect=(0, 0.045, 1, 1))
 
     save_figure(
         fig,
         slug,
-        "Interview-coded AI Error Summary",
-        "Participant-level interview coding of injected AI-error awareness and reported non-injected AI error types.",
+        "Workflow Choices in Main Round 1",
+        "Voluntary workflow selections in the first Main round. Participants "
+        "selecting an AI-supported workflow encountered the injected-error condition.",
     )
 
 
-def plot_error_exposure(df: pd.DataFrame):
-    plot_round5_workflow_exposure(df)
-    plot_post_error_workflow_choices_by_exposure(df)
-    plot_interview_coded_ai_error_summary()
+# ---------------------------------------------------------------------------
+# 42: Workflow choices after the injected-error round
+# ---------------------------------------------------------------------------
+
+
+def plot_post_error_workflow_choices_by_exposure(prepared) -> None:
+    """Show post-error Main Round 2-3 workflow distributions by Round-5 exposure."""
+    slug = "42_post_error_workflow_choices_by_exposure"
+
+    post = (
+        prepared[prepared["roundIndex"].gt(ERROR_ROUND_INDEX)]
+        .dropna(subset=["errorExposed"])
+        .copy()
+    )
+    if post.empty:
+        return
+
+    groups = [group for group in [True, False] if group in set(post["errorExposed"])]
+    rounds = sorted(post["roundIndex"].unique().tolist())
+    grid = pd.MultiIndex.from_product(
+        [groups, rounds, WORKFLOW_ORDER],
+        names=["errorExposed", "roundIndex", "workflow"],
+    )
+    summary = (
+        post.groupby(["errorExposed", "roundIndex", "workflow"])
+        .size()
+        .reindex(grid, fill_value=0)
+        .rename("choiceCount")
+        .reset_index()
+    )
+    summary["roundTotal"] = summary.groupby(["errorExposed", "roundIndex"])[
+        "choiceCount"
+    ].transform("sum")
+    summary["choicePercentage"] = np.where(
+        summary["roundTotal"] > 0,
+        summary["choiceCount"] / summary["roundTotal"] * 100,
+        np.nan,
+    )
+    summary["workflowLabel"] = summary["workflow"].map(workflow_display_name)
+    summary["exposureLabel"] = summary["errorExposed"].map(exposure_display_name)
+    summary["mainRoundLabel"] = summary["roundIndex"].map(round_display_name)
+    save_table(summary, slug, index=False)
+
+    fig, axes = plt.subplots(
+        1, len(groups), figsize=(6.2 * len(groups), 5.5), sharey=True, squeeze=False
+    )
+    for ax, group in zip(axes.flatten(), groups):
+        group_summary = summary[summary["errorExposed"].eq(group)]
+        bottoms = np.zeros(len(rounds), dtype=float)
+
+        for workflow in WORKFLOW_ORDER:
+            values = (
+                group_summary[group_summary["workflow"].eq(workflow)]
+                .set_index("roundIndex")
+                .reindex(rounds)
+            )
+            percentages = values["choicePercentage"].to_numpy(dtype=float)
+            counts = values["choiceCount"].to_numpy(dtype=int)
+            bars = ax.bar(
+                np.arange(len(rounds)),
+                percentages,
+                bottom=bottoms,
+                color=WORKFLOW_COLORS[workflow],
+                edgecolor=BAR_EDGE_COLOR,
+                linewidth=0.8,
+                label=workflow_display_name(workflow),
+                zorder=2,
+            )
+            for bar, percent, count, bottom in zip(bars, percentages, counts, bottoms):
+                if percent >= 9:
+                    ax.text(
+                        bar.get_x() + bar.get_width() / 2,
+                        bottom + percent / 2,
+                        f"{count}\n{percent:.0f}%",
+                        ha="center",
+                        va="center",
+                        fontsize=7.5,
+                        color="black",
+                    )
+            bottoms += percentages
+
+        totals = (
+            group_summary.drop_duplicates("roundIndex")
+            .set_index("roundIndex")
+            .reindex(rounds)["roundTotal"]
+            .to_numpy(dtype=int)
+        )
+        ax.set_xticks(np.arange(len(rounds)))
+        ax.set_xticklabels(
+            [f"{round_display_name(r)}\nn={n}" for r, n in zip(rounds, totals)]
+        )
+        ax.set_ylim(0, 100)
+        ax.set_xlabel("Free-choice post-error round")
+        ax.set_title(exposure_display_name(group))
+        apply_standard_axes_style(ax, grid_axis="y")
+
+    axes[0, 0].set_ylabel("Workflow choices (%)")
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        title="Workflow selected",
+        bbox_to_anchor=(0.99, 0.5),
+        loc="center left",
+    )
+    fig.suptitle(
+        "Post-Error Workflow Choices by Main Round 1 Exposure", fontsize=13, y=0.99
+    )
+    fig.text(
+        0.01,
+        0.01,
+        "Each bar contains all workflow choices in that round. Exposure was defined from Main Round 1 and was not independently randomized.",
+        ha="left",
+        va="bottom",
+        fontsize=8.3,
+        color="#4A4A4A",
+    )
+    fig.tight_layout(rect=(0, 0.045, 0.84, 0.96))
+
+    save_figure(
+        fig,
+        slug,
+        "Post-Error Workflow Choices by Main Round 1 Exposure",
+        "Distribution of voluntary workflow choices in Main Rounds 2-3 by error exposure.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# 43: Interview awareness among exposed participants
+# ---------------------------------------------------------------------------
+
+
+def plot_injected_error_awareness(prepared) -> None:
+    """Show whether exposed interview respondents noticed the injected error."""
+    slug = "43_injected_error_awareness"
+
+    notes = _load_and_prepare_notes(prepared)
+    required = {"injectedErrorExperience"}
+    if notes.empty or not require_columns(
+        notes, required, "injected-error awareness notes"
+    ):
+        return
+
+    exposed = notes[notes["errorExposed"]].copy()
+    if exposed.empty:
+        print(
+            "Skipping Figure 43; no exposed interview respondents with awareness coding were available."
+        )
+        return
+
+    summary = (
+        exposed["injectedErrorExperience"]
+        .value_counts()
+        .reindex(["noticed", "not_noticed"], fill_value=0)
+        .rename_axis("awarenessCode")
+        .reset_index(name="participantCount")
+    )
+    denominator = int(summary["participantCount"].sum())
+    summary["awarenessLabel"] = summary["awarenessCode"].map(AWARENESS_LABELS)
+    summary["percentage"] = summary["participantCount"] / denominator * 100
+    summary["interviewRespondentsTotal"] = int(notes["participantId"].nunique())
+    summary["exposedInterviewRespondents"] = denominator
+    save_table(summary, slug, index=False)
+
+    plot_df = summary.iloc[::-1]
+    fig, ax = plt.subplots(figsize=(8.2, 4.3))
+    bars = ax.barh(
+        plot_df["awarenessLabel"],
+        plot_df["percentage"],
+        edgecolor=BAR_EDGE_COLOR,
+    )
+    for bar, (_, row) in zip(bars, plot_df.iterrows()):
+        ax.text(
+            bar.get_width() + 1.5,
+            bar.get_y() + bar.get_height() / 2,
+            f"{int(row['participantCount'])}/{denominator} ({row['percentage']:.1f}%)",
+            va="center",
+            fontsize=9,
+        )
+    ax.set_xlim(0, 112)
+    ax.set_xlabel("Exposed interview respondents (%)")
+    ax.set_ylabel("")
+    ax.set_title("Awareness of the Injected AI Error")
+    apply_standard_axes_style(ax, grid_axis="x")
+    fig.text(
+        0.01,
+        0.01,
+        f"Denominator: {denominator} interview respondent(s) confirmed as error-exposed in Main Round 1. Non-exposed respondents are excluded.",
+        ha="left",
+        va="bottom",
+        fontsize=8.3,
+        color="#4A4A4A",
+    )
+    fig.tight_layout(rect=(0, 0.045, 1, 1))
+
+    save_figure(
+        fig,
+        slug,
+        "Awareness of the Injected AI Error",
+        "Interview-coded awareness among respondents actually exposed to the injected error in Main Round 1.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# 44: Other AI error types reported in interviews
+# ---------------------------------------------------------------------------
+
+
+def plot_other_ai_error_types(prepared) -> None:
+    """Show non-injected AI issues reported by interview respondents."""
+    slug = "44_reported_other_ai_error_types"
+
+    notes = _load_and_prepare_notes(prepared)
+    required = {"reportedOtherAiErrorTypes"}
+    if notes.empty or not require_columns(
+        notes, required, "other AI error interview notes"
+    ):
+        return
+
+    total_respondents = int(notes["participantId"].nunique())
+    rows = []
+    for _, row in notes.iterrows():
+        raw_types = row.get("reportedOtherAiErrorTypes")
+        if pd.isna(raw_types) or not str(raw_types).strip():
+            continue
+        for raw_type in str(raw_types).split(";"):
+            error_type = raw_type.strip()
+            if error_type:
+                rows.append(
+                    {"participantId": row["participantId"], "errorType": error_type}
+                )
+    if not rows:
+        print(
+            "Skipping Figure 44; no coded non-injected AI error types were available."
+        )
+        return
+
+    error_type_df = pd.DataFrame(rows).drop_duplicates(
+        subset=["participantId", "errorType"]
+    )
+
+    unique_reporters = error_type_df["participantId"].nunique()
+    total_issue_reports = len(error_type_df)
+
+    summary = (
+        pd.DataFrame(rows)
+        .groupby("errorType")["participantId"]
+        .nunique()
+        .reset_index(name="participantCount")
+    )
+    summary["errorTypeLabel"] = (
+        summary["errorType"]
+        .map(OTHER_AI_ERROR_LABELS)
+        .fillna(summary["errorType"].str.replace("_", " ").str.title())
+    )
+    summary["percentage"] = summary["participantCount"] / total_respondents * 100
+    summary = summary.sort_values(
+        ["participantCount", "errorTypeLabel"], ascending=[True, True]
+    ).reset_index(drop=True)
+    summary["interviewRespondentsTotal"] = total_respondents
+    save_table(summary, slug, index=False)
+
+    fig, ax = plt.subplots(figsize=(9.4, max(4.5, 0.65 * len(summary) + 2.4)))
+    bars = ax.barh(
+        summary["errorTypeLabel"],
+        summary["participantCount"],
+        edgecolor=BAR_EDGE_COLOR,
+        linewidth=0.8,
+        zorder=2,
+    )
+    for bar, (_, row) in zip(bars, summary.iterrows()):
+        ax.text(
+            bar.get_width() + 0.12,
+            bar.get_y() + bar.get_height() / 2,
+            f"{int(row['participantCount'])} ({row['percentage']:.1f}%)",
+            va="center",
+            fontsize=8.5,
+        )
+    ax.set_xlim(0, max(1, summary["participantCount"].max() + 1.8))
+    ax.set_xlabel("Interview respondents reporting the issue")
+    ax.set_ylabel("")
+    ax.set_title("Other AI Error Types Reported in Interviews")
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    apply_standard_axes_style(ax, grid_axis="x")
+    fig.text(
+        0.01,
+        0.01,
+        (
+            f"{unique_reporters} of {total_respondents} interview respondents "
+            f"reported at least one other AI issue. "
+            f"There were {total_issue_reports} issue-type reports in total; "
+            "participants could report multiple issue types."
+        ),
+        ha="left",
+        va="bottom",
+        fontsize=8.3,
+        color="#4A4A4A",
+    )
+    fig.tight_layout(rect=(0, 0.045, 1, 1))
+
+    save_figure(
+        fig,
+        slug,
+        "Other AI Error Types Reported in Interviews",
+        "Interview-coded non-injected AI issues reported by participants. Categories are not mutually exclusive.",
+    )
+
+
+def plot_error_exposure(df: pd.DataFrame) -> None:
+    """Generate injected-error exposure and interview-coding figures."""
+    required = {"participantId", "roundIndex", "workflow", "errorExposed"}
+
+    if df.empty or not require_columns(
+        df,
+        required,
+        "error-exposure data",
+    ):
+        return
+
+    prepared = df.copy()
+    prepared["participantId"] = prepared["participantId"].astype(str)
+
+    if prepared.empty:
+        return
+
+    plot_round5_workflow_choice(prepared)
+    plot_post_error_workflow_choices_by_exposure(prepared)
+    plot_injected_error_awareness(prepared)
+    plot_other_ai_error_types(prepared)

@@ -1,3 +1,10 @@
+"""OpenAI-generated feedback summaries (no figure prefix).
+
+Collects round comments and final feedback, groups by workflow,
+and calls the OpenAI API to produce short narrative summaries.
+Output: data/runtime/workflow_feedback_summaries.csv
+"""
+
 import json
 import os
 from collections import defaultdict
@@ -5,7 +12,8 @@ from collections import defaultdict
 import pandas as pd
 from openai import OpenAI
 
-from scripts.config import TABLE_DIR, WORKFLOW_LABELS, WORKFLOW_FEEDBACK_SUMMARY_PATH
+from scripts.config import TABLE_DIR, WORKFLOW_FEEDBACK_SUMMARY_PATH
+from scripts.dashboard_figures.helpers import workflow_display_name
 
 OPENAI_SUMMARY_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_COMMENT_CHAR_LIMIT = 12000
@@ -40,10 +48,6 @@ def _normalize_workflow(value):
     return workflow
 
 
-def _workflow_label(workflow):
-    return WORKFLOW_LABELS.get(workflow, workflow)
-
-
 def _collect_round_comments(df):
     comments = []
 
@@ -69,7 +73,7 @@ def _collect_round_comments(df):
                     {
                         "source": "round",
                         "workflow": workflow,
-                        "workflowLabel": _workflow_label(workflow),
+                        "workflowLabel": workflow_display_name(workflow),
                         "comment": comment,
                     }
                 )
@@ -194,7 +198,7 @@ def generate_feedback_summaries(df, feedback_df):
     summary_rows = []
 
     for workflow, comments in sorted(comments_by_workflow.items()):
-        workflow_label = _workflow_label(workflow)
+        workflow_label = workflow_display_name(workflow)
 
         summary_rows.append(
             {

@@ -1,15 +1,14 @@
 """Output-quality figures for the research dashboard.
 
-Core quality figures
+Figures
 --------------------
-11  Evaluation coverage across submitted outputs
-12  Composite quality by workflow across all evaluated rounds
-13  Composite quality by workflow in controlled practice rounds
-14  Quality dimensions by workflow in controlled practice rounds
-15  Composite quality versus completion time by workflow
-16  Human→AI versus AI→Human quality in practice rounds
-17  Mixed versus solo workflow quality in practice rounds
-18  Main-round quality trends by actual error-exposure group
+11  Mean overall quality by workflow in main rounds
+12  Rating dimensions by workflow in main rounds
+13  Mean overall quality versus completion time by workflow
+14  Human→AI versus AI→Human quality in main rounds
+15  Mixed versus solo workflow quality in main rounds
+16  Main-round quality trends by actual error-exposure group
+17  Highest- and lowest-rated poems
 """
 
 from __future__ import annotations
@@ -20,10 +19,7 @@ from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 
 from scripts.config import (
-    EXPECTED_EVALUATORS,
-    EXPOSURE_LABELS,
     MAIN_ROUND_INDICES,
-    PRACTICE_ROUND_INDICES,
     QUALITY_DIMENSION_LABELS,
     QUALITY_PRIMARY_METRIC,
     QUALITY_SCALE_MAX,
@@ -35,14 +31,15 @@ from scripts.config import (
 from scripts.dashboard_figures.helpers import (
     workflow_display_name,
     exposure_display_name,
+    drop_duplicate_participant_rounds,
+    phase_data,
+    ordered_exposure_groups,
 )
 from scripts.dashboard_figures.style import (
     BAR_EDGE_COLOR,
     apply_standard_axes_style,
 )
 from scripts.utils import (
-    drop_duplicate_participant_rounds,
-    parse_bool,
     require_columns,
     save_figure,
     save_table,
@@ -59,47 +56,19 @@ CI_Z_VALUE = 1.96
 # -----------------------------------------------------------------------------
 
 
-def _truthy_mask(series: pd.Series) -> pd.Series:
-    """Interpret common CSV boolean representations as a boolean mask."""
-    normalized = series.astype(str).str.strip().str.lower()
-    return series.map(parse_bool) | normalized.isin({"1.0"})
-
-
 def _prepare_quality_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Return deduplicated rows with valid primary-quality observations."""
-    required = {QUALITY_PRIMARY_METRIC, "workflow"}
-    if df.empty or not require_columns(df, required, "quality data"):
+    """Keep valid observations for the primary quality outcome."""
+    prepared = df.copy()
+
+    if QUALITY_PRIMARY_METRIC not in prepared.columns:
         return pd.DataFrame()
 
-    prepared = drop_duplicate_participant_rounds(df.copy())
     prepared[QUALITY_PRIMARY_METRIC] = pd.to_numeric(
         prepared[QUALITY_PRIMARY_METRIC],
         errors="coerce",
     )
-    prepared = prepared.dropna(subset=[QUALITY_PRIMARY_METRIC, "workflow"])
-    prepared = prepared[prepared["workflow"].isin(WORKFLOW_ORDER)].copy()
 
-    return prepared
-
-
-def _phase_data(df: pd.DataFrame, phase: str) -> pd.DataFrame:
-    """Filter rows to the planned practice or main phase without guessing values."""
-    if phase not in {"practice", "main"}:
-        raise ValueError("phase must be either 'practice' or 'main'")
-
-    flag_column = "isPracticeRound" if phase == "practice" else "isMainRound"
-    round_indices = (
-        PRACTICE_ROUND_INDICES if phase == "practice" else MAIN_ROUND_INDICES
-    )
-
-    if flag_column in df.columns:
-        return df.loc[_truthy_mask(df[flag_column])].copy()
-
-    if "roundIndex" not in df.columns:
-        return pd.DataFrame(columns=df.columns)
-
-    numeric_rounds = pd.to_numeric(df["roundIndex"], errors="coerce")
-    return df.loc[numeric_rounds.isin(round_indices)].copy()
+    return prepared.dropna(subset=[QUALITY_PRIMARY_METRIC]).copy()
 
 
 def _quality_summary(
@@ -119,18 +88,6 @@ def _quality_summary(
     summary.loc[summary["count"] < 2, ["std", "se", "ciLow", "ciHigh"]] = np.nan
 
     return summary
-
-
-def _fully_rated_mask(dataframe: pd.DataFrame) -> pd.Series:
-    """Identify fully rated outputs from the explicit flag or rating count."""
-    if "isFullyRated" in dataframe.columns:
-        return _truthy_mask(dataframe["isFullyRated"])
-
-    if "ratingCount" in dataframe.columns:
-        rating_count = pd.to_numeric(dataframe["ratingCount"], errors="coerce")
-        return rating_count.ge(EXPECTED_EVALUATORS)
-
-    return pd.Series(False, index=dataframe.index)
 
 
 def _workflow_order_present(dataframe: pd.DataFrame) -> list[str]:
@@ -291,7 +248,7 @@ def _plot_workflow_quality_distribution(
     ax.legend(handles=[mean_handle], loc="upper right")
     ax.set_title(title)
     ax.set_xlabel("Workflow")
-    ax.set_ylabel("Composite quality (1–5)")
+    ax.set_ylabel("Mean overall quality (1-5)")
     ax.set_ylim(QUALITY_Y_MIN, QUALITY_Y_MAX)
     ax.tick_params(axis="x", rotation=0)
     apply_standard_axes_style(ax)
@@ -420,210 +377,58 @@ def _plot_two_condition_paired_comparison(
     ax.set_xlim(0.55, 2.45)
     ax.set_ylim(QUALITY_Y_MIN, QUALITY_Y_MAX)
     ax.set_title(title)
-    ax.set_ylabel("Composite quality (1–5)")
+    ax.set_ylabel("Mean overall quality (1-5)")
     apply_standard_axes_style(ax)
 
     save_figure(fig, slug, title, description)
 
 
 # -----------------------------------------------------------------------------
-# 11: Evaluation coverage
+# 11: Main rounds workflow quality
 # -----------------------------------------------------------------------------
 
 
-def plot_evaluation_coverage(df: pd.DataFrame) -> None:
-    """Show how many outputs received ratings and reached full rating coverage."""
-    slug = "11_evaluation_coverage"
-    if df.empty:
-        return
-
-    coverage_df = drop_duplicate_participant_rounds(df.copy())
-    if coverage_df.empty:
-        return
-
-    has_rating_count = "ratingCount" in coverage_df.columns
-    has_full_flag = "isFullyRated" in coverage_df.columns
-    if not has_rating_count and not has_full_flag:
-        print("Skipping evaluation coverage; missing ratingCount and isFullyRated.")
-        return
-
-    if has_rating_count:
-        coverage_df["ratingCountNumeric"] = (
-            pd.to_numeric(
-                coverage_df["ratingCount"],
-                errors="coerce",
-            )
-            .fillna(0)
-            .astype(int)
-        )
-    else:
-        coverage_df["ratingCountNumeric"] = np.nan
-
-    coverage_df["isFullyRatedCalculated"] = _fully_rated_mask(coverage_df)
-
-    rating_distribution = (
-        coverage_df["ratingCountNumeric"]
-        .value_counts(dropna=False)
-        .sort_index()
-        .rename_axis("ratingCount")
-        .reset_index(name="outputCount")
-    )
-    save_table(rating_distribution, f"{slug}_rating_count_distribution", index=False)
-
-    if "workflow" in coverage_df.columns:
-        workflow_coverage = (
-            coverage_df[coverage_df["workflow"].isin(WORKFLOW_ORDER)]
-            .groupby("workflow")
-            .agg(
-                outputCount=("workflow", "size"),
-                outputsWithAtLeastOneRating=(
-                    "ratingCountNumeric",
-                    lambda values: (
-                        int((values > 0).sum()) if has_rating_count else np.nan
-                    ),
-                ),
-                fullyRated=("isFullyRatedCalculated", "sum"),
-            )
-            .reindex(WORKFLOW_ORDER, fill_value=0)
-            .reset_index()
-        )
-        workflow_coverage["fullyRatedPercentage"] = np.where(
-            workflow_coverage["outputCount"] > 0,
-            workflow_coverage["fullyRated"] / workflow_coverage["outputCount"] * 100,
-            np.nan,
-        )
-        workflow_coverage["workflowLabel"] = workflow_coverage["workflow"].map(
-            workflow_display_name
-        )
-        save_table(workflow_coverage, f"{slug}_by_workflow", index=False)
-    else:
-        workflow_coverage = pd.DataFrame()
-
-    fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.8))
-
-    if has_rating_count and not rating_distribution.empty:
-        bars = axes[0].bar(
-            rating_distribution["ratingCount"].astype(str),
-            rating_distribution["outputCount"],
-            edgecolor=BAR_EDGE_COLOR,
-        )
-        for bar, count in zip(bars, rating_distribution["outputCount"]):
-            axes[0].text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + max(len(coverage_df) * 0.01, 0.1),
-                str(int(count)),
-                ha="center",
-                va="bottom",
-                fontsize=9,
-            )
-        axes[0].set_title("Number of Evaluator Ratings per Output")
-        axes[0].set_xlabel("Rating count")
-        axes[0].set_ylabel("Outputs")
-        apply_standard_axes_style(axes[0])
-    else:
-        axes[0].axis("off")
-        axes[0].text(
-            0.5,
-            0.5,
-            "Rating-count data unavailable",
-            ha="center",
-            va="center",
-            transform=axes[0].transAxes,
-        )
-
-    if not workflow_coverage.empty:
-        bars = axes[1].bar(
-            workflow_coverage["workflowLabel"],
-            workflow_coverage["fullyRatedPercentage"],
-            color=[
-                WORKFLOW_COLORS[workflow] for workflow in workflow_coverage["workflow"]
-            ],
-            edgecolor=BAR_EDGE_COLOR,
-        )
-        for bar, (_, row) in zip(bars, workflow_coverage.iterrows()):
-            axes[1].text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + 2.0,
-                f"{int(row['fullyRated'])}/{int(row['outputCount'])}",
-                ha="center",
-                va="bottom",
-                fontsize=8,
-            )
-        axes[1].set_title("Fully Rated Outputs by Workflow")
-        axes[1].set_xlabel("Workflow")
-        axes[1].set_ylabel("Fully rated outputs (%)")
-        axes[1].set_ylim(0, 112)
-        axes[1].tick_params(axis="x", rotation=12)
-        apply_standard_axes_style(axes[1])
-    else:
-        axes[1].axis("off")
-        axes[1].text(
-            0.5,
-            0.5,
-            "Workflow data unavailable",
-            ha="center",
-            va="center",
-            transform=axes[1].transAxes,
-        )
-
-    fig.tight_layout()
-    save_figure(
-        fig,
-        slug,
-        "Evaluation Coverage",
-        "Number of evaluator ratings per submitted output and the share of outputs "
-        "that received all expected evaluator ratings, shown by workflow.",
-    )
-
-
-# -----------------------------------------------------------------------------
-# 12–13: Overall and controlled-practice workflow quality
-# -----------------------------------------------------------------------------
-
-
-def plot_composite_quality_by_workflow_all_rounds(df: pd.DataFrame) -> None:
-    """Compare externally rated composite quality across all evaluated rounds."""
-    plot_df = _prepare_quality_data(df)
+def plot_mean_overall_quality_by_workflow_main_rounds(main_df) -> None:
+    """Compare quality across voluntarily selected workflows in Main rounds."""
     _plot_workflow_quality_distribution(
-        plot_df,
-        slug="12_composite_quality_by_workflow_all_rounds",
-        title="Composite Quality by Workflow Across All Evaluated Rounds",
-        description="Poem-level composite quality across all rounds with a valid "
-        "external quality score. Points are individual outputs; diamonds show "
-        "workflow means with descriptive 95% confidence intervals.",
+        main_df,
+        slug="11_mean_overall_quality_by_workflow_main_rounds",
+        title="Mean Overall Quality by Workflow in Main Rounds",
+        description=(
+            "Poem-level mean overall quality in the Main rounds. "
+            "Participants selected their own workflow, so differences are "
+            "descriptive associations rather than controlled workflow effects."
+        ),
     )
 
 
-def plot_composite_quality_by_workflow_practice_rounds(df: pd.DataFrame) -> None:
-    """Compare quality in the controlled, assigned-workflow practice phase."""
-    plot_df = _phase_data(_prepare_quality_data(df), "practice")
-    _plot_workflow_quality_distribution(
-        plot_df,
-        slug="13_composite_quality_by_workflow_practice_rounds",
-        title="Composite Quality by Workflow in Controlled Practice Rounds",
-        description="Poem-level composite quality in the assigned-workflow practice "
-        "phase. Workflow and task order were randomized, making this the primary "
-        "descriptive workflow-quality comparison.",
-    )
+# def plot_mean_overall_quality_by_workflow_practice_rounds(df: pd.DataFrame) -> None:
+#     """Compare quality in the controlled, assigned-workflow practice phase."""
+#     main_df = phase_data(_prepare_quality_data(df), "practice")
+#     _plot_workflow_quality_distribution(
+#         main_df,
+#         slug="11b_mean_overall_quality_by_workflow_practice_rounds",
+#         title="Mean Overall Quality by Workflow in Practice Rounds",
+#         description="Poem-level mean overall quality in the assigned-workflow practice "
+#         "phase. Workflow and task order were randomized, making this the primary "
+#         "descriptive workflow-quality comparison.",
+#     )
 
 
 # -----------------------------------------------------------------------------
-# 14: Dimension-level quality profile
+# 12: Main rounds dimension-level quality
 # -----------------------------------------------------------------------------
 
 
-def plot_quality_dimensions_by_workflow_practice_rounds(df: pd.DataFrame) -> None:
-    """Compare evaluator-rated quality dimensions in controlled practice rounds."""
-    slug = "14_quality_dimensions_by_workflow_practice_rounds"
-    plot_df = _phase_data(_prepare_quality_data(df), "practice")
-    if plot_df.empty:
-        return
+def plot_rating_dimensions_by_workflow_main_rounds(main_df) -> None:
+    """Compare evaluator-rated quality dimensions in main rounds."""
+    slug = "12_rating_dimensions_by_workflow_main_rounds"
 
     available_dimensions = [
         column
         for column in QUALITY_DIMENSION_LABELS
-        if column in plot_df.columns
-        and pd.to_numeric(plot_df[column], errors="coerce").notna().any()
+        if column in main_df.columns
+        and pd.to_numeric(main_df[column], errors="coerce").notna().any()
     ]
     if not available_dimensions:
         print(
@@ -633,8 +438,8 @@ def plot_quality_dimensions_by_workflow_practice_rounds(df: pd.DataFrame) -> Non
 
     long_rows = []
     for column in available_dimensions:
-        values = pd.to_numeric(plot_df[column], errors="coerce")
-        dimension_df = plot_df.loc[values.notna(), ["workflow"]].copy()
+        values = pd.to_numeric(main_df[column], errors="coerce")
+        dimension_df = main_df.loc[values.notna(), ["workflow"]].copy()
         dimension_df["dimension"] = QUALITY_DIMENSION_LABELS[column]
         dimension_df["score"] = values.loc[values.notna()].to_numpy()
         long_rows.append(dimension_df)
@@ -692,42 +497,39 @@ def plot_quality_dimensions_by_workflow_practice_rounds(df: pd.DataFrame) -> Non
     ax.set_yticklabels(dimension_labels)
     ax.invert_yaxis()
     ax.set_xlim(QUALITY_Y_MIN, QUALITY_Y_MAX)
-    ax.set_xlabel("Mean evaluator rating (1–5)")
+    ax.set_xlabel("Mean evaluator rating (1-5)")
     ax.set_ylabel("Quality dimension")
-    ax.set_title("Quality Dimensions by Workflow in Controlled Practice Rounds")
+    ax.set_title("Quality Dimensions by Workflow in Main Rounds")
     ax.legend(title="Workflow", bbox_to_anchor=(1.02, 1), loc="upper left")
     apply_standard_axes_style(ax, grid_axis="x")
 
     save_figure(
         fig,
         slug,
-        "Quality Dimensions by Workflow in Controlled Practice Rounds",
-        "Mean evaluator ratings by workflow and quality dimension in practice "
+        "Quality Dimensions by Workflow in Main Rounds",
+        "Mean evaluator ratings by workflow and quality dimension in main rounds "
         "rounds. Error bars show descriptive 95% confidence intervals.",
     )
 
 
 # -----------------------------------------------------------------------------
-# 15: Quality–time relationship
+# 13: Quality–time relationship
 # -----------------------------------------------------------------------------
 
 
-def plot_quality_vs_completion_time_by_workflow(df: pd.DataFrame) -> None:
-    """Show poem-level quality and completion time without ratio-score emphasis."""
-    slug = "15_quality_vs_completion_time_by_workflow"
-    plot_df = _prepare_quality_data(df)
-    if plot_df.empty:
-        return
+def plot_quality_vs_completion_time_by_workflow(prepared) -> None:
+    """Show poem-level mean overall quality and completion time without ratio-score emphasis."""
+    slug = "13_quality_vs_completion_time_by_workflow"
 
-    if "effectiveTimeMinutes" in plot_df.columns:
-        plot_df["completionTimeMinutes"] = pd.to_numeric(
-            plot_df["effectiveTimeMinutes"],
+    if "effectiveTimeMinutes" in prepared.columns:
+        prepared["completionTimeMinutes"] = pd.to_numeric(
+            prepared["effectiveTimeMinutes"],
             errors="coerce",
         )
-    elif "timeMs" in plot_df.columns:
-        plot_df["completionTimeMinutes"] = (
+    elif "timeMs" in prepared.columns:
+        prepared["completionTimeMinutes"] = (
             pd.to_numeric(
-                plot_df["timeMs"],
+                prepared["timeMs"],
                 errors="coerce",
             )
             / 60000
@@ -736,13 +538,13 @@ def plot_quality_vs_completion_time_by_workflow(df: pd.DataFrame) -> None:
         print("Skipping quality-time plot; missing effectiveTimeMinutes and timeMs.")
         return
 
-    plot_df = plot_df.dropna(subset=["completionTimeMinutes"])
-    plot_df = plot_df[plot_df["completionTimeMinutes"] >= 0].copy()
-    if plot_df.empty:
+    main_df = prepared.dropna(subset=["completionTimeMinutes"])
+    main_df = main_df[main_df["completionTimeMinutes"] >= 0].copy()
+    if main_df.empty:
         return
 
     summary = (
-        plot_df.groupby("workflow")
+        main_df.groupby("workflow")
         .agg(
             meanQuality=(QUALITY_PRIMARY_METRIC, "mean"),
             meanCompletionTimeMinutes=("completionTimeMinutes", "mean"),
@@ -756,10 +558,10 @@ def plot_quality_vs_completion_time_by_workflow(df: pd.DataFrame) -> None:
     save_table(summary, slug, index=False)
 
     fig, ax = plt.subplots(figsize=(8.6, 5.6))
-    workflows = _workflow_order_present(plot_df)
+    workflows = _workflow_order_present(main_df)
 
     for workflow in workflows:
-        workflow_df = plot_df[plot_df["workflow"] == workflow]
+        workflow_df = main_df[main_df["workflow"] == workflow]
         ax.scatter(
             workflow_df["completionTimeMinutes"],
             workflow_df[QUALITY_PRIMARY_METRIC],
@@ -790,9 +592,9 @@ def plot_quality_vs_completion_time_by_workflow(df: pd.DataFrame) -> None:
             fontsize=8,
         )
 
-    ax.set_title("Composite Quality and Completion Time by Workflow")
+    ax.set_title("Mean Overall Quality and Completion Time by Workflow")
     ax.set_xlabel("Effective completion time (minutes)")
-    ax.set_ylabel("Composite quality (1–5)")
+    ax.set_ylabel("Mean Overall quality (1-5)")
     ax.set_ylim(QUALITY_Y_MIN, QUALITY_Y_MAX)
     ax.legend(title="Workflow", bbox_to_anchor=(1.02, 1), loc="upper left")
     apply_standard_axes_style(ax)
@@ -800,7 +602,7 @@ def plot_quality_vs_completion_time_by_workflow(df: pd.DataFrame) -> None:
     save_figure(
         fig,
         slug,
-        "Composite Quality and Completion Time by Workflow",
+        "Mean Overall Quality and Completion Time by Workflow",
         "Each point is one evaluated output. Larger diamonds show the mean time "
         "and mean quality for each workflow; the plot displays the quality-time "
         "trade-off directly rather than using a ratio score.",
@@ -808,15 +610,14 @@ def plot_quality_vs_completion_time_by_workflow(df: pd.DataFrame) -> None:
 
 
 # -----------------------------------------------------------------------------
-# 16–17: Paired controlled-practice comparisons
+# 14: Paired workflows quality in main rounds
 # -----------------------------------------------------------------------------
 
 
-def plot_mixed_workflow_direction_quality_practice_rounds(df: pd.DataFrame) -> None:
-    """Compare Human→AI and AI→Human quality within the same participants."""
-    slug = "16_mixed_workflow_direction_quality_practice_rounds"
-    plot_df = _phase_data(_prepare_quality_data(df), "practice")
-    paired_df = _paired_matrix(plot_df, ["human_ai", "ai_human"])
+def plot_mixed_workflow_direction_quality_main_rounds(main_df) -> None:
+    """Compare each participant's Human→AI and AI→Human workflow quality in main rounds."""
+    slug = "14_mixed_workflow_direction_quality_main_rounds"
+    paired_df = _paired_matrix(main_df, ["human_ai", "ai_human"])
 
     _plot_two_condition_paired_comparison(
         paired_df=paired_df,
@@ -827,19 +628,19 @@ def plot_mixed_workflow_direction_quality_practice_rounds(df: pd.DataFrame) -> N
         left_color=WORKFLOW_COLORS["human_ai"],
         right_color=WORKFLOW_COLORS["ai_human"],
         slug=slug,
-        title="Mixed-Workflow Direction and Quality in Practice Rounds",
+        title="Mixed-Workflow Direction and Quality in Main Rounds",
         description="Within-participant comparison of the two mixed workflows in "
-        "controlled practice rounds. Lines connect the same participant across "
+        "main rounds. Lines connect the same participant across "
         "Human→AI and AI→Human.",
     )
 
 
-def plot_mixed_vs_solo_quality_practice_rounds(df: pd.DataFrame) -> None:
-    """Compare each participant's mixed- and solo-workflow practice quality."""
-    slug = "17_mixed_vs_solo_quality_practice_rounds"
-    plot_df = _phase_data(_prepare_quality_data(df), "practice")
+def plot_mixed_vs_solo_quality_main_rounds(main_df) -> None:
+    """Compare each participant's mixed- and solo-workflow quality in main rounds."""
+    slug = "15_mixed_vs_solo_quality_main_rounds"
+
     required_workflows = ["human", "ai", "human_ai", "ai_human"]
-    matrix = _paired_matrix(plot_df, required_workflows)
+    matrix = _paired_matrix(main_df, required_workflows)
     if matrix.empty:
         return
 
@@ -860,56 +661,50 @@ def plot_mixed_vs_solo_quality_practice_rounds(df: pd.DataFrame) -> None:
         left_color="0.45",
         right_color=WORKFLOW_COLORS["human_ai"],
         slug=slug,
-        title="Mixed versus Solo Workflow Quality in Practice Rounds",
+        title="Mixed versus Solo Workflow Quality in Main Rounds",
         description="Within-participant comparison of average quality in solo and "
-        "mixed workflows. Each participant contributes one average over Human-only "
+        "mixed workflows in main rounds. Each participant contributes one average over Human-only "
         "and AI-only outputs and one average over Human→AI and AI→Human outputs.",
     )
 
 
 # -----------------------------------------------------------------------------
-# 18: Main-round quality patterns by actual error exposure
+# 16: Main-round quality patterns by actual error exposure
 # -----------------------------------------------------------------------------
 
 
-def _available_exposure_groups(dataframe: pd.DataFrame) -> list[str]:
-    """Return present exposure groups in the canonical display order."""
-    if "errorExposureGroup" not in dataframe.columns:
-        return []
+def plot_main_round_quality_by_error_exposure(main_df) -> None:
+    """Plot descriptive Main-round quality trends by AI-error exposure."""
+    slug = "16_main_round_quality_by_error_exposure"
 
-    available = set(dataframe["errorExposureGroup"].dropna().astype(str))
-    configured = [group for group in EXPOSURE_LABELS if group in available]
-    extras = sorted(available - set(configured))
-    return configured + extras
-
-
-def plot_main_round_quality_by_error_exposure(df: pd.DataFrame) -> None:
-    """Plot descriptive quality trends in Main rounds by exposure group."""
-    slug = "18_main_round_quality_by_error_exposure"
-    plot_df = _phase_data(_prepare_quality_data(df), "main")
-
-    if plot_df.empty:
-        return
     if not require_columns(
-        plot_df,
-        {"roundIndex", "errorExposureGroup"},
+        main_df,
+        {"roundIndex", "errorExposed"},
         "main-round quality by exposure",
     ):
         return
 
-    plot_df["roundIndex"] = pd.to_numeric(plot_df["roundIndex"], errors="coerce")
-    plot_df = plot_df.dropna(subset=["roundIndex", "errorExposureGroup"])
-    plot_df["roundIndex"] = plot_df["roundIndex"].astype(int)
-    plot_df = plot_df[plot_df["roundIndex"].isin(MAIN_ROUND_INDICES)].copy()
-    groups = _available_exposure_groups(plot_df)
+    main_df["roundIndex"] = pd.to_numeric(
+        main_df["roundIndex"],
+        errors="coerce",
+    )
+
+    main_df = main_df.dropna(subset=["roundIndex", "errorExposed"])
+    main_df["roundIndex"] = main_df["roundIndex"].astype(int)
+    main_df = main_df[main_df["roundIndex"].isin(MAIN_ROUND_INDICES)].copy()
+
+    groups = ordered_exposure_groups(main_df)
+
     if not groups:
         return
 
     summary = _quality_summary(
-        plot_df,
-        ["errorExposureGroup", "roundIndex", "workflow"],
+        main_df,
+        ["errorExposed", "roundIndex", "workflow"],
     )
     summary["workflowLabel"] = summary["workflow"].map(workflow_display_name)
+    summary["exposureLabel"] = summary["errorExposed"].map(exposure_display_name)
+
     save_table(summary, slug, index=False)
 
     fig, axes = plt.subplots(
@@ -921,14 +716,16 @@ def plot_main_round_quality_by_error_exposure(df: pd.DataFrame) -> None:
     )
     axes = axes[0]
 
-    for panel_index, group in enumerate(groups):
+    for panel_index, exposed in enumerate(groups):
         ax = axes[panel_index]
-        group_summary = summary[summary["errorExposureGroup"].astype(str) == group]
+
+        group_summary = summary[summary["errorExposed"].eq(exposed)]
 
         for workflow in WORKFLOW_ORDER:
             workflow_summary = group_summary[
-                group_summary["workflow"] == workflow
+                group_summary["workflow"].eq(workflow)
             ].sort_values("roundIndex")
+
             if workflow_summary.empty:
                 continue
 
@@ -946,7 +743,9 @@ def plot_main_round_quality_by_error_exposure(df: pd.DataFrame) -> None:
                 color=WORKFLOW_COLORS[workflow],
                 label=workflow_display_name(workflow),
             )
+
             valid_ci = pd.notna(lows) & pd.notna(highs)
+
             if valid_ci.any():
                 ax.fill_between(
                     rounds[valid_ci],
@@ -956,20 +755,27 @@ def plot_main_round_quality_by_error_exposure(df: pd.DataFrame) -> None:
                     alpha=0.14,
                 )
 
-        ax.set_title(exposure_display_name(group))
+        ax.set_title(exposure_display_name(exposed))
         ax.set_xticks(MAIN_ROUND_INDICES)
         ax.set_xticklabels(
             [f"Main {index}" for index in range(1, len(MAIN_ROUND_INDICES) + 1)]
         )
         ax.set_xlabel("Free-choice main round")
         ax.set_ylim(QUALITY_Y_MIN, QUALITY_Y_MAX)
+
         if panel_index == 0:
-            ax.set_ylabel("Mean composite quality (1–5)")
+            ax.set_ylabel("Mean overall quality (1-5)")
+
         apply_standard_axes_style(ax)
 
-    axes[-1].legend(title="Workflow", bbox_to_anchor=(1.02, 1), loc="upper left")
+    axes[-1].legend(
+        title="Workflow",
+        bbox_to_anchor=(1.02, 1),
+        loc="upper left",
+    )
+
     fig.suptitle(
-        "Composite Quality Across Main Rounds by Error-Exposure Group",
+        "Mean Overall Quality Across Main Rounds by Error Exposure",
         fontsize=12,
         y=0.98,
     )
@@ -978,20 +784,19 @@ def plot_main_round_quality_by_error_exposure(df: pd.DataFrame) -> None:
     save_figure(
         fig,
         slug,
-        "Composite Quality Across Main Rounds by Error-Exposure Group",
-        "Descriptive workflow-level quality trends in free-choice Main rounds, "
-        "shown separately for participants exposed and not exposed to the injected "
-        "AI error. Exposure groups arise from Main 1 workflow choices and should not "
-        "be interpreted as a randomized causal contrast.",
+        "Mean Overall Quality Across Main Rounds by Error Exposure",
+        "Descriptive workflow-level quality trends in Main rounds, shown "
+        "separately for participants exposed and not exposed to the injected "
+        "AI error in round 5.",
     )
 
 
 # -----------------------------------------------------------------------------
-# 19: Highest- and lowest-rated poems
+# 17: Highest- and lowest-rated poems
 # -----------------------------------------------------------------------------
 
 
-def plot_quality_examples(df, max_examples_per_extreme=3):
+def plot_quality_examples(prepared, max_examples_per_extreme=3):
     """Create optional illustrative examples of highest- and lowest-rated poems.
 
     These figures are for curious dashboard readers only and are not intended
@@ -999,24 +804,23 @@ def plot_quality_examples(df, max_examples_per_extreme=3):
     """
     required_columns = {QUALITY_PRIMARY_METRIC, "text", "workflow", "roundIndex"}
 
-    if not require_columns(df, required_columns, "quality examples"):
+    if not require_columns(prepared, required_columns, "quality examples"):
         return
 
-    plot_df = drop_duplicate_participant_rounds(df.copy())
-    plot_df[QUALITY_PRIMARY_METRIC] = pd.to_numeric(
-        plot_df[QUALITY_PRIMARY_METRIC], errors="coerce"
+    prepared[QUALITY_PRIMARY_METRIC] = pd.to_numeric(
+        prepared[QUALITY_PRIMARY_METRIC], errors="coerce"
     )
-    plot_df = plot_df.dropna(
+    prepared = prepared.dropna(
         subset=[QUALITY_PRIMARY_METRIC, "text", "workflow", "roundIndex"]
     )
 
-    if plot_df.empty:
+    if prepared.empty:
         return
 
-    plot_df["text"] = plot_df["text"].astype(str).str.strip()
-    plot_df = plot_df[plot_df["text"] != ""]
+    prepared["text"] = prepared["text"].astype(str).str.strip()
+    prepared = prepared[prepared["text"] != ""]
 
-    if plot_df.empty:
+    if prepared.empty:
         return
 
     display_columns = [
@@ -1028,9 +832,10 @@ def plot_quality_examples(df, max_examples_per_extreme=3):
         QUALITY_PRIMARY_METRIC,
         "constraintScore",
         "ratingCount",
-        "isFullyRated",
     ]
-    export_columns = [column for column in display_columns if column in plot_df.columns]
+    export_columns = [
+        column for column in display_columns if column in prepared.columns
+    ]
 
     def wrap_text(text, max_line_length=72):
         wrapped_lines = []
@@ -1074,13 +879,23 @@ def plot_quality_examples(df, max_examples_per_extreme=3):
             example_df["workflow"].map(WORKFLOW_LABELS).fillna(example_df["workflow"])
         )
 
-        figure_height = max(5.0, 4.0 * len(example_df))
-        fig, ax = plt.subplots(figsize=(11.5, figure_height))
-        ax.axis("off")
-        ax.set_title(title, fontsize=14, fontweight="bold", pad=18)
+        # Conservative spacing values in inches.
+        HEADER_LINE_HEIGHT = 0.21
+        TOPIC_LINE_HEIGHT = 0.18
+        POEM_LINE_HEIGHT = 0.21
 
-        y_position = 0.96
-        vertical_gap = 0.90 / len(example_df)
+        HEADER_TO_TOPIC_GAP = 0.08
+        TOPIC_TO_POEM_GAP = 0.12
+        POEM_BOX_PADDING = 0.22
+        BLOCK_BOTTOM_GAP = 0.38
+
+        TOP_PADDING = 0.85
+        BOTTOM_PADDING = 0.30
+
+        def count_lines(value):
+            return str(value).count("\n") + 1
+
+        examples = []
 
         for index, (_, row) in enumerate(example_df.iterrows(), start=1):
             topic = (
@@ -1101,40 +916,85 @@ def plot_quality_examples(df, max_examples_per_extreme=3):
             if "ratingCount" in row and pd.notna(row["ratingCount"]):
                 metadata.append(f"Ratings: {int(row['ratingCount'])}")
 
-            if "isFullyRated" in row and pd.notna(row["isFullyRated"]):
-                fully_rated = bool(row["isFullyRated"])
-                metadata.append("Fully rated" if fully_rated else "Partially rated")
-
             header = f"Example {index}  |  " + "  |  ".join(metadata)
+
+            # Wrap these too, in case metadata or topics become long.
+            header = wrap_text(header, max_line_length=135)
+            topic_text = wrap_text(f"Topic: {topic}", max_line_length=110)
             poem_text = wrap_text(row["text"])
 
-            ax.text(
+            block_height = (
+                count_lines(header) * HEADER_LINE_HEIGHT
+                + HEADER_TO_TOPIC_GAP
+                + count_lines(topic_text) * TOPIC_LINE_HEIGHT
+                + TOPIC_TO_POEM_GAP
+                + count_lines(poem_text) * POEM_LINE_HEIGHT
+                + POEM_BOX_PADDING
+                + BLOCK_BOTTOM_GAP
+            )
+
+            examples.append(
+                {
+                    "header": header,
+                    "topic": topic_text,
+                    "poem": poem_text,
+                    "height": block_height,
+                }
+            )
+
+        figure_height = max(
+            5.0,
+            TOP_PADDING
+            + BOTTOM_PADDING
+            + sum(example["height"] for example in examples),
+        )
+
+        fig = plt.figure(figsize=(11.5, figure_height))
+        fig.patch.set_facecolor("white")
+
+        fig.text(
+            0.5,
+            (figure_height - 0.25) / figure_height,
+            title,
+            ha="center",
+            va="top",
+            fontsize=14,
+            fontweight="bold",
+        )
+
+        y_position = figure_height - TOP_PADDING
+
+        for example in examples:
+            fig.text(
                 0.03,
-                y_position,
-                header,
-                transform=ax.transAxes,
+                y_position / figure_height,
+                example["header"],
                 ha="left",
                 va="top",
                 fontsize=10,
                 fontweight="bold",
             )
 
-            ax.text(
+            y_position -= count_lines(example["header"]) * HEADER_LINE_HEIGHT
+            y_position -= HEADER_TO_TOPIC_GAP
+
+            fig.text(
                 0.03,
-                y_position - 0.06,
-                f"Topic: {topic}",
-                transform=ax.transAxes,
+                y_position / figure_height,
+                example["topic"],
                 ha="left",
                 va="top",
                 fontsize=9,
                 style="italic",
             )
 
-            ax.text(
+            y_position -= count_lines(example["topic"]) * TOPIC_LINE_HEIGHT
+            y_position -= TOPIC_TO_POEM_GAP
+
+            fig.text(
                 0.03,
-                y_position - 0.12,
-                poem_text,
-                transform=ax.transAxes,
+                y_position / figure_height,
+                example["poem"],
                 ha="left",
                 va="top",
                 fontsize=9,
@@ -1148,15 +1008,17 @@ def plot_quality_examples(df, max_examples_per_extreme=3):
                 },
             )
 
-            y_position -= vertical_gap
+            y_position -= count_lines(example["poem"]) * POEM_LINE_HEIGHT
+            y_position -= POEM_BOX_PADDING
+            y_position -= BLOCK_BOTTOM_GAP
 
         save_figure(fig, slug, title, description)
 
-    highest_examples = select_examples(plot_df, ascending=False)
-    lowest_examples = select_examples(plot_df, ascending=True)
+    highest_examples = select_examples(prepared, ascending=False)
+    lowest_examples = select_examples(prepared, ascending=True)
 
-    highest_slug = "19_highest_rated_poem_examples"
-    lowest_slug = "19b_lowest_rated_poem_examples"
+    highest_slug = "17_highest_rated_poem_examples"
+    lowest_slug = "17b_lowest_rated_poem_examples"
 
     save_table(
         highest_examples[export_columns],
@@ -1173,7 +1035,7 @@ def plot_quality_examples(df, max_examples_per_extreme=3):
         highest_examples,
         highest_slug,
         "Highest-Rated Poem Examples",
-        "Illustrative examples selected by the highest composite quality scores. "
+        "Illustrative examples selected by the highest mean overall quality scores. "
         "They are individual cases and should not be interpreted as evidence "
         "that a workflow generally performs better.",
     )
@@ -1182,7 +1044,7 @@ def plot_quality_examples(df, max_examples_per_extreme=3):
         lowest_examples,
         lowest_slug,
         "Lowest-Rated Poem Examples",
-        "Illustrative examples selected by the lowest composite quality scores. "
+        "Illustrative examples selected by the lowest mean overall quality scores. "
         "They are individual cases and should not be interpreted as evidence "
         "that a workflow generally performs worse.",
     )
@@ -1195,12 +1057,18 @@ def plot_quality_examples(df, max_examples_per_extreme=3):
 
 def plot_quality(df: pd.DataFrame) -> None:
     """Generate the complete output-quality figure set."""
-    plot_evaluation_coverage(df)
-    plot_composite_quality_by_workflow_all_rounds(df)
-    plot_composite_quality_by_workflow_practice_rounds(df)
-    plot_quality_dimensions_by_workflow_practice_rounds(df)
-    plot_quality_vs_completion_time_by_workflow(df)
-    plot_mixed_workflow_direction_quality_practice_rounds(df)
-    plot_mixed_vs_solo_quality_practice_rounds(df)
-    plot_main_round_quality_by_error_exposure(df)
-    plot_quality_examples(df)
+    prepared = _prepare_quality_data(df)
+    if prepared.empty:
+        return
+
+    main_df = phase_data(prepared, "main")
+    if main_df.empty:
+        return
+
+    plot_mean_overall_quality_by_workflow_main_rounds(main_df)
+    plot_rating_dimensions_by_workflow_main_rounds(main_df)
+    plot_quality_vs_completion_time_by_workflow(prepared)
+    plot_mixed_workflow_direction_quality_main_rounds(main_df)
+    plot_mixed_vs_solo_quality_main_rounds(main_df)
+    plot_main_round_quality_by_error_exposure(main_df)
+    plot_quality_examples(main_df)

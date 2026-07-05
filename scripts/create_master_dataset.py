@@ -7,6 +7,7 @@ from scripts.config import (
     INPUTS_DIR,
     ERROR_ROUND_INDEX,
     AI_SUPPORTED_WORKFLOWS,
+    TLX_METRICS,
 )
 from scripts.utils import parse_bool, parse_bool_or_none
 
@@ -123,66 +124,28 @@ def load_participant_folder(folder):
     return rounds
 
 
-def add_error_exposure_columns(master):
-    """
-    The AI error happens in the first main round, which is round 5.
-
-    A participant is exposed to the AI error only if the workflow in round 5
-    includes AI support.
-
-    AI-supported workflows:
-    - ai
-    - human_ai
-    - ai_human
-
-    Human-only workflow:
-    - human
-    """
-
-    master["roundIndex"] = pd.to_numeric(master["roundIndex"], errors="coerce")
-    master["participantId"] = pd.to_numeric(master["participantId"], errors="coerce")
-
-    master["isAiSupportedWorkflow"] = master["workflow"].isin(AI_SUPPORTED_WORKFLOWS)
-    master["isMixedWorkflow"] = master["workflow"].isin(["human_ai", "ai_human"])
-
-    error_round = master[master["roundIndex"] == ERROR_ROUND_INDEX][
-        ["participantId", "isAiSupportedWorkflow"]
-    ].copy()
-
-    error_round = error_round.rename(
-        columns={
-            "isAiSupportedWorkflow": "errorExposed",
-        }
+def add_error_exposure_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Add participant-level AI-error exposure columns based on round 5."""
+    df["roundIndex"] = pd.to_numeric(df["roundIndex"], errors="coerce")
+    df["participantId"] = pd.to_numeric(
+        df["participantId"],
+        errors="coerce",
     )
 
-    master = master.merge(
-        error_round,
-        on="participantId",
-        how="left",
+    df["isAiSupportedWorkflow"] = df["workflow"].isin(AI_SUPPORTED_WORKFLOWS)
+
+    # For each participant: were they using an AI-supported workflow in round 5?
+    exposure_by_participant = (
+        df.loc[df["roundIndex"].eq(ERROR_ROUND_INDEX)]
+        .groupby("participantId")["isAiSupportedWorkflow"]
+        .any()
     )
 
-    master["errorExposed"] = master["errorExposed"].fillna(False).astype(bool)
-
-    master["isErrorRound"] = (master["roundIndex"] == ERROR_ROUND_INDEX) & (
-        master["isAiSupportedWorkflow"]
+    df["errorExposed"] = (
+        df["participantId"].map(exposure_by_participant).fillna(False).astype(bool)
     )
 
-    master["isAfterError"] = (master["errorExposed"]) & (
-        master["roundIndex"] > ERROR_ROUND_INDEX
-    )
-
-    master["errorRoundIndex"] = master["errorExposed"].apply(
-        lambda exposed: ERROR_ROUND_INDEX if exposed else None
-    )
-
-    master["errorExposureGroup"] = master["errorExposed"].map(
-        {
-            True: "error_exposed",
-            False: "not_exposed",
-        }
-    )
-
-    return master
+    return df
 
 
 all_rounds = []
@@ -208,17 +171,12 @@ master["phase"] = master["roundIndex"].apply(
     lambda value: "practice" if int(value) <= 4 else "main"
 )
 
-master["isPracticeRound"] = master["roundIndex"] <= 4
-master["isMainRound"] = master["roundIndex"] >= 5
+# Ensure all subscale ratings are numeric.
+tlx_columns = list(TLX_METRICS.keys())
+for column in tlx_columns:
+    master[column] = pd.to_numeric(master[column], errors="coerce")
 
-master["workflowGroup"] = master["workflow"].map(
-    {
-        "human": "human_only",
-        "ai": "ai_only",
-        "human_ai": "mixed",
-        "ai_human": "mixed",
-    }
-)
+master["rawNasaTlxScore"] = master[tlx_columns].mean(axis=1)
 
 master = add_error_exposure_columns(master)
 
@@ -237,9 +195,9 @@ if POEM_SCORES_PATH.exists():
         suffixes=("", "_rating"),
     )
 
-    if "qualityComposite" in master.columns:
+    if "meanOverallQuality" in master.columns:
         master["qualityPerMinute"] = (
-            master["qualityComposite"] / master["effectiveTimeMinutes"]
+            master["meanOverallQuality"] / master["effectiveTimeMinutes"]
         )
 else:
     print(f"Warning: {POEM_SCORES_PATH} not found. Ratings were not merged.")
@@ -252,13 +210,3 @@ print(f"Created {MASTER_DATASET_PATH}")
 print(f"Rows: {len(master)}")
 print(f"Participants: {master['participantId'].nunique()}")
 print(f"Expected rows for 24 participants: {24 * 7}")
-
-print("\nError exposure groups:")
-print(
-    master[["participantId", "errorExposed"]]
-    .drop_duplicates()["errorExposed"]
-    .value_counts()
-)
-
-print("\nError rounds:")
-print(master["isErrorRound"].value_counts())

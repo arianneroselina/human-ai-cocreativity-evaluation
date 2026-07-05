@@ -30,7 +30,6 @@ def load_master_dataset():
             "wordCount",
             "charCount",
             "effectiveTimeMinutes",
-            "qualityComposite",
             "meanOverallQuality",
             "satisfactionResult",
             "frustration",
