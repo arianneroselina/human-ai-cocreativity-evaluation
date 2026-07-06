@@ -17,7 +17,7 @@ export default function DataTable<T>({
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
-        <thead className="border-b bg-gray-50 text-gray-600">
+        <thead className="border-b bg-gray-50 text-gray-600 dark:border-slate-700 dark:bg-black dark:text-white">
           <tr>
             {columns.map((column) => (
               <th key={column.header} className="px-4 py-3">

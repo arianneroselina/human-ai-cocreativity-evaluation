@@ -13,7 +13,7 @@ export default function AnalysisFileList({ files }: { files: AnalysisFile[] }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
-        <thead className="border-b bg-gray-50 text-gray-600">
+        <thead className="border-b bg-gray-50 text-gray-600 dark:border-slate-700 dark:bg-black dark:text-white">
           <tr>
             <th className="px-4 py-3">File</th>
             <th className="px-4 py-3">Size</th>

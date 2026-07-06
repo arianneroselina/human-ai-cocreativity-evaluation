@@ -23,7 +23,7 @@ function NavLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a
       href={href}
-      className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+      className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 dark:border-slate-700 dark:bg-black dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700"
     >
       {children}
     </a>
@@ -49,12 +49,12 @@ function FoldableSection({
     <details
       id={id}
       open={defaultOpen}
-      className="group scroll-mt-24 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+      className="group scroll-mt-24 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-black"
     >
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 transition hover:bg-gray-50 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 transition hover:bg-gray-50 dark:hover:bg-slate-800 [&::-webkit-details-marker]:hidden">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
 
             {badge !== undefined && (
               <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
@@ -64,7 +64,7 @@ function FoldableSection({
           </div>
 
           {description && (
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">{description}</p>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600 dark:text-slate-300">{description}</p>
           )}
         </div>
 
@@ -73,7 +73,9 @@ function FoldableSection({
         </span>
       </summary>
 
-      <div className="border-t border-gray-100 bg-white p-5">{children}</div>
+      <div className="border-t border-gray-100 bg-white p-5 dark:border-slate-800 dark:bg-black">
+        {children}
+      </div>
     </details>
   );
 }
@@ -174,20 +176,20 @@ export default async function ResearchDashboardPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 text-gray-900 dark:bg-slate-950 dark:text-slate-100">
       <div className="mx-auto max-w-7xl space-y-6 px-6 py-6">
-        <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-black">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
                 Master Thesis Evaluation
               </p>
 
-              <h1 className="text-4xl font-bold tracking-tight text-gray-950">
+              <h1 className="text-4xl font-bold tracking-tight text-gray-950 dark:text-white">
                 Research Dashboard
               </h1>
 
-              <p className="mt-3 max-w-3xl text-base leading-7 text-gray-600">
+              <p className="mt-3 max-w-3xl text-base leading-7 text-gray-600 dark:text-slate-300">
                 Overview of evaluator progress, rating completeness, generated figures, participant
                 information, and qualitative feedback summaries.
               </p>
@@ -208,7 +210,7 @@ export default async function ResearchDashboardPage() {
           )}
         </section>
 
-        <nav className="sticky top-4 z-20 flex flex-wrap gap-2 rounded-2xl border border-gray-200 bg-white/90 p-3 shadow-sm backdrop-blur">
+        <nav className="sticky top-4 z-20 flex flex-wrap gap-2 rounded-2xl border border-gray-200 bg-white/90 p-3 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-black/90">
           <NavLink href="#overview">Overview</NavLink>
           <NavLink href="#progress">Evaluator Progress</NavLink>
           <NavLink href="#figures">Data Visualization</NavLink>
@@ -218,8 +220,8 @@ export default async function ResearchDashboardPage() {
 
         <section id="overview" className="scroll-mt-24 space-y-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Overview</h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Overview</h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
               General dataset size and rating completion status.
             </p>
           </div>
@@ -268,10 +270,10 @@ export default async function ResearchDashboardPage() {
         </FoldableSection>
 
         <section id="figures" className="scroll-mt-24 space-y-4">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="text-2xl font-bold text-gray-900">Data Visualization</h2>
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-black">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Data Visualization</h2>
 
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600 dark:text-slate-300">
               Generated with Python/Matplotlib. Figures are grouped by analysis topic and can be
               viewed fullscreen or downloaded as PNG, PDF, or SVG.
             </p>
