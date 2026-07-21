@@ -2,45 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { DashboardFigure } from "@/lib/research-dashboard/figures";
+import { ExpandIcon, DownloadIcon, StarIcon, CircleQuestionMarkIcon } from "lucide-react";
 
-function DownloadIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="h-4 w-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <path d="M7 10l5 5 5-5" />
-      <path d="M12 15V3" />
-    </svg>
-  );
-}
-
-function ExpandIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="h-4 w-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M15 3h6v6" />
-      <path d="M10 14 21 3" />
-      <path d="M9 21H3v-6" />
-      <path d="M14 10 3 21" />
-    </svg>
-  );
-}
+type FigureGalleryProps = {
+  figures: DashboardFigure[];
+  favoriteNumbers?: string[];
+  interestingNumbers?: string[];
+};
 
 function DownloadMenu({ figure }: { figure: DashboardFigure }) {
   const [open, setOpen] = useState(false);
@@ -48,11 +16,7 @@ function DownloadMenu({ figure }: { figure: DashboardFigure }) {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (!menuRef.current) {
-        return;
-      }
-
-      if (!menuRef.current.contains(event.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     }
@@ -79,6 +43,7 @@ function DownloadMenu({ figure }: { figure: DashboardFigure }) {
         onClick={() => setOpen((current) => !current)}
         className="flex h-8 w-8 items-center justify-center rounded-md border bg-white text-gray-600 hover:bg-gray-50"
         title="Download"
+        aria-label={`Download ${figure.title}`}
       >
         <DownloadIcon />
       </button>
@@ -117,7 +82,11 @@ function DownloadMenu({ figure }: { figure: DashboardFigure }) {
   );
 }
 
-export default function FigureGallery({ figures }: { figures: DashboardFigure[] }) {
+export default function FigureGallery({
+  figures,
+  favoriteNumbers = [],
+  interestingNumbers = [],
+}: FigureGalleryProps) {
   const [selectedFigure, setSelectedFigure] = useState<DashboardFigure | null>(null);
 
   useEffect(() => {
@@ -128,8 +97,19 @@ export default function FigureGallery({ figures }: { figures: DashboardFigure[] 
     }
 
     window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
   }, []);
+
+  function isFavorite(figure: DashboardFigure) {
+    return favoriteNumbers.some((number) => figure.slug.startsWith(number));
+  }
+
+  function isInteresting(figure: DashboardFigure) {
+    return interestingNumbers.some((number) => figure.slug.startsWith(number));
+  }
 
   if (figures.length === 0) {
     return (
@@ -143,50 +123,79 @@ export default function FigureGallery({ figures }: { figures: DashboardFigure[] 
   return (
     <>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(380px,1fr))] gap-6">
-        {figures.map((figure) => (
-          <section
-            key={figure.slug}
-            className="flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h3 className="text-lg font-semibold text-gray-900">{figure.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-gray-500">{figure.description}</p>
-              </div>
+        {figures.map((figure) => {
+          const favorite = isFavorite(figure);
+          const interesting = isInteresting(figure);
 
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedFigure(figure)}
-                  className="flex h-8 w-8 items-center justify-center rounded-md border bg-white text-gray-600 hover:bg-gray-50"
-                  title="Open fullscreen"
-                >
-                  <ExpandIcon />
-                </button>
-
-                <DownloadMenu figure={figure} />
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setSelectedFigure(figure)}
-              className="mt-4 flex min-h-[320px] flex-1 items-center justify-center overflow-hidden rounded-xl border bg-gray-50 p-3 hover:bg-gray-100"
+          return (
+            <section
+              key={figure.slug}
+              className="flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
             >
-              <img
-                src={figure.pngUrl}
-                alt={figure.title}
-                className="max-h-[430px] w-full object-contain"
-              />
-            </button>
-          </section>
-        ))}
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h3 className="text-lg font-semibold text-gray-900">{figure.title}</h3>
+
+                  <p className="mt-1 text-sm leading-relaxed text-gray-500">{figure.description}</p>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2">
+                  {favorite && (
+                    <div
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-yellow-300 bg-yellow-50 text-yellow-500"
+                      title="Favorite figure"
+                      aria-label="Favorite figure"
+                    >
+                      <StarIcon />
+                    </div>
+                  )}
+                  {interesting && (
+                    <div
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-blue-300 bg-blue-50 text-blue-600"
+                      title="Potentially interesting figure"
+                      aria-label="Potentially interesting figure"
+                    >
+                      <CircleQuestionMarkIcon />
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFigure(figure)}
+                    className="flex h-8 w-8 items-center justify-center rounded-md border bg-white text-gray-600 hover:bg-gray-50"
+                    title="Open fullscreen"
+                    aria-label={`Open ${figure.title} fullscreen`}
+                  >
+                    <ExpandIcon />
+                  </button>
+
+                  <DownloadMenu figure={figure} />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedFigure(figure)}
+                className="mt-4 flex min-h-[320px] flex-1 items-center justify-center overflow-hidden rounded-xl border bg-gray-50 p-3 hover:bg-gray-100"
+              >
+                <img
+                  src={figure.pngUrl}
+                  alt={figure.title}
+                  className="max-h-[430px] w-full object-contain"
+                />
+              </button>
+            </section>
+          );
+        })}
       </div>
 
       {selectedFigure && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setSelectedFigure(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={selectedFigure.title}
         >
           <div
             className="flex max-h-[95vh] w-full max-w-7xl flex-col rounded-2xl bg-white p-4 shadow-2xl"
@@ -195,10 +204,30 @@ export default function FigureGallery({ figures }: { figures: DashboardFigure[] 
             <div className="mb-3 flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h2 className="text-xl font-semibold text-gray-900">{selectedFigure.title}</h2>
+
                 <p className="mt-1 text-sm text-gray-500">{selectedFigure.description}</p>
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
+                {isFavorite(selectedFigure) && (
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-md border border-yellow-300 bg-yellow-50 text-yellow-500"
+                    title="Favorite figure"
+                    aria-label="Favorite figure"
+                  >
+                    <StarIcon />
+                  </div>
+                )}
+                {isInteresting(selectedFigure) && (
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-md border border-blue-300 bg-blue-50 text-blue-600"
+                    title="Potentially interesting figure"
+                    aria-label="Potentially interesting figure"
+                  >
+                    <CircleQuestionMarkIcon />
+                  </div>
+                )}
+
                 <DownloadMenu figure={selectedFigure} />
 
                 <button

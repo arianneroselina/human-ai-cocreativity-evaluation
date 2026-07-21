@@ -5,9 +5,10 @@ import { getWorkflowFeedbackSummaries } from "@/lib/research-dashboard/feedbackS
 import { getAnalysisFiles } from "@/lib/research-dashboard/analysisFiles";
 import AnalysisFileList from "./components/AnalysisFileList";
 import DataTable from "./components/DataTable";
-import FigureGallery from "./components/FigureGallery";
 import StatCard from "./components/StatCard";
 import FeedbackSummaryCards from "./components/FeedbackSummaryCards";
+import FigureDashboard from "@/app/research-dashboard/components/FigureDashboard";
+import FoldableSection from "@/app/research-dashboard/components/FoldableSection";
 
 export const dynamic = "force-dynamic";
 
@@ -27,56 +28,6 @@ function NavLink({ href, children }: { href: string; children: ReactNode }) {
     >
       {children}
     </a>
-  );
-}
-
-function FoldableSection({
-  id,
-  title,
-  description,
-  badge,
-  defaultOpen = false,
-  children,
-}: {
-  id: string;
-  title: string;
-  description?: string;
-  badge?: string | number;
-  defaultOpen?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <details
-      id={id}
-      open={defaultOpen}
-      className="group scroll-mt-24 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-black"
-    >
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 transition hover:bg-gray-50 dark:hover:bg-slate-800 [&::-webkit-details-marker]:hidden">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
-
-            {badge !== undefined && (
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
-                {badge}
-              </span>
-            )}
-          </div>
-
-          {description && (
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600 dark:text-slate-300">{description}</p>
-          )}
-        </div>
-
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-xl text-gray-500 transition group-open:rotate-90">
-          ›
-        </span>
-      </summary>
-
-      <div className="border-t border-gray-100 bg-white p-5 dark:border-slate-800 dark:bg-black">
-        {children}
-      </div>
-    </details>
   );
 }
 
@@ -147,6 +98,24 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
     },
   ].filter((group) => group.figures.length > 0);
 }
+
+const FAVORITE_FIGURE_NUMBERS = [
+  "02_", "03_", "07_", "08_", "08b_", // workflow behavior
+  "11_", "13_", // output quality
+  "62_", "64_", // evaluator agreement
+  "21_", "23_", "25_", // constraints fulfillment
+  "32_", "33_", // participant experience
+  "42_", "43_", // ai error exposure
+];
+
+const INTERESTING_FIGURE_NUMBERS = [
+  "09_", // workflow behavior
+  "12_", "16_", // output quality
+  // evaluator agreement
+  "24_", "26_", // constraints fulfillment
+  "31_", // participant experience
+  "44_", // ai error exposure
+];
 
 export default async function ResearchDashboardPage() {
   const data = await getResearchDashboardData();
@@ -270,7 +239,7 @@ export default async function ResearchDashboardPage() {
         </FoldableSection>
 
         <section id="figures" className="scroll-mt-24 space-y-4">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-black">
+          <div className="rounded-2xl shadow-sm dark:bg-black">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Data Visualization</h2>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600 dark:text-slate-300">
@@ -279,18 +248,11 @@ export default async function ResearchDashboardPage() {
             </p>
           </div>
 
-          {figureGroups.map((group, index) => (
-            <FoldableSection
-              key={group.id}
-              id={group.id}
-              title={group.title}
-              badge={`${group.figures.length} figures`}
-              description={group.description}
-              defaultOpen={index < 2}
-            >
-              <FigureGallery figures={group.figures} />
-            </FoldableSection>
-          ))}
+          <FigureDashboard
+            figureGroups={figureGroups}
+            favoriteNumbers={FAVORITE_FIGURE_NUMBERS}
+            interestingNumbers={INTERESTING_FIGURE_NUMBERS}
+          />
         </section>
 
         <FoldableSection

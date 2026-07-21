@@ -592,7 +592,7 @@ def plot_quality_vs_completion_time_by_workflow(prepared) -> None:
             fontsize=8,
         )
 
-    ax.set_title("Mean Overall Quality and Completion Time by Workflow")
+    ax.set_title("Mean Overall Quality and Completion Time by Workflow in Main Rounds")
     ax.set_xlabel("Effective completion time (minutes)")
     ax.set_ylabel("Mean Overall quality (1-5)")
     ax.set_ylim(QUALITY_Y_MIN, QUALITY_Y_MAX)
@@ -602,7 +602,7 @@ def plot_quality_vs_completion_time_by_workflow(prepared) -> None:
     save_figure(
         fig,
         slug,
-        "Mean Overall Quality and Completion Time by Workflow",
+        "Mean Overall Quality and Completion Time by Workflow in Main Rounds",
         "Each point is one evaluated output. Larger diamonds show the mean time "
         "and mean quality for each workflow; the plot displays the quality-time "
         "trade-off directly rather than using a ratio score.",
@@ -636,35 +636,58 @@ def plot_mixed_workflow_direction_quality_main_rounds(main_df) -> None:
 
 
 def plot_mixed_vs_solo_quality_main_rounds(main_df) -> None:
-    """Compare each participant's mixed- and solo-workflow quality in main rounds."""
+    """Compare participant-level mixed and solo workflow quality in main rounds."""
     slug = "15_mixed_vs_solo_quality_main_rounds"
 
-    required_workflows = ["human", "ai", "human_ai", "ai_human"]
-    matrix = _paired_matrix(main_df, required_workflows)
-    if matrix.empty:
-        return
+    working_df = main_df.copy()
 
-    paired_df = pd.DataFrame(
+    working_df["workflowGroup"] = working_df["workflow"].map(
         {
-            "solo": matrix[["human", "ai"]].mean(axis=1),
-            "mixed": matrix[["human_ai", "ai_human"]].mean(axis=1),
-        },
-        index=matrix.index,
+            "human": "solo",
+            "ai": "solo",
+            "human_ai": "mixed",
+            "ai_human": "mixed",
+        }
     )
+
+    working_df = working_df.dropna(
+        subset=["participantId", "workflowGroup", QUALITY_PRIMARY_METRIC]
+    )
+
+    paired_df = (
+        working_df.groupby(
+            ["participantId", "workflowGroup"],
+            observed=True,
+        )[QUALITY_PRIMARY_METRIC]
+        .mean()
+        .unstack("workflowGroup")
+    )
+
+    # Keep participants who used at least one solo and one mixed workflow.
+    paired_df = paired_df.dropna(subset=["solo", "mixed"])
+
+    if paired_df.empty:
+        print(
+            f"{slug}: no participants used both a solo and a mixed workflow "
+            "during the main rounds."
+        )
+        return
 
     _plot_two_condition_paired_comparison(
         paired_df=paired_df,
         left_column="solo",
         right_column="mixed",
-        left_label="Solo workflows\n(Human-only + AI-only)",
-        right_label="Mixed workflows\n(Human→AI + AI→Human)",
+        left_label="Solo workflows\n(Human-only or AI-only)",
+        right_label="Mixed workflows\n(Human→AI or AI→Human)",
         left_color="0.45",
         right_color=WORKFLOW_COLORS["human_ai"],
         slug=slug,
         title="Mixed versus Solo Workflow Quality in Main Rounds",
-        description="Within-participant comparison of average quality in solo and "
-        "mixed workflows in main rounds. Each participant contributes one average over Human-only "
-        "and AI-only outputs and one average over Human→AI and AI→Human outputs.",
+        description=(
+            "Within-participant comparison of average quality for solo and mixed "
+            "workflows in the main rounds. Participants are included when they used "
+            "at least one solo and at least one mixed workflow."
+        ),
     )
 
 

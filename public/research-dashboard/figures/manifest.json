@@ -137,7 +137,7 @@
   },
   {
     "slug": "13_quality_vs_completion_time_by_workflow",
-    "title": "Mean Overall Quality and Completion Time by Workflow",
+    "title": "Mean Overall Quality and Completion Time by Workflow in Main Rounds",
     "description": "Each point is one evaluated output. Larger diamonds show the mean time and mean quality for each workflow; the plot displays the quality-time trade-off directly rather than using a ratio score.",
     "pngUrl": "/research-dashboard/figures/13_quality_vs_completion_time_by_workflow.png",
     "pdfUrl": "/research-dashboard/figures/13_quality_vs_completion_time_by_workflow.pdf",
@@ -150,6 +150,14 @@
     "pngUrl": "/research-dashboard/figures/14_mixed_workflow_direction_quality_main_rounds.png",
     "pdfUrl": "/research-dashboard/figures/14_mixed_workflow_direction_quality_main_rounds.pdf",
     "svgUrl": "/research-dashboard/figures/14_mixed_workflow_direction_quality_main_rounds.svg"
+  },
+  {
+    "slug": "15_mixed_vs_solo_quality_main_rounds",
+    "title": "Mixed versus Solo Workflow Quality in Main Rounds",
+    "description": "Within-participant comparison of average quality for solo and mixed workflows in the main rounds. Participants are included when they used at least one solo and at least one mixed workflow.",
+    "pngUrl": "/research-dashboard/figures/15_mixed_vs_solo_quality_main_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/15_mixed_vs_solo_quality_main_rounds.pdf",
+    "svgUrl": "/research-dashboard/figures/15_mixed_vs_solo_quality_main_rounds.svg"
   },
   {
     "slug": "16_main_round_quality_by_error_exposure",
