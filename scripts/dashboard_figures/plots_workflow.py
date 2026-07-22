@@ -6,7 +6,7 @@ Core workflow figures
 02  First voluntary workflow choice after Practice Rounds
 03  Workflow distribution across Main Rounds
 04  Participant-level workflow trajectories across Main Rounds
-05a Final practice workflow -> first voluntary workflow choice
+05  Final practice workflow -> first voluntary workflow choice
 05b Main-round workflow transition heatmaps (Main 1 -> 2 and Main 2 -> 3)
 06  Workflow retention across Main Rounds
 07  Number and pattern of workflow switches across Main Rounds

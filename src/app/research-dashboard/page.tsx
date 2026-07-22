@@ -52,6 +52,15 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       ),
     },
     {
+      id: "evaluator-figures",
+      title: "Evaluator Agreement",
+      description:
+        "Inter-rater agreement (ICC, Ordinal Krippendorff's Alpha, Cohen's Kappa) and individual evaluator rating patterns.",
+      figures: figures.filter((figure) =>
+        ["61_", "62_", "63_", "64_", "65_", "66_", "67_"].some((prefix) => figure.slug.startsWith(prefix))
+      ),
+    },
+    {
       id: "quality-figures",
       title: "Output Quality",
       description:
@@ -60,15 +69,6 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
         ["11_", "12_", "13_", "14_", "15_", "16_", "17_", "17b_"].some((prefix) =>
           figure.slug.startsWith(prefix)
         )
-      ),
-    },
-    {
-      id: "evaluator-figures",
-      title: "Evaluator Agreement",
-      description:
-        "Inter-rater agreement (ICC, Cohen's Kappa) and individual evaluator rating patterns.",
-      figures: figures.filter((figure) =>
-        ["61_", "62_", "63_", "64_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
     {
@@ -107,7 +107,9 @@ const FAVORITE_FIGURE_NUMBERS = [
   "11_",
   "13_", // output quality
   "62_",
-  "64_", // evaluator agreement
+  "64_",
+  "65_",
+  "66_", // evaluator agreement
   "21_",
   "23_",
   "25_", // constraints fulfillment
@@ -122,7 +124,7 @@ const INTERESTING_FIGURE_NUMBERS = [
   "09_", // workflow behavior
   "12_",
   "16_", // output quality
-  // evaluator agreement
+  "63_", // evaluator agreement
   "24_",
   "26_", // constraints fulfillment
   "31_", // participant experience

@@ -238,25 +238,46 @@
     "pdfUrl": "/research-dashboard/figures/61_overall_quality_rating_distribution.pdf"
   },
   {
-    "slug": "62_overall_quality_reliability_summary",
-    "title": "Overall-Quality Inter-Rater Reliability and Agreement",
-    "description": "Absolute-agreement ICC values for a single evaluator and the averaged three-evaluator score, alongside pairwise quadratic-weighted Kappa, exact agreement, and within-one-point agreement.",
-    "pngUrl": "/research-dashboard/figures/62_overall_quality_reliability_summary.png",
-    "pdfUrl": "/research-dashboard/figures/62_overall_quality_reliability_summary.pdf"
+    "slug": "62_overall_quality_ordinal_agreement",
+    "title": "Overall-Quality Ordinal Inter-Rater Agreement",
+    "description": "Ordinal Krippendorff's alpha and bootstrap 95% confidence interval across all official evaluators.",
+    "pngUrl": "/research-dashboard/figures/62_overall_quality_ordinal_agreement.png",
+    "pdfUrl": "/research-dashboard/figures/62_overall_quality_ordinal_agreement.pdf"
   },
   {
-    "slug": "63_pairwise_overall_quality_rating_matrices",
+    "slug": "63_overall_quality_icc_reliability",
+    "title": "Overall-Quality ICC Reliability",
+    "description": "Absolute-agreement ICC values and 95% confidence intervals for one evaluator and the mean across the full evaluator panel.",
+    "pngUrl": "/research-dashboard/figures/63_overall_quality_icc_reliability.png",
+    "pdfUrl": "/research-dashboard/figures/63_overall_quality_icc_reliability.pdf"
+  },
+  {
+    "slug": "64_pairwise_overall_quality_agreement",
+    "title": "Pairwise Overall-Quality Agreement",
+    "description": "Pairwise quadratic-weighted Cohen's kappa, exact agreement, and within-one-point agreement for every evaluator pair.",
+    "pngUrl": "/research-dashboard/figures/64_pairwise_overall_quality_agreement.png",
+    "pdfUrl": "/research-dashboard/figures/64_pairwise_overall_quality_agreement.pdf"
+  },
+  {
+    "slug": "65_evaluator_disagreement_magnitude",
+    "title": "Magnitude of Evaluator Disagreement",
+    "description": "Distribution of the difference between the highest and lowest overall-quality rating assigned to each poem.",
+    "pngUrl": "/research-dashboard/figures/65_evaluator_disagreement_magnitude.png",
+    "pdfUrl": "/research-dashboard/figures/65_evaluator_disagreement_magnitude.pdf"
+  },
+  {
+    "slug": "66_evaluator_rating_tendency",
+    "title": "Relative Evaluator Rating Tendency",
+    "description": "Mean deviation of each evaluator's rating from the average rating of the other evaluators, with 95% confidence intervals.",
+    "pngUrl": "/research-dashboard/figures/66_evaluator_rating_tendency.png",
+    "pdfUrl": "/research-dashboard/figures/66_evaluator_rating_tendency.pdf"
+  },
+  {
+    "slug": "67_pairwise_overall_quality_rating_matrices",
     "title": "Raw Overall-Quality Rating Combinations",
     "description": "Cross-tabulations of raw 1-5 overall-quality ratings for every evaluator pair. Diagonal cells show exact agreement; off-diagonal cells show the direction and magnitude of disagreements.",
-    "pngUrl": "/research-dashboard/figures/63_pairwise_overall_quality_rating_matrices.png",
-    "pdfUrl": "/research-dashboard/figures/63_pairwise_overall_quality_rating_matrices.pdf"
-  },
-  {
-    "slug": "64_evaluator_tendency_and_disagreement",
-    "title": "Evaluator Tendency and Disagreement Magnitude",
-    "description": "Relative strictness or generosity of each evaluator compared with the other two evaluators, alongside the distribution of rating ranges across all three evaluators for the same poem.",
-    "pngUrl": "/research-dashboard/figures/64_evaluator_tendency_and_disagreement.png",
-    "pdfUrl": "/research-dashboard/figures/64_evaluator_tendency_and_disagreement.pdf"
+    "pngUrl": "/research-dashboard/figures/67_pairwise_overall_quality_rating_matrices.png",
+    "pdfUrl": "/research-dashboard/figures/67_pairwise_overall_quality_rating_matrices.pdf"
   },
   {
     "slug": "51_participant_age_distribution",

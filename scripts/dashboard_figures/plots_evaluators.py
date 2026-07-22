@@ -3,9 +3,12 @@
 Figures
 -------
 61  Overall-quality rating distribution by evaluator
-62  Overall-quality reliability and pairwise agreement summary
-63  Pairwise raw-rating matrices
-64  Evaluator rating tendency and disagreement magnitude
+62  Ordinal Krippendorff's alpha across all evaluators
+63  ICC reliability for one evaluator and the evaluator mean
+64  Pairwise weighted agreement between evaluators
+65  Magnitude of evaluator disagreement
+66  Relative evaluator rating tendency
+67  Pairwise raw-rating matrices
 
 Supplementary CSV files are exported to the dashboard's Statistical Analysis
 section via ``save_analysis_table``.
@@ -16,6 +19,7 @@ from __future__ import annotations
 import re
 from itertools import combinations
 
+import krippendorff
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -34,6 +38,7 @@ from scripts.dashboard_figures.style import apply_standard_axes_style
 from scripts.utils import (
     require_columns,
     save_figure,
+    save_table,
 )
 
 
@@ -378,6 +383,85 @@ def _disagreement_outputs(
     return distribution, detailed
 
 
+def _ordinal_krippendorff_alpha_summary(
+    wide_df: pd.DataFrame,
+    evaluators: list[str],
+    *,
+    bootstrap_iterations: int = 5000,
+    random_seed: int = 42,
+) -> pd.DataFrame:
+    """
+    Calculate ordinal Krippendorff's alpha and a poem-level bootstrap CI.
+
+    The reliability matrix must have evaluators in rows and poems in columns.
+    Missing ratings may be represented by NaN.
+    """
+    ratings = (
+        wide_df[evaluators]
+        .apply(pd.to_numeric, errors="coerce")
+        .to_numpy(dtype=float)
+        .T
+    )
+
+    if ratings.shape[0] < 2 or ratings.shape[1] < 2:
+        return pd.DataFrame()
+
+    alpha = float(
+        krippendorff.alpha(
+            reliability_data=ratings,
+            level_of_measurement="ordinal",
+        )
+    )
+
+    rng = np.random.default_rng(random_seed)
+    poem_count = ratings.shape[1]
+    bootstrap_values = []
+
+    # Resample complete poems, preserving the three ratings belonging
+    # to each poem.
+    for _ in range(bootstrap_iterations):
+        sampled_columns = rng.integers(
+            low=0,
+            high=poem_count,
+            size=poem_count,
+        )
+        sampled_ratings = ratings[:, sampled_columns]
+
+        try:
+            bootstrap_alpha = krippendorff.alpha(
+                reliability_data=sampled_ratings,
+                level_of_measurement="ordinal",
+            )
+        except (ValueError, ZeroDivisionError):
+            continue
+
+        if np.isfinite(bootstrap_alpha):
+            bootstrap_values.append(float(bootstrap_alpha))
+
+    if bootstrap_values:
+        lower_ci, upper_ci = np.quantile(
+            bootstrap_values,
+            [0.025, 0.975],
+        )
+    else:
+        lower_ci = np.nan
+        upper_ci = np.nan
+
+    return pd.DataFrame(
+        [
+            {
+                "statistic": "Ordinal Krippendorff's alpha",
+                "alpha": alpha,
+                "lowerCI": lower_ci,
+                "upperCI": upper_ci,
+                "poems": poem_count,
+                "evaluators": len(evaluators),
+                "bootstrapIterations": len(bootstrap_values),
+            }
+        ]
+    )
+
+
 # ---------------------------------------------------------------------------
 # 61: Raw rating distribution
 # ---------------------------------------------------------------------------
@@ -448,24 +532,133 @@ def plot_overall_quality_rating_distribution(
 
 
 # ---------------------------------------------------------------------------
-# 62: Reliability summary
+# 62: Ordinal Krippendorff's alpha
 # ---------------------------------------------------------------------------
 
 
-def plot_overall_quality_reliability_summary(
+def plot_overall_quality_ordinal_agreement(
     wide_df: pd.DataFrame,
     evaluators: list[str],
 ) -> None:
-    """Plot panel-level ICC alongside pairwise weighted ordinal agreement."""
-    slug = "62_overall_quality_reliability_summary"
-    icc_df = _icc_summary(wide_df)
-    pairwise_df = _pairwise_summary(wide_df, evaluators)
+    """Plot ordinal Krippendorff's alpha across the full evaluator panel."""
+    slug = "62_overall_quality_ordinal_agreement"
 
-    if icc_df.empty or pairwise_df.empty:
+    alpha_df = _ordinal_krippendorff_alpha_summary(
+        wide_df,
+        evaluators,
+    )
+    if alpha_df.empty:
         return
 
-    fig, axes = plt.subplots(1, 2, figsize=(13.2, 5.2))
-    icc_axis, kappa_axis = axes
+    save_table(
+        alpha_df,
+        f"{slug}_summary",
+        index=False,
+    )
+
+    alpha_row = alpha_df.iloc[0]
+    alpha = float(alpha_row["alpha"])
+    lower_ci = float(alpha_row["lowerCI"])
+    upper_ci = float(alpha_row["upperCI"])
+
+    fig, ax = plt.subplots(figsize=(7.4, 3.8))
+
+    if np.isfinite(lower_ci) and np.isfinite(upper_ci):
+        lower_error = max(alpha - lower_ci, 0.0)
+        upper_error = max(upper_ci - alpha, 0.0)
+
+        ax.errorbar(
+            [alpha],
+            [0],
+            xerr=np.array([[lower_error], [upper_error]]),
+            fmt="o",
+            color="#333333",
+            markersize=10,
+            capsize=5,
+            linewidth=1.8,
+            zorder=3,
+        )
+        ci_label = f"95% CI [{lower_ci:.2f}, {upper_ci:.2f}]"
+    else:
+        ax.scatter(
+            [alpha],
+            [0],
+            s=100,
+            color="#333333",
+            zorder=3,
+        )
+        ci_label = "95% CI unavailable"
+
+    ax.annotate(
+        f"αordinal = {alpha:.3f}\n{ci_label}",
+        (alpha, 0),
+        xytext=(12, 0),
+        textcoords="offset points",
+        va="center",
+        fontsize=10,
+    )
+
+    ax.axvline(
+        0,
+        color="black",
+        linestyle="--",
+        linewidth=1,
+    )
+    ax.set_xlim(-0.05, 1.02)
+    ax.set_ylim(-0.65, 0.65)
+    ax.set_yticks([0])
+    ax.set_yticklabels([f"All {len(evaluators)} evaluators"])
+    ax.set_xlabel("Ordinal Krippendorff's alpha")
+    ax.set_title("Overall-Quality Ordinal Inter-Rater Agreement")
+    apply_standard_axes_style(ax, grid_axis="x")
+
+    fig.text(
+        0.01,
+        0.01,
+        (
+            f"Agreement across {len(wide_df)} poems rated by "
+            f"{len(evaluators)} evaluators. The confidence interval was estimated "
+            "by resampling poems."
+        ),
+        ha="left",
+        va="bottom",
+        fontsize=8.4,
+        color="#4a4a4a",
+    )
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
+
+    save_figure(
+        fig,
+        slug,
+        "Overall-Quality Ordinal Inter-Rater Agreement",
+        (
+            "Ordinal Krippendorff's alpha and bootstrap 95% confidence interval "
+            "across all official evaluators."
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# 63: ICC reliability
+# ---------------------------------------------------------------------------
+
+
+def plot_overall_quality_icc_reliability(
+    wide_df: pd.DataFrame,
+    evaluators: list[str],
+) -> None:
+    """Plot absolute-agreement ICC for one evaluator and the evaluator mean."""
+    slug = "63_overall_quality_icc_reliability"
+
+    icc_df = _icc_summary(wide_df)
+    if icc_df.empty:
+        return
+
+    save_table(
+        icc_df,
+        f"{slug}_summary",
+        index=False,
+    )
 
     icc_plot = (
         icc_df.set_index("statistic")
@@ -473,122 +666,390 @@ def plot_overall_quality_reliability_summary(
         .dropna(subset=["icc"])
         .reset_index()
     )
+    if icc_plot.empty:
+        return
+
     y_positions = np.arange(len(icc_plot))
     values = icc_plot["icc"].to_numpy(dtype=float)
-    lower_error = values - icc_plot["lowerCI"].to_numpy(dtype=float)
-    upper_error = icc_plot["upperCI"].to_numpy(dtype=float) - values
+    lower_ci = icc_plot["lowerCI"].to_numpy(dtype=float)
+    upper_ci = icc_plot["upperCI"].to_numpy(dtype=float)
 
-    icc_axis.errorbar(
+    lower_error = np.maximum(values - lower_ci, 0.0)
+    upper_error = np.maximum(upper_ci - values, 0.0)
+
+    fig, ax = plt.subplots(figsize=(7.8, 4.2))
+
+    ax.errorbar(
         values,
         y_positions,
         xerr=np.vstack([lower_error, upper_error]),
         fmt="o",
         color="#333333",
-        markersize=8,
-        capsize=4,
-        linewidth=1.5,
+        markersize=9,
+        capsize=5,
+        linewidth=1.7,
+        zorder=3,
     )
+
     for y_position, (_, row) in zip(y_positions, icc_plot.iterrows()):
-        icc_axis.annotate(
-            f"{row['icc']:.3f}\n95% CI [{row['lowerCI']:.2f}, {row['upperCI']:.2f}]",
+        ax.annotate(
+            (f"{row['icc']:.3f}\n95% CI [{row['lowerCI']:.2f}, {row['upperCI']:.2f}]"),
             (row["icc"], y_position),
-            xytext=(8, 0),
+            xytext=(10, 0),
             textcoords="offset points",
             va="center",
-            fontsize=8,
+            fontsize=9,
         )
 
-    icc_axis.axvline(0, color="black", linestyle="--", linewidth=1)
-    icc_axis.set_xlim(-0.05, 1.02)
-    icc_axis.set_yticks(y_positions)
-    icc_axis.set_yticklabels(
+    ax.axvline(
+        0,
+        color="black",
+        linestyle="--",
+        linewidth=1,
+    )
+    ax.set_xlim(-0.05, 1.02)
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(
         [
-            "One individual evaluator\nICC(A,1)",
-            f"Mean of {wide_df.shape[1]} evaluators\nICC(A,k)",
+            "One evaluator\nICC(A,1)",
+            f"Mean of {len(evaluators)} evaluators\nICC(A,k)",
         ]
     )
-    icc_axis.set_xlabel("Absolute-agreement intraclass correlation")
-    icc_axis.set_title("Reliability of the Overall-Quality Score")
-    apply_standard_axes_style(icc_axis, grid_axis="x")
+    ax.set_xlabel("Absolute-agreement intraclass correlation")
+    ax.set_title("Overall-Quality ICC Reliability")
+    apply_standard_axes_style(ax, grid_axis="x")
 
-    pairwise_plot = pairwise_df.sort_values(
-        "quadraticWeightedKappa",
-        ascending=True,
-    ).reset_index(drop=True)
-    y_positions = np.arange(len(pairwise_plot))
-    kappa_axis.barh(
-        y_positions,
-        pairwise_plot["quadraticWeightedKappa"],
-        color=[
-            EVALUATOR_COLORS[evaluator] for evaluator in pairwise_plot["evaluatorA"]
-        ],
-        edgecolor="white",
-        linewidth=0.8,
-        zorder=2,
-    )
-
-    for y_position, (_, row) in zip(y_positions, pairwise_plot.iterrows()):
-        kappa_axis.text(
-            row["quadraticWeightedKappa"] + 0.012,
-            y_position,
-            (
-                f"κw={row['quadraticWeightedKappa']:.3f} | "
-                f"exact {row['exactAgreementPercentage']:.1f}% | "
-                f"±1 {row['withinOnePointPercentage']:.1f}%"
-            ),
-            va="center",
-            fontsize=7.8,
-        )
-
-    kappa_axis.axvline(0, color="black", linestyle="--", linewidth=1)
-    kappa_axis.set_xlim(-0.03, 1.0)
-    kappa_axis.set_yticks(y_positions)
-    kappa_axis.set_yticklabels(pairwise_plot["pairLabel"])
-    kappa_axis.set_xlabel("Quadratic-weighted Cohen's Kappa")
-    kappa_axis.set_title("Pairwise Agreement Between Evaluators")
-    apply_standard_axes_style(kappa_axis, grid_axis="x")
-
-    fig.suptitle(
-        "Overall-Quality Inter-Rater Reliability and Agreement",
-        fontsize=13,
-        y=0.99,
-    )
     fig.text(
         0.01,
         0.01,
         (
-            f"All three official evaluators rated the same {len(wide_df)} poems. "
-            "ICC(A,k) describes the reliability of their averaged poem score; "
-            "quadratic weighting treats 4 vs 5 as less severe disagreement than 1 vs 5."
+            f"ICC(A,1) describes one evaluator's score; ICC(A,k) describes the "
+            f"mean score across {len(evaluators)} evaluators for {len(wide_df)} poems."
         ),
         ha="left",
         va="bottom",
         fontsize=8.4,
         color="#4a4a4a",
     )
-    fig.tight_layout(rect=(0, 0.045, 1, 0.96))
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
 
     save_figure(
         fig,
         slug,
-        "Overall-Quality Inter-Rater Reliability and Agreement",
-        "Absolute-agreement ICC values for a single evaluator and the averaged "
-        "three-evaluator score, alongside pairwise quadratic-weighted Kappa, exact "
-        "agreement, and within-one-point agreement.",
+        "Overall-Quality ICC Reliability",
+        (
+            "Absolute-agreement ICC values and 95% confidence intervals for one "
+            "evaluator and the mean across the full evaluator panel."
+        ),
     )
 
 
 # ---------------------------------------------------------------------------
-# 63: Direct raw-rating matrices
+# 64: Pairwise weighted agreement
+# ---------------------------------------------------------------------------
+
+
+def plot_pairwise_overall_quality_agreement(
+    wide_df: pd.DataFrame,
+    evaluators: list[str],
+) -> None:
+    """Plot pairwise weighted kappa, exact agreement, and one-point agreement."""
+    slug = "64_pairwise_overall_quality_agreement"
+
+    pairwise_df = _pairwise_summary(
+        wide_df,
+        evaluators,
+    )
+    if pairwise_df.empty:
+        return
+
+    save_table(
+        pairwise_df,
+        f"{slug}_summary",
+        index=False,
+    )
+
+    pairwise_plot = pairwise_df.copy()
+    pairwise_plot["containsAI"] = pairwise_plot["evaluatorALabel"].str.contains(
+        "AI",
+        case=False,
+        na=False,
+    ) | pairwise_plot["evaluatorBLabel"].str.contains(
+        "AI",
+        case=False,
+        na=False,
+    )
+
+    # Human-human comparison first, followed by the two AI-involving pairs.
+    pairwise_plot = pairwise_plot.sort_values(
+        ["containsAI", "pairLabel"],
+        ascending=[True, True],
+    ).reset_index(drop=True)
+
+    y_positions = np.arange(len(pairwise_plot))
+    bar_colours = [
+        "#9a5f53" if contains_ai else "#888888"
+        for contains_ai in pairwise_plot["containsAI"]
+    ]
+
+    fig, ax = plt.subplots(figsize=(9.4, 4.6))
+
+    ax.barh(
+        y_positions,
+        pairwise_plot["quadraticWeightedKappa"],
+        color=bar_colours,
+        edgecolor="white",
+        linewidth=0.8,
+        zorder=2,
+    )
+
+    for y_position, (_, row) in zip(
+        y_positions,
+        pairwise_plot.iterrows(),
+    ):
+        ax.text(
+            row["quadraticWeightedKappa"] + 0.012,
+            y_position,
+            (
+                f"κw={row['quadraticWeightedKappa']:.3f}  |  "
+                f"exact {row['exactAgreementPercentage']:.1f}%  |  "
+                f"±1 {row['withinOnePointPercentage']:.1f}%"
+            ),
+            va="center",
+            fontsize=8.4,
+        )
+
+    ax.axvline(
+        0,
+        color="black",
+        linestyle="--",
+        linewidth=1,
+    )
+    ax.set_xlim(-0.03, 1.0)
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(pairwise_plot["pairLabel"])
+    ax.invert_yaxis()
+    ax.set_xlabel("Quadratic-weighted Cohen's kappa")
+    ax.set_title("Pairwise Overall-Quality Agreement")
+    apply_standard_axes_style(ax, grid_axis="x")
+
+    fig.text(
+        0.01,
+        0.01,
+        (
+            f"Pairwise agreement across {len(wide_df)} shared poems. "
+            "Brown bars involve the AI evaluator; the grey bar compares the two humans."
+        ),
+        ha="left",
+        va="bottom",
+        fontsize=8.4,
+        color="#4a4a4a",
+    )
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
+
+    save_figure(
+        fig,
+        slug,
+        "Pairwise Overall-Quality Agreement",
+        (
+            "Pairwise quadratic-weighted Cohen's kappa, exact agreement, and "
+            "within-one-point agreement for every evaluator pair."
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# 65: Magnitude of evaluator disagreement
+# ---------------------------------------------------------------------------
+
+
+def plot_evaluator_disagreement_magnitude(
+        wide_df: pd.DataFrame,
+        evaluators: list[str],
+) -> None:
+    """Show the poem-level spread across evaluator ratings."""
+    slug = "65_evaluator_disagreement_magnitude"
+    range_df, disagreement_rows = _disagreement_outputs(wide_df, evaluators)
+
+    if range_df.empty:
+        return
+
+    save_table(
+        range_df,
+        f"{slug}_distribution",
+        index=False,
+    )
+    save_table(
+        disagreement_rows,
+        f"{slug}_poem_level",
+        index=False,
+    )
+
+    fig, ax = plt.subplots(figsize=(7.8, 4.8))
+
+    bars = ax.bar(
+        range_df["ratingRange"].astype(str),
+        range_df["percentage"],
+        color="#8BAE66",
+        edgecolor="white",
+        linewidth=0.8,
+        zorder=2,
+    )
+
+    for bar, (_, row) in zip(bars, range_df.iterrows()):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 1.0,
+            f"{int(row['poemCount'])}\n({row['percentage']:.1f}%)",
+            ha="center",
+            va="bottom",
+            fontsize=8.5,
+            )
+
+    ax.set_ylim(0, max(5, float(range_df["percentage"].max()) + 12))
+    ax.set_xlabel("Rating range across all evaluators")
+    ax.set_ylabel("Poems (%)")
+    ax.set_title("Magnitude of Evaluator Disagreement")
+    apply_standard_axes_style(ax, grid_axis="y")
+
+    fig.text(
+        0.01,
+        0.01,
+        (
+            "Rating range = highest minus lowest raw 1-5 rating for the same poem. "
+            "A range of 0 indicates exact agreement."
+        ),
+        ha="left",
+        va="bottom",
+        fontsize=8.4,
+        color="#4a4a4a",
+    )
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
+
+    save_figure(
+        fig,
+        slug,
+        "Magnitude of Evaluator Disagreement",
+        (
+            "Distribution of the difference between the highest and lowest "
+            "overall-quality rating assigned to each poem."
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# 66: Relative evaluator rating tendency
+# ---------------------------------------------------------------------------
+
+
+def plot_evaluator_rating_tendency(
+    wide_df: pd.DataFrame,
+    evaluators: list[str],
+) -> None:
+    """Show systematic evaluator strictness or generosity."""
+    slug = "66_evaluator_rating_tendency"
+    tendency_df = _tendency_summary(wide_df, evaluators)
+
+    if tendency_df.empty:
+        return
+
+    save_table(
+        tendency_df,
+        f"{slug}_summary",
+        index=False,
+    )
+
+    tendency_plot = tendency_df.reset_index(drop=True)
+    y_positions = np.arange(len(tendency_plot))
+    deviations = tendency_plot["meanDeviationFromPeers"].to_numpy(dtype=float)
+    lower_error = deviations - tendency_plot["lowerCI"].to_numpy(dtype=float)
+    upper_error = tendency_plot["upperCI"].to_numpy(dtype=float) - deviations
+
+    fig, ax = plt.subplots(figsize=(8.2, 4.6))
+
+    ax.errorbar(
+        deviations,
+        y_positions,
+        xerr=np.vstack([lower_error, upper_error]),
+        fmt="none",
+        capsize=4,
+        linewidth=1.4,
+        color="#333333",
+        zorder=2,
+    )
+
+    for y_position, (_, row) in zip(y_positions, tendency_plot.iterrows()):
+        ax.scatter(
+            row["meanDeviationFromPeers"],
+            y_position,
+            s=70,
+            color=EVALUATOR_COLORS[row["evaluatorId"]],
+            edgecolor="white",
+            linewidth=0.8,
+            zorder=3,
+        )
+        ax.annotate(
+            (
+                f"Mean rating {row['meanRating']:.2f}\n"
+                f"Peer deviation {row['meanDeviationFromPeers']:+.2f}"
+            ),
+            (row["meanDeviationFromPeers"], y_position),
+            xytext=(9, 0),
+            textcoords="offset points",
+            va="center",
+            fontsize=8.5,
+        )
+
+    max_abs = max(
+        0.3,
+        abs(float(tendency_plot["lowerCI"].min())),
+        abs(float(tendency_plot["upperCI"].max())),
+    )
+    ax.axvline(0, color="black", linestyle="--", linewidth=1)
+    ax.set_xlim(-max_abs * 1.25, max_abs * 1.25)
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(tendency_plot["evaluatorLabel"])
+    ax.set_xlabel("Mean deviation from the other evaluators")
+    ax.set_ylabel("Evaluator")
+    ax.set_title("Relative Evaluator Rating Tendency")
+    apply_standard_axes_style(ax, grid_axis="x")
+
+    fig.text(
+        0.01,
+        0.01,
+        (
+            "Positive values indicate more generous ratings than the other "
+            "evaluators; negative values indicate stricter ratings."
+        ),
+        ha="left",
+        va="bottom",
+        fontsize=8.4,
+        color="#4a4a4a",
+    )
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
+
+    save_figure(
+        fig,
+        slug,
+        "Relative Evaluator Rating Tendency",
+        (
+            "Mean deviation of each evaluator's rating from the average rating "
+            "of the other evaluators, with 95% confidence intervals."
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# 67: Direct raw-rating matrices
 # ---------------------------------------------------------------------------
 
 
 def plot_pairwise_overall_quality_matrices(
-    wide_df: pd.DataFrame,
-    evaluators: list[str],
+        wide_df: pd.DataFrame,
+        evaluators: list[str],
 ) -> None:
     """Show every raw 1-5 rating combination for every evaluator pair."""
-    slug = "63_pairwise_overall_quality_rating_matrices"
+    slug = "67_pairwise_overall_quality_rating_matrices"
     pairwise_df = _pairwise_summary(wide_df, evaluators)
     if pairwise_df.empty:
         return
@@ -639,7 +1100,7 @@ def plot_pairwise_overall_quality_matrices(
         pair_metrics = pairwise_df[
             pairwise_df["evaluatorA"].eq(evaluator_a)
             & pairwise_df["evaluatorB"].eq(evaluator_b)
-        ].iloc[0]
+            ].iloc[0]
 
         axis.set_xticks(range(len(RATING_SCALE)))
         axis.set_xticklabels(RATING_SCALE)
@@ -692,122 +1153,6 @@ def plot_pairwise_overall_quality_matrices(
 
 
 # ---------------------------------------------------------------------------
-# 64: Rating tendency and disagreement magnitude
-# ---------------------------------------------------------------------------
-
-
-def plot_evaluator_tendency_and_disagreement(
-    wide_df: pd.DataFrame,
-    evaluators: list[str],
-) -> None:
-    """Show systematic strictness/generosity and poem-level rating spread."""
-    slug = "64_evaluator_tendency_and_disagreement"
-    tendency_df = _tendency_summary(wide_df, evaluators)
-    range_df, disagreement_rows = _disagreement_outputs(wide_df, evaluators)
-
-    fig, axes = plt.subplots(1, 2, figsize=(13.0, 5.0))
-    tendency_axis, range_axis = axes
-
-    tendency_plot = tendency_df.reset_index(drop=True)
-    y_positions = np.arange(len(tendency_plot))
-    deviations = tendency_plot["meanDeviationFromPeers"].to_numpy(dtype=float)
-    lower_error = deviations - tendency_plot["lowerCI"].to_numpy(dtype=float)
-    upper_error = tendency_plot["upperCI"].to_numpy(dtype=float) - deviations
-
-    tendency_axis.errorbar(
-        deviations,
-        y_positions,
-        xerr=np.vstack([lower_error, upper_error]),
-        fmt="o",
-        markersize=7,
-        capsize=4,
-        linewidth=1.4,
-        color="#333333",
-    )
-    for y_position, (_, row) in zip(y_positions, tendency_plot.iterrows()):
-        tendency_axis.scatter(
-            row["meanDeviationFromPeers"],
-            y_position,
-            s=60,
-            color=EVALUATOR_COLORS[row["evaluatorId"]],
-            edgecolor="white",
-            linewidth=0.8,
-            zorder=4,
-        )
-        tendency_axis.annotate(
-            (
-                f"Mean rating {row['meanRating']:.2f}\n"
-                f"Peer deviation {row['meanDeviationFromPeers']:+.2f}"
-            ),
-            (row["meanDeviationFromPeers"], y_position),
-            xytext=(8, 0),
-            textcoords="offset points",
-            va="center",
-            fontsize=8,
-        )
-
-    max_abs = max(
-        0.3,
-        abs(float(tendency_plot["lowerCI"].min())),
-        abs(float(tendency_plot["upperCI"].max())),
-    )
-    tendency_axis.axvline(0, color="black", linestyle="--", linewidth=1)
-    tendency_axis.set_xlim(-max_abs * 1.25, max_abs * 1.25)
-    tendency_axis.set_yticks(y_positions)
-    tendency_axis.set_yticklabels(tendency_plot["evaluatorLabel"])
-    tendency_axis.set_xlabel("Mean deviation from the other two evaluators")
-    tendency_axis.set_ylabel("Evaluator")
-    tendency_axis.set_title("Relative Evaluator Rating Tendency")
-    apply_standard_axes_style(tendency_axis, grid_axis="x")
-
-    bars = range_axis.bar(
-        range_df["ratingRange"].astype(str),
-        range_df["percentage"],
-        color="#8BAE66",
-        edgecolor="white",
-        linewidth=0.8,
-        zorder=2,
-    )
-    for bar, (_, row) in zip(bars, range_df.iterrows()):
-        range_axis.text(
-            bar.get_x() + bar.get_width() / 2,
-            bar.get_height() + 1.0,
-            f"{int(row['poemCount'])}\n({row['percentage']:.1f}%)",
-            ha="center",
-            va="bottom",
-            fontsize=8,
-        )
-
-    range_axis.set_ylim(0, max(5, float(range_df["percentage"].max()) + 12))
-    range_axis.set_xlabel("Rating range across all three evaluators")
-    range_axis.set_ylabel("Poems (%)")
-    range_axis.set_title("Magnitude of Evaluator Disagreement")
-    apply_standard_axes_style(range_axis, grid_axis="y")
-
-    fig.suptitle("Evaluator Tendency and Disagreement Magnitude", fontsize=13, y=0.99)
-    fig.text(
-        0.01,
-        0.01,
-        "Range = highest minus lowest raw 1-5 rating for the same poem. The full "
-        "poem-level disagreement table is available in the Statistical Analysis section.",
-        ha="left",
-        va="bottom",
-        fontsize=8.4,
-        color="#4a4a4a",
-    )
-    fig.tight_layout(rect=(0, 0.045, 1, 0.96))
-
-    save_figure(
-        fig,
-        slug,
-        "Evaluator Tendency and Disagreement Magnitude",
-        "Relative strictness or generosity of each evaluator compared with the other "
-        "two evaluators, alongside the distribution of rating ranges across all three "
-        "evaluators for the same poem.",
-    )
-
-
-# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -836,6 +1181,9 @@ def plot_evaluators(ratings_df: pd.DataFrame | None = None) -> None:
         )
 
     plot_overall_quality_rating_distribution(wide_df, evaluators)
-    plot_overall_quality_reliability_summary(wide_df, evaluators)
+    plot_overall_quality_ordinal_agreement(wide_df, evaluators)
+    plot_overall_quality_icc_reliability(wide_df, evaluators)
+    plot_pairwise_overall_quality_agreement(wide_df, evaluators)
+    plot_evaluator_disagreement_magnitude(wide_df, evaluators)
+    plot_evaluator_rating_tendency(wide_df, evaluators)
     plot_pairwise_overall_quality_matrices(wide_df, evaluators)
-    plot_evaluator_tendency_and_disagreement(wide_df, evaluators)
