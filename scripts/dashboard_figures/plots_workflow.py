@@ -641,9 +641,9 @@ def plot_main_workflow_transitions(main_df) -> None:
             counts,
             percentages,
             totals,
-            title="Final Practice Workflow to First Voluntary Choice",
-            source_label=f"Assigned workflow in {from_label}",
-            target_label=f"Chosen workflow in {to_label}",
+            title=f"{from_label} → {to_label}",
+            source_label=f"Workflow in {from_label}",
+            target_label=f"Workflow in {to_label}",
         )
 
     fig.colorbar(
