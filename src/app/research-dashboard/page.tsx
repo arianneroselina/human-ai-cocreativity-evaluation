@@ -89,7 +89,8 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
     {
       id: "experience-figures",
       title: "Participant Experience",
-      description: "Satisfaction, frustration, AI performance ratings, and perceived task load.",
+      description:
+        "Satisfaction, frustration, AI performance ratings, and perceived task load in practice rounds.",
       figures: figures.filter((figure) =>
         ["31_", "32_", "33_", "34_"].some((prefix) => figure.slug.startsWith(prefix))
       ),

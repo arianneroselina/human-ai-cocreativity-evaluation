@@ -70,25 +70,25 @@
     "pdfUrl": "/research-dashboard/figures/09_stated_vs_observed_workflow_behaviour.pdf"
   },
   {
-    "slug": "31_satisfaction_by_round_and_workflow",
-    "title": "Participant Satisfaction by Round and Workflow",
-    "description": "Mean round-level satisfaction by the workflow used in each round. Error bars show approximate 95% confidence intervals; labels show the number of observations. Main-round workflow means are descriptive because workflows were voluntarily selected.",
-    "pngUrl": "/research-dashboard/figures/31_satisfaction_by_round_and_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/31_satisfaction_by_round_and_workflow.pdf"
+    "slug": "31_satisfaction_by_practice_round_and_workflow",
+    "title": "Participant Satisfaction by Practice Round and Workflow",
+    "description": "Mean satisfaction across the randomized practice phase, grouped by practice round and assigned workflow. Error bars show approximate 95% confidence intervals; labels show observation counts.",
+    "pngUrl": "/research-dashboard/figures/31_satisfaction_by_practice_round_and_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/31_satisfaction_by_practice_round_and_workflow.pdf"
   },
   {
-    "slug": "32_ai_experience_by_round_and_workflow",
-    "title": "AI Interaction Ratings by Round and Workflow",
-    "description": "Mean ratings for AI understanding, collaboration, creativity support, and overall AI performance by round and AI-supported workflow. Error bars show approximate 95% confidence intervals; labels show the number of observations.",
-    "pngUrl": "/research-dashboard/figures/32_ai_experience_by_round_and_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/32_ai_experience_by_round_and_workflow.pdf"
+    "slug": "32_ai_experience_by_practice_round_and_workflow",
+    "title": "AI Interaction Ratings by Practice Round and Workflow",
+    "description": "Mean ratings for AI understanding, collaboration quality, creativity support, and overall AI performance across the randomized practice phase. Error bars show approximate 95% confidence intervals; labels show observation counts.",
+    "pngUrl": "/research-dashboard/figures/32_ai_experience_by_practice_round_and_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/32_ai_experience_by_practice_round_and_workflow.pdf"
   },
   {
-    "slug": "33_tlx_score_by_workflow_and_rounds",
-    "title": "Raw NASA-TLX Workload Score by Workflow and Study Phase",
-    "description": "Raw NASA-TLX workload scores were calculated for each participant-round as the equally weighted mean of the six NASA-TLX subscales, then summarised by workflow and rounds. Higher scores indicate greater perceived workload. Error bars show approximate 95% confidence intervals.",
-    "pngUrl": "/research-dashboard/figures/33_tlx_score_by_workflow_and_rounds.png",
-    "pdfUrl": "/research-dashboard/figures/33_tlx_score_by_workflow_and_rounds.pdf"
+    "slug": "33_tlx_score_by_workflow_in_practice_rounds",
+    "title": "Raw NASA-TLX Workload by Workflow in Practice Rounds",
+    "description": "Raw NASA-TLX is the equally weighted mean of the six subscales for each practice round observation. Higher scores indicate greater perceived workload. Points show workflow means and whiskers show approximate 95% confidence intervals.",
+    "pngUrl": "/research-dashboard/figures/33_tlx_score_by_workflow_in_practice_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/33_tlx_score_by_workflow_in_practice_rounds.pdf"
   },
   {
     "slug": "34_satisfaction_vs_external_quality",

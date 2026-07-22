@@ -2,15 +2,13 @@
 
 Figures
 -------
-31  Satisfaction by round and workflow — all rounds
-32  AI interaction ratings by round and AI-supported workflow — all rounds
-33  NASA-TLX workload profile by workflow and study phase
+31  Satisfaction by practice round position and workflow
+32  AI interaction ratings by practice round position and AI-supported workflow
+33  Raw NASA-TLX workload by workflow in practice rounds
 34  Participant satisfaction versus external text quality
 """
 
 from __future__ import annotations
-
-from collections.abc import Iterable
 
 import numpy as np
 import pandas as pd
@@ -18,7 +16,6 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
 from scripts.config import (
-    ERROR_ROUND_INDEX,
     QUALITY_PRIMARY_METRIC,
     QUALITY_SCALE_MAX,
     QUALITY_SCALE_MIN,
@@ -30,8 +27,7 @@ from scripts.config import (
     PHASES,
 )
 from scripts.dashboard_figures.helpers import (
-    annotate_injected_error_round,
-    shade_main_rounds,
+    phase_data,
     workflow_display_name,
 )
 from scripts.dashboard_figures.style import apply_standard_axes_style
@@ -122,20 +118,6 @@ def _mean_ci_summary(
     return pd.DataFrame(rows)
 
 
-def _phase_metric_summary(
-    df: pd.DataFrame,
-    metric_columns: list[str],
-) -> pd.DataFrame:
-    """Summarise selected metrics by workflow and Practice/Main phase."""
-    phase_df = df.copy()
-
-    return _mean_ci_summary(
-        phase_df,
-        group_columns=["phase", "workflow"],
-        metric_columns=metric_columns,
-    )
-
-
 def _plot_round_series(
     ax,
     summary: pd.DataFrame,
@@ -143,9 +125,8 @@ def _plot_round_series(
     rounds: list[int],
     metric: str,
     point_offset: float = 0.0,
-    annotate_counts: bool = True,
 ) -> None:
-    """Plot one workflow's full-round series, preserving gaps for absent cells."""
+    """Plot one workflow series across practice round positions."""
     workflow_summary = (
         summary[summary["workflow"].eq(workflow) & summary["metric"].eq(metric)]
         .set_index("roundIndex")
@@ -200,74 +181,29 @@ def _plot_round_series(
         zorder=2,
     )
 
-    if annotate_counts:
-        for x_value, y_value, count in zip(
-            x_values[valid],
-            means[valid],
-            workflow_summary.loc[
-                workflow_summary["mean"].notna(),
-                "count",
-            ].to_numpy(dtype=int),
-        ):
-            ax.annotate(
-                f"n={count}",
-                (x_value, y_value),
-                xytext=(0, 7),
-                textcoords="offset points",
-                ha="center",
-                va="bottom",
-                fontsize=6.8,
-                color=WORKFLOW_COLORS[workflow],
-            )
+
+# ---------------------------------------------------------------------------
+# 31: Satisfaction by practice round position and workflow
+# ---------------------------------------------------------------------------
 
 
-def _draw_jittered_points(
-    ax,
-    x_values: Iterable[float],
-    y_values: Iterable[float],
-    color: str,
-    seed: int,
-    x_scale: float = 0.055,
-    y_scale: float = 0.0,
+def plot_satisfaction_by_practice_round_and_workflow(
+    practice_df: pd.DataFrame,
 ) -> None:
-    """Draw reproducibly jittered raw points."""
-    x_values = np.asarray(list(x_values), dtype=float)
-    y_values = np.asarray(list(y_values), dtype=float)
-
-    rng = np.random.default_rng(seed)
-    x_jitter = rng.normal(0, x_scale, size=len(x_values))
-    y_jitter = rng.normal(0, y_scale, size=len(y_values))
-
-    ax.scatter(
-        x_values + x_jitter,
-        y_values + y_jitter,
-        s=24,
-        color=color,
-        alpha=0.55,
-        edgecolor="white",
-        linewidth=0.45,
-        zorder=3,
-    )
-
-
-# ---------------------------------------------------------------------------
-# 31: Satisfaction by round and workflow, all rounds
-# ---------------------------------------------------------------------------
-
-
-def plot_satisfaction_by_round_and_workflow(prepared) -> None:
-    """Show satisfaction throughout the full study by workflow used per round."""
-    slug = "31_satisfaction_by_round_and_workflow"
+    """Show satisfaction across randomized practice round positions."""
+    slug = "31_satisfaction_by_practice_round_and_workflow"
 
     required_columns = {SATISFACTION_COLUMN, "roundIndex", "workflow"}
     if not require_columns(
-        prepared,
+        practice_df,
         required_columns,
-        "satisfaction by round and workflow",
+        "practice round satisfaction by workflow",
     ):
         return
 
-    plot_df = prepared.dropna(subset=[SATISFACTION_COLUMN]).copy()
+    plot_df = practice_df.dropna(
+        subset=[SATISFACTION_COLUMN, "roundIndex", "workflow"]
+    ).copy()
     if plot_df.empty:
         return
 
@@ -277,12 +213,13 @@ def plot_satisfaction_by_round_and_workflow(prepared) -> None:
         group_columns=["roundIndex", "workflow"],
         metric_columns=[SATISFACTION_COLUMN],
     )
+    if summary.empty:
+        return
 
     summary["workflowLabel"] = summary["workflow"].map(workflow_display_name)
     save_table(summary, slug, index=False)
 
-    fig, ax = plt.subplots(figsize=(10.0, 5.5))
-    shade_main_rounds(ax, label="Main rounds", label_y=0.025)
+    fig, ax = plt.subplots(figsize=(9.6, 5.3))
 
     for workflow in WORKFLOW_ORDER:
         _plot_round_series(
@@ -293,21 +230,15 @@ def plot_satisfaction_by_round_and_workflow(prepared) -> None:
             SATISFACTION_COLUMN,
         )
 
-    annotate_injected_error_round(
-        ax,
-        ERROR_ROUND_INDEX,
-        y_top=5.05,
-        text_y=5.25,
-    )
-
-    ax.set_title("Participant Satisfaction by Round and Workflow")
-    ax.set_xlabel("Round")
+    ax.set_title("Participant Satisfaction by Practice Round and Workflow")
+    ax.set_xlabel("Practice round")
     ax.set_ylabel("Satisfaction rating (1-5)")
     ax.set_xticks(rounds)
+    ax.set_xticklabels([f"Practice {index + 1}" for index in range(len(rounds))])
     ax.set_ylim(0.7, 5.42)
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     ax.legend(
-        title="Workflow used in round",
+        title="Assigned workflow",
         bbox_to_anchor=(1.02, 1),
         loc="upper left",
     )
@@ -317,33 +248,36 @@ def plot_satisfaction_by_round_and_workflow(prepared) -> None:
     save_figure(
         fig,
         slug,
-        "Participant Satisfaction by Round and Workflow",
-        "Mean round-level satisfaction by the workflow used in each round. "
-        "Error bars show approximate 95% confidence intervals; labels show the "
-        "number of observations. Main-round workflow means are descriptive because "
-        "workflows were voluntarily selected.",
+        "Participant Satisfaction by Practice Round and Workflow",
+        (
+            "Mean satisfaction across the randomized practice phase, grouped by "
+            "practice round and assigned workflow. Error bars show "
+            "approximate 95% confidence intervals; labels show observation counts."
+        ),
     )
 
 
 # ---------------------------------------------------------------------------
-# 32: AI interaction ratings by round and workflow, all rounds
+# 32: AI interaction ratings by practice round position and workflow
 # ---------------------------------------------------------------------------
 
 
-def plot_ai_experience_by_round_and_workflow(prepared) -> None:
-    """Show AI experience ratings throughout the full study."""
-    slug = "32_ai_experience_by_round_and_workflow"
+def plot_ai_experience_by_practice_round_and_workflow(
+    practice_df: pd.DataFrame,
+) -> None:
+    """Show AI interaction ratings across randomized practice rounds."""
+    slug = "32_ai_experience_by_practice_round_and_workflow"
 
     available_metrics = [
         metric
         for metric in AI_EXPERIENCE_METRICS
-        if metric in prepared.columns and prepared[metric].notna().any()
+        if metric in practice_df.columns and practice_df[metric].notna().any()
     ]
     if not available_metrics:
         return
 
     ai_workflows = [workflow for workflow in WORKFLOW_ORDER if workflow != "human"]
-    plot_df = prepared[prepared["workflow"].isin(ai_workflows)].copy()
+    plot_df = practice_df.loc[practice_df["workflow"].isin(ai_workflows)].copy()
     if plot_df.empty:
         return
 
@@ -367,7 +301,7 @@ def plot_ai_experience_by_round_and_workflow(prepared) -> None:
     fig, axes = plt.subplots(
         n_rows,
         n_columns,
-        figsize=(12.4, 4.55 * n_rows),
+        figsize=(12.4, 4.45 * n_rows),
         sharex=True,
         sharey=True,
         squeeze=False,
@@ -375,8 +309,6 @@ def plot_ai_experience_by_round_and_workflow(prepared) -> None:
     axes_flat = axes.flatten()
 
     for axis, metric in zip(axes_flat, available_metrics):
-        shade_main_rounds(axis, label="", label_y=0.025)
-
         for workflow in ai_workflows:
             _plot_round_series(
                 axis,
@@ -384,21 +316,14 @@ def plot_ai_experience_by_round_and_workflow(prepared) -> None:
                 workflow,
                 rounds,
                 metric,
-                annotate_counts=True,
             )
-
-        annotate_injected_error_round(
-            axis,
-            ERROR_ROUND_INDEX,
-            y_top=5.05,
-            text_y=5.25,
-        )
 
         axis.set_title(AI_EXPERIENCE_METRICS[metric])
         axis.set_xticks(rounds)
+        axis.set_xticklabels([f"Practice {index + 1}" for index in range(len(rounds))])
         axis.set_ylim(0.7, 5.42)
         axis.yaxis.set_major_locator(MaxNLocator(integer=True))
-        axis.set_xlabel("Round")
+        axis.set_xlabel("Practice round")
         axis.set_ylabel("Participant rating (1-5)")
         apply_standard_axes_style(axis, grid_axis="y")
 
@@ -409,198 +334,144 @@ def plot_ai_experience_by_round_and_workflow(prepared) -> None:
     fig.legend(
         legend_handles,
         legend_labels,
-        title="AI-supported workflow used in round",
+        title="Assigned AI-supported workflow",
         bbox_to_anchor=(0.99, 0.5),
         loc="center left",
     )
     fig.suptitle(
-        "AI Interaction Ratings by Round and Workflow",
+        "AI Interaction Ratings by Practice Round and Workflow",
         fontsize=13,
         y=0.995,
     )
-    fig.text(
-        0.43,
-        0.012,
-        "Shading indicates Main rounds; the dashed line marks the injected-error round. "
-        "Main-round workflow means are descriptive because workflows were self-selected.",
-        ha="center",
-        va="bottom",
-        fontsize=8.5,
-        color="#4a4a4a",
-    )
-    fig.tight_layout(rect=(0, 0.04, 0.82, 0.97))
+    fig.tight_layout(rect=(0, 0.02, 0.82, 0.97))
 
     save_figure(
         fig,
         slug,
-        "AI Interaction Ratings by Round and Workflow",
-        "Mean ratings for AI understanding, collaboration, creativity support, and "
-        "overall AI performance by round and AI-supported workflow. Error bars show "
-        "approximate 95% confidence intervals; labels show the number of observations.",
+        "AI Interaction Ratings by Practice Round and Workflow",
+        (
+            "Mean ratings for AI understanding, collaboration quality, creativity "
+            "support, and overall AI performance across the randomized practice "
+            "phase. Error bars show approximate 95% confidence intervals; labels "
+            "show observation counts."
+        ),
     )
 
 
 # ---------------------------------------------------------------------------
-# 33: NASA-TLX profile by workflow and study phase
+# 33: Raw NASA-TLX workload by workflow in practice rounds
 # ---------------------------------------------------------------------------
 
 
-def plot_tlx_score_by_workflow_and_rounds(prepared) -> None:
-    """Compare Raw NASA-TLX workload scores by workflow and rounds.
+def plot_tlx_score_by_workflow_in_practice_rounds(
+    practice_df: pd.DataFrame,
+) -> None:
+    """Compare Raw NASA-TLX workload across practice workflows.
 
-    Raw NASA-TLX is calculated for each participant-round as the mean of the
-    available NASA-TLX subscale ratings. Scores remain on the original 0–20
-    response scale, where higher values indicate greater perceived workload.
+    Raw NASA-TLX is the equally weighted mean of the six NASA-TLX subscales
+    for each participant-round. Scores remain on the original 0-20 scale.
     """
-    slug = "33_tlx_score_by_workflow_and_rounds"
+    slug = "33_tlx_score_by_workflow_in_practice_rounds"
 
-    required_columns = {"phase", "workflow", "rawNasaTlxScore"}
+    required_columns = {"workflow", "rawNasaTlxScore"}
     if not require_columns(
-        prepared,
+        practice_df,
         required_columns,
-        "Raw NASA-TLX score by workflow and rounds",
+        "Raw NASA-TLX score by practice workflow",
     ):
         return
 
+    plot_df = practice_df.dropna(subset=["workflow", "rawNasaTlxScore"]).copy()
+    if plot_df.empty:
+        return
+
     summary = _mean_ci_summary(
-        prepared,
-        group_columns=["phase", "workflow"],
+        plot_df,
+        group_columns=["workflow"],
         metric_columns=["rawNasaTlxScore"],
     )
     if summary.empty:
         return
 
     summary["workflowLabel"] = summary["workflow"].map(workflow_display_name)
-    summary["phaseLabel"] = summary["phase"].str.capitalize()
-
     save_table(summary, slug, index=False)
 
-    available_phases = [
-        phase for phase in PHASES if phase in summary["phase"].dropna().unique()
+    workflow_order = [
+        workflow for workflow in WORKFLOW_ORDER if workflow in set(summary["workflow"])
     ]
-
-    if not available_phases:
+    plot_summary = (
+        summary.set_index("workflow")
+        .reindex(workflow_order)
+        .dropna(subset=["mean"])
+        .reset_index()
+    )
+    if plot_summary.empty:
         return
 
-    fig, axes = plt.subplots(
-        1,
-        len(available_phases),
-        figsize=(7.0 * len(available_phases), 5.0),
-        sharey=True,
-        squeeze=False,
+    positions = np.arange(len(plot_summary))
+    values = plot_summary["mean"].to_numpy(dtype=float)
+    lower_ci = plot_summary["lowerCI"].to_numpy(dtype=float)
+    upper_ci = plot_summary["upperCI"].to_numpy(dtype=float)
+
+    fig, ax = plt.subplots(figsize=(8.7, 4.8))
+
+    ax.errorbar(
+        values,
+        positions,
+        xerr=np.vstack([values - lower_ci, upper_ci - values]),
+        fmt="none",
+        ecolor="#303030",
+        elinewidth=1.3,
+        capsize=4,
+        capthick=1.3,
+        zorder=2,
     )
 
-    y_positions = np.arange(len(WORKFLOW_ORDER))
+    for position, (_, row) in zip(positions, plot_summary.iterrows()):
+        workflow = row["workflow"]
 
-    for axis, phase in zip(axes.flatten(), available_phases):
-        phase_summary = (
-            summary[summary["phase"].eq(phase)]
-            .set_index("workflow")
-            .reindex(WORKFLOW_ORDER)
-            .dropna(subset=["mean"])
-            .reset_index()
+        ax.scatter(
+            row["mean"],
+            position,
+            s=95,
+            color=WORKFLOW_COLORS[workflow],
+            edgecolor="white",
+            linewidth=1.0,
+            zorder=3,
+        )
+        ax.annotate(
+            f"{row['mean']:.1f} (n={int(row['count'])})",
+            (row["mean"], position),
+            xytext=(7, 0),
+            textcoords="offset points",
+            ha="left",
+            va="center",
+            fontsize=8.5,
+            color="#333333",
         )
 
-        if phase_summary.empty:
-            axis.set_visible(False)
-            continue
-
-        values = phase_summary["mean"].to_numpy(dtype=float)
-        lower_ci = phase_summary["lowerCI"].to_numpy(dtype=float)
-        upper_ci = phase_summary["upperCI"].to_numpy(dtype=float)
-
-        lower_errors = values - lower_ci
-        upper_errors = upper_ci - values
-
-        positions = np.array(
-            [WORKFLOW_ORDER.index(workflow) for workflow in phase_summary["workflow"]]
-        )
-
-        # Show confidence intervals behind the workflow points.
-        axis.errorbar(
-            values,
-            positions,
-            xerr=np.vstack([lower_errors, upper_errors]),
-            fmt="none",
-            ecolor="#303030",
-            elinewidth=1.3,
-            capsize=4,
-            capthick=1.3,
-            zorder=2,
-        )
-
-        for position, (_, row) in zip(positions, phase_summary.iterrows()):
-            workflow = row["workflow"]
-
-            axis.scatter(
-                row["mean"],
-                position,
-                s=90,
-                color=WORKFLOW_COLORS[workflow],
-                edgecolor="white",
-                linewidth=1.0,
-                zorder=3,
-            )
-
-            axis.annotate(
-                f"{row['mean']:.1f} (n={int(row['count'])})",
-                (row["mean"], position),
-                xytext=(7, 0),
-                textcoords="offset points",
-                ha="left",
-                va="center",
-                fontsize=8.5,
-                color="#333333",
-            )
-
-        axis.set_title(
-            f"{phase.capitalize()} rounds",
-            fontsize=11,
-            fontweight="bold",
-        )
-
-        axis.set_xlim(-0.5, 21.8)
-        axis.set_xticks([0, 5, 10, 15, 20])
-        axis.set_xlabel("Raw NASA-TLX workload score (0–20)")
-
-        axis.set_yticks(y_positions)
-        axis.set_yticklabels(
-            [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER]
-        )
-
-        apply_standard_axes_style(axis, grid_axis="x")
-
-    axes[0, 0].set_ylabel("Workflow")
-
-    fig.suptitle(
-        "Raw NASA-TLX Workload Score by Workflow and Rounds",
-        fontsize=13,
-        y=0.995,
+    ax.set_yticks(positions)
+    ax.set_yticklabels(
+        [workflow_display_name(workflow) for workflow in plot_summary["workflow"]]
     )
-
-    fig.text(
-        0.02,
-        0.012,
-        "Raw NASA-TLX was calculated for each participant-round as the equally "
-        "weighted mean of the six NASA-TLX subscales. Higher scores indicate "
-        "greater perceived workload. Whiskers show approximate 95% confidence "
-        "intervals.",
-        ha="left",
-        va="bottom",
-        fontsize=8.5,
-        color="#4a4a4a",
-    )
-
-    fig.tight_layout(rect=(0, 0.075, 1, 0.95))
+    ax.invert_yaxis()
+    ax.set_xlim(-0.5, 21.8)
+    ax.set_xticks([0, 5, 10, 15, 20])
+    ax.set_xlabel("Raw NASA-TLX workload score (0-20)")
+    ax.set_ylabel("Assigned workflow")
+    ax.set_title("Raw NASA-TLX Workload by Workflow in Practice Rounds")
+    apply_standard_axes_style(ax, grid_axis="x")
 
     save_figure(
         fig,
         slug,
-        "Raw NASA-TLX Workload Score by Workflow and Study Phase",
-        "Raw NASA-TLX workload scores were calculated for each participant-round "
-        "as the equally weighted mean of the six NASA-TLX subscales, then "
-        "summarised by workflow and rounds. Higher scores indicate greater "
-        "perceived workload. Error bars show approximate 95% confidence intervals.",
+        "Raw NASA-TLX Workload by Workflow in Practice Rounds",
+        (
+            "Raw NASA-TLX is the equally weighted mean of the six subscales for "
+            "each practice round observation. Higher scores indicate greater "
+            "perceived workload. Points show workflow means and whiskers show "
+            "approximate 95% confidence intervals."
+        ),
     )
 
 
@@ -935,7 +806,10 @@ def plot_experience(df: pd.DataFrame) -> None:
     if prepared.empty:
         return
 
-    plot_satisfaction_by_round_and_workflow(prepared)
-    plot_ai_experience_by_round_and_workflow(prepared)
-    plot_tlx_score_by_workflow_and_rounds(prepared)
+    practice_df = phase_data(prepared, "practice")
+    if not practice_df.empty:
+        plot_satisfaction_by_practice_round_and_workflow(practice_df)
+        plot_ai_experience_by_practice_round_and_workflow(practice_df)
+        plot_tlx_score_by_workflow_in_practice_rounds(practice_df)
+
     plot_satisfaction_vs_external_quality(prepared)

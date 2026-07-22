@@ -381,7 +381,7 @@ def plot_workflow_distribution(main_df):
     )
     ax.set_ylim(0, 113)
     ax.set_title("Workflow Distribution Across Main Rounds")
-    ax.set_xlabel("Free-choice round")
+    ax.set_xlabel("Main round")
     ax.set_ylabel("Share of participants (%)")
 
     for position, round_index in enumerate(main_rounds):

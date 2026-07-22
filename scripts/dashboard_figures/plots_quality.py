@@ -865,11 +865,10 @@ def plot_quality(df: pd.DataFrame) -> None:
         return
 
     practice_df = phase_data(prepared, "practice")
-    if practice_df.empty:
-        return
+    if not practice_df.empty:
+        plot_overall_quality_by_workflow_practice_rounds(practice_df)
+        plot_rating_dimensions_by_workflow_practice_rounds(practice_df)
+        plot_mixed_workflow_direction_quality_practice_rounds(practice_df)
+        plot_mixed_vs_solo_quality_practice_rounds(practice_df)
 
-    plot_overall_quality_by_workflow_practice_rounds(practice_df)
-    plot_rating_dimensions_by_workflow_practice_rounds(practice_df)
-    plot_mixed_workflow_direction_quality_practice_rounds(practice_df)
-    plot_mixed_vs_solo_quality_practice_rounds(practice_df)
     plot_quality_examples(prepared)
