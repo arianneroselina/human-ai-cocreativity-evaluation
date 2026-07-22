@@ -111,11 +111,13 @@ const FAVORITE_FIGURE_NUMBERS = [
   "03_",
   "07_",
   "08_", // workflow behaviour
-  "11_", // output quality
   "62_",
   "64_",
   "65_",
   "66_", // evaluator agreement
+  "11_", // output quality
+  "16_",
+  "17_", // efficiency
   "21_",
   "23_",
   "25_", // constraints fulfillment
@@ -129,8 +131,8 @@ const FAVORITE_FIGURE_NUMBERS = [
 
 const INTERESTING_FIGURE_NUMBERS = [
   "09_", // workflow behavior
-  "12_", // output quality
   "63_", // evaluator agreement
+  "12_", // output quality
   "24_",
   "26_", // constraints fulfillment
   "31_", // participant experience
