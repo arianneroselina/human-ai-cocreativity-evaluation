@@ -864,8 +864,8 @@ def plot_pairwise_overall_quality_agreement(
 
 
 def plot_evaluator_disagreement_magnitude(
-        wide_df: pd.DataFrame,
-        evaluators: list[str],
+    wide_df: pd.DataFrame,
+    evaluators: list[str],
 ) -> None:
     """Show the poem-level spread across evaluator ratings."""
     slug = "65_evaluator_disagreement_magnitude"
@@ -904,7 +904,7 @@ def plot_evaluator_disagreement_magnitude(
             ha="center",
             va="bottom",
             fontsize=8.5,
-            )
+        )
 
     ax.set_ylim(0, max(5, float(range_df["percentage"].max()) + 12))
     ax.set_xlabel("Rating range across all evaluators")
@@ -1045,8 +1045,8 @@ def plot_evaluator_rating_tendency(
 
 
 def plot_pairwise_overall_quality_matrices(
-        wide_df: pd.DataFrame,
-        evaluators: list[str],
+    wide_df: pd.DataFrame,
+    evaluators: list[str],
 ) -> None:
     """Show every raw 1-5 rating combination for every evaluator pair."""
     slug = "67_pairwise_overall_quality_rating_matrices"
@@ -1100,7 +1100,7 @@ def plot_pairwise_overall_quality_matrices(
         pair_metrics = pairwise_df[
             pairwise_df["evaluatorA"].eq(evaluator_a)
             & pairwise_df["evaluatorB"].eq(evaluator_b)
-            ].iloc[0]
+        ].iloc[0]
 
         axis.set_xticks(range(len(RATING_SCALE)))
         axis.set_xticklabels(RATING_SCALE)

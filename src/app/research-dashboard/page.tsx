@@ -57,18 +57,25 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       description:
         "Inter-rater agreement (ICC, Ordinal Krippendorff's Alpha, Cohen's Kappa) and individual evaluator rating patterns.",
       figures: figures.filter((figure) =>
-        ["61_", "62_", "63_", "64_", "65_", "66_", "67_"].some((prefix) => figure.slug.startsWith(prefix))
+        ["61_", "62_", "63_", "64_", "65_", "66_", "67_"].some((prefix) =>
+          figure.slug.startsWith(prefix)
+        )
       ),
     },
     {
       id: "quality-figures",
       title: "Output Quality",
-      description:
-        "Quality by round and workflow, dimensions, efficiency, error-exposure interaction, and learning/fatigue effects.",
+      description: "Quality dimensions by round and workflow in practice rounds.",
       figures: figures.filter((figure) =>
-        ["11_", "12_", "13_", "14_", "15_", "16_", "17_", "17b_"].some((prefix) =>
-          figure.slug.startsWith(prefix)
-        )
+        ["11_", "12_", "13_", "14_", "15_", "15b_"].some((prefix) => figure.slug.startsWith(prefix))
+      ),
+    },
+    {
+      id: "efficiency-figures",
+      title: "Efficiency",
+      description: "Efficiency metrics by round and workflow in practice rounds.",
+      figures: figures.filter((figure) =>
+        ["16_", "17_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
     {
@@ -93,7 +100,7 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       description:
         "Round-5 error exposure, line-count error, post-error behaviour, and subjective reactions.",
       figures: figures.filter((figure) =>
-        ["41_", "42_", "43_", "44_", "45_"].some((prefix) => figure.slug.startsWith(prefix))
+        ["41_", "42_", "43_", "44_", "45_", "46_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
   ].filter((group) => group.figures.length > 0);
@@ -104,8 +111,7 @@ const FAVORITE_FIGURE_NUMBERS = [
   "03_",
   "07_",
   "08_", // workflow behaviour
-  "11_",
-  "13_", // output quality
+  "11_", // output quality
   "62_",
   "64_",
   "65_",
@@ -117,18 +123,18 @@ const FAVORITE_FIGURE_NUMBERS = [
   "33_", // participant experience
   "42_",
   "43_",
-  "44_", // ai error exposure
+  "44_",
+  "45_", // ai error exposure
 ];
 
 const INTERESTING_FIGURE_NUMBERS = [
   "09_", // workflow behavior
-  "12_",
-  "16_", // output quality
+  "12_", // output quality
   "63_", // evaluator agreement
   "24_",
   "26_", // constraints fulfillment
   "31_", // participant experience
-  "45_", // ai error exposure
+  "46_", // ai error exposure
 ];
 
 export default async function ResearchDashboardPage() {

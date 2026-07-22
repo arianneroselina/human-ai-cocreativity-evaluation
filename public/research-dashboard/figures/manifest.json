@@ -98,60 +98,60 @@
     "pdfUrl": "/research-dashboard/figures/34_satisfaction_vs_external_quality.pdf"
   },
   {
-    "slug": "11_mean_overall_quality_by_workflow_main_rounds",
-    "title": "Mean Overall Quality by Workflow in Main Rounds",
-    "description": "Poem-level mean overall quality in the Main rounds. Participants selected their own workflow, so differences are descriptive associations rather than controlled workflow effects.",
-    "pngUrl": "/research-dashboard/figures/11_mean_overall_quality_by_workflow_main_rounds.png",
-    "pdfUrl": "/research-dashboard/figures/11_mean_overall_quality_by_workflow_main_rounds.pdf"
+    "slug": "11_overall_quality_by_workflow_practice_rounds",
+    "title": "Overall Quality by Workflow in Practice Rounds",
+    "description": "Overall-quality ratings in the randomized practice phase; points show poems, boxes show distributions, and diamonds show means with 95% confidence intervals.",
+    "pngUrl": "/research-dashboard/figures/11_overall_quality_by_workflow_practice_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/11_overall_quality_by_workflow_practice_rounds.pdf"
   },
   {
-    "slug": "12_rating_dimensions_by_workflow_main_rounds",
-    "title": "Quality Dimensions by Workflow in Main Rounds",
-    "description": "Mean evaluator ratings by workflow and quality dimension in main rounds rounds. Error bars show descriptive 95% confidence intervals.",
-    "pngUrl": "/research-dashboard/figures/12_rating_dimensions_by_workflow_main_rounds.png",
-    "pdfUrl": "/research-dashboard/figures/12_rating_dimensions_by_workflow_main_rounds.pdf"
+    "slug": "12_rating_dimensions_by_workflow_practice_rounds",
+    "title": "Quality Dimensions by Workflow in Practice Rounds",
+    "description": "Mean evaluator ratings by workflow and quality dimension in the randomized practice phase. Error bars show descriptive 95% confidence intervals.",
+    "pngUrl": "/research-dashboard/figures/12_rating_dimensions_by_workflow_practice_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/12_rating_dimensions_by_workflow_practice_rounds.pdf"
   },
   {
-    "slug": "13_quality_vs_completion_time_by_workflow",
-    "title": "Mean Overall Quality and Completion Time by Workflow in Main Rounds",
-    "description": "Each point is one evaluated output. Larger diamonds show the mean time and mean quality for each workflow; the plot displays the quality-time trade-off directly rather than using a ratio score.",
-    "pngUrl": "/research-dashboard/figures/13_quality_vs_completion_time_by_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/13_quality_vs_completion_time_by_workflow.pdf"
+    "slug": "13_mixed_workflow_direction_quality_practice_rounds",
+    "title": "Mixed-Workflow Direction and Quality in Practice Rounds",
+    "description": "Within-participant comparison of the two mixed workflows in the randomized practice phase. Each line connects the same participant.",
+    "pngUrl": "/research-dashboard/figures/13_mixed_workflow_direction_quality_practice_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/13_mixed_workflow_direction_quality_practice_rounds.pdf"
   },
   {
-    "slug": "14_mixed_workflow_direction_quality_main_rounds",
-    "title": "Mixed-Workflow Direction and Quality in Main Rounds",
-    "description": "Within-participant comparison of the two mixed workflows in main rounds. Lines connect the same participant across Human→AI and AI→Human.",
-    "pngUrl": "/research-dashboard/figures/14_mixed_workflow_direction_quality_main_rounds.png",
-    "pdfUrl": "/research-dashboard/figures/14_mixed_workflow_direction_quality_main_rounds.pdf"
+    "slug": "14_mixed_vs_solo_quality_practice_rounds",
+    "title": "Mixed versus Solo Workflow Quality in Practice Rounds",
+    "description": "Within-participant comparison of average quality across the two solo and two mixed workflows in the randomized practice phase.",
+    "pngUrl": "/research-dashboard/figures/14_mixed_vs_solo_quality_practice_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/14_mixed_vs_solo_quality_practice_rounds.pdf"
   },
   {
-    "slug": "15_mixed_vs_solo_quality_main_rounds",
-    "title": "Mixed versus Solo Workflow Quality in Main Rounds",
-    "description": "Within-participant comparison of average quality for solo and mixed workflows in the main rounds. Participants are included when they used at least one solo and at least one mixed workflow.",
-    "pngUrl": "/research-dashboard/figures/15_mixed_vs_solo_quality_main_rounds.png",
-    "pdfUrl": "/research-dashboard/figures/15_mixed_vs_solo_quality_main_rounds.pdf"
-  },
-  {
-    "slug": "16_main_round_quality_by_error_exposure",
-    "title": "Mean Overall Quality Across Main Rounds by Error Exposure",
-    "description": "Descriptive workflow-level quality trends in Main rounds, shown separately for participants exposed and not exposed to the injected AI error in round 5.",
-    "pngUrl": "/research-dashboard/figures/16_main_round_quality_by_error_exposure.png",
-    "pdfUrl": "/research-dashboard/figures/16_main_round_quality_by_error_exposure.pdf"
-  },
-  {
-    "slug": "17_highest_rated_poem_examples",
+    "slug": "15_highest_rated_poem_examples",
     "title": "Highest-Rated Poem Examples",
     "description": "Illustrative examples selected by the highest mean overall quality scores. They are individual cases and should not be interpreted as evidence that a workflow generally performs better.",
-    "pngUrl": "/research-dashboard/figures/17_highest_rated_poem_examples.png",
-    "pdfUrl": "/research-dashboard/figures/17_highest_rated_poem_examples.pdf"
+    "pngUrl": "/research-dashboard/figures/15_highest_rated_poem_examples.png",
+    "pdfUrl": "/research-dashboard/figures/15_highest_rated_poem_examples.pdf"
   },
   {
-    "slug": "17b_lowest_rated_poem_examples",
+    "slug": "15b_lowest_rated_poem_examples",
     "title": "Lowest-Rated Poem Examples",
     "description": "Illustrative examples selected by the lowest mean overall quality scores. They are individual cases and should not be interpreted as evidence that a workflow generally performs worse.",
-    "pngUrl": "/research-dashboard/figures/17b_lowest_rated_poem_examples.png",
-    "pdfUrl": "/research-dashboard/figures/17b_lowest_rated_poem_examples.pdf"
+    "pngUrl": "/research-dashboard/figures/15b_lowest_rated_poem_examples.png",
+    "pdfUrl": "/research-dashboard/figures/15b_lowest_rated_poem_examples.pdf"
+  },
+  {
+    "slug": "16_completion_time_by_workflow_practice_rounds",
+    "title": "Total Completion Time by Workflow in Practice Rounds",
+    "description": "Practice round completion times include pauses. Points show outputs, boxes show distributions, and diamonds show descriptive means with 95% confidence intervals.",
+    "pngUrl": "/research-dashboard/figures/16_completion_time_by_workflow_practice_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/16_completion_time_by_workflow_practice_rounds.pdf"
+  },
+  {
+    "slug": "17_quality_time_efficiency_profile_practice_rounds",
+    "title": "Quality-Time Efficiency Profile in Practice Rounds",
+    "description": "Diamonds show workflow means; horizontal and vertical error bars show descriptive 95% confidence intervals for total completion time and quality. Workflows nearer the upper-left combine higher quality with shorter completion time.",
+    "pngUrl": "/research-dashboard/figures/17_quality_time_efficiency_profile_practice_rounds.png",
+    "pdfUrl": "/research-dashboard/figures/17_quality_time_efficiency_profile_practice_rounds.pdf"
   },
   {
     "slug": "21_main_constraint_pass_rate_by_workflow",
@@ -217,18 +217,25 @@
     "pdfUrl": "/research-dashboard/figures/43_final_workflow_preference_by_reported_ai_errors.pdf"
   },
   {
-    "slug": "44_injected_error_awareness",
-    "title": "Awareness of the Injected AI Error",
-    "description": "Interview-coded awareness among respondents actually exposed to the injected error in Main Round 1.",
-    "pngUrl": "/research-dashboard/figures/44_injected_error_awareness.png",
-    "pdfUrl": "/research-dashboard/figures/44_injected_error_awareness.pdf"
+    "slug": "44_main_round_quality_by_error_exposure",
+    "title": "Mean Overall Quality Across Main Rounds by Error Exposure",
+    "description": "Descriptive workflow-level quality trends in Main rounds, shown separately for participants exposed and not exposed to the injected AI error in round 5.",
+    "pngUrl": "/research-dashboard/figures/44_main_round_quality_by_error_exposure.png",
+    "pdfUrl": "/research-dashboard/figures/44_main_round_quality_by_error_exposure.pdf"
   },
   {
-    "slug": "45_reported_other_ai_error_types",
+    "slug": "45_injected_error_awareness",
+    "title": "Awareness of the Injected AI Error",
+    "description": "Interview-coded awareness among respondents actually exposed to the injected error in Main Round 1.",
+    "pngUrl": "/research-dashboard/figures/45_injected_error_awareness.png",
+    "pdfUrl": "/research-dashboard/figures/45_injected_error_awareness.pdf"
+  },
+  {
+    "slug": "46_reported_other_ai_error_types",
     "title": "Other AI Error Types Reported in Interviews",
     "description": "Interview-coded non-injected AI issues reported by participants. Categories are not mutually exclusive.",
-    "pngUrl": "/research-dashboard/figures/45_reported_other_ai_error_types.png",
-    "pdfUrl": "/research-dashboard/figures/45_reported_other_ai_error_types.pdf"
+    "pngUrl": "/research-dashboard/figures/46_reported_other_ai_error_types.png",
+    "pdfUrl": "/research-dashboard/figures/46_reported_other_ai_error_types.pdf"
   },
   {
     "slug": "61_overall_quality_rating_distribution",

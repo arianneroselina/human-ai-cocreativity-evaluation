@@ -2,8 +2,10 @@
 
 41  Main Round 1 workflow choice and actual injected-error exposure
 42  Workflow choices in Main Rounds 2-3 by Round-5 exposure group
-43  Awareness of the injected error among exposed interview respondents
-44  Other AI error types reported in interviews
+43  Final workflow preference by reported AI error
+44  Main-round quality patterns by AI error exposure
+45  Awareness of the injected error among exposed interview respondents
+46  Other AI error types reported in interviews
 
 Exposure is determined by the workflow voluntarily selected in Main Round 1.
 Post-error comparisons are therefore descriptive, not randomized causal effects.
@@ -22,6 +24,9 @@ from scripts.config import (
     WORKFLOW_ORDER,
     AWARENESS_LABELS,
     OTHER_AI_ERROR_LABELS,
+    MAIN_ROUND_INDICES,
+    QUALITY_Y_MIN,
+    QUALITY_Y_MAX,
 )
 from scripts.dashboard_figures.helpers import (
     exposure_display_name,
@@ -29,6 +34,9 @@ from scripts.dashboard_figures.helpers import (
     round_display_name,
     build_valid_ranking_rows,
     ranking_summary,
+    ordered_exposure_groups,
+    quality_summary,
+    phase_data,
 )
 from scripts.dashboard_figures.loaders import load_participant_interview_notes
 from scripts.dashboard_figures.plots_workflow import RANK_COLORS
@@ -513,14 +521,137 @@ def plot_final_workflow_preference_by_reported_ai_errors(
     )
 
 
+# -----------------------------------------------------------------------------
+# 44: Main-round quality patterns by AI error exposure
+# -----------------------------------------------------------------------------
+
+
+def plot_main_round_quality_by_error_exposure(main_df) -> None:
+    """Plot descriptive Main-round quality trends by AI-error exposure."""
+    slug = "44_main_round_quality_by_error_exposure"
+
+    if not require_columns(
+        main_df,
+        {"roundIndex", "errorExposed"},
+        "main-round quality by exposure",
+    ):
+        return
+
+    main_df["roundIndex"] = pd.to_numeric(
+        main_df["roundIndex"],
+        errors="coerce",
+    )
+
+    main_df = main_df.dropna(subset=["roundIndex", "errorExposed"])
+    main_df["roundIndex"] = main_df["roundIndex"].astype(int)
+    main_df = main_df[main_df["roundIndex"].isin(MAIN_ROUND_INDICES)].copy()
+
+    groups = ordered_exposure_groups(main_df)
+
+    if not groups:
+        return
+
+    summary = quality_summary(
+        main_df,
+        ["errorExposed", "roundIndex", "workflow"],
+    )
+    summary["workflowLabel"] = summary["workflow"].map(workflow_display_name)
+    summary["exposureLabel"] = summary["errorExposed"].map(exposure_display_name)
+
+    save_table(summary, slug, index=False)
+
+    fig, axes = plt.subplots(
+        1,
+        len(groups),
+        figsize=(6.6 * len(groups), 5.2),
+        sharey=True,
+        squeeze=False,
+    )
+    axes = axes[0]
+
+    for panel_index, exposed in enumerate(groups):
+        ax = axes[panel_index]
+
+        group_summary = summary[summary["errorExposed"].eq(exposed)]
+
+        for workflow in WORKFLOW_ORDER:
+            workflow_summary = group_summary[
+                group_summary["workflow"].eq(workflow)
+            ].sort_values("roundIndex")
+
+            if workflow_summary.empty:
+                continue
+
+            rounds = workflow_summary["roundIndex"].to_numpy()
+            means = workflow_summary["mean"].to_numpy()
+            lows = workflow_summary["ciLow"].to_numpy()
+            highs = workflow_summary["ciHigh"].to_numpy()
+
+            ax.plot(
+                rounds,
+                means,
+                marker="o",
+                linewidth=2,
+                markersize=5,
+                color=WORKFLOW_COLORS[workflow],
+                label=workflow_display_name(workflow),
+            )
+
+            valid_ci = pd.notna(lows) & pd.notna(highs)
+
+            if valid_ci.any():
+                ax.fill_between(
+                    rounds[valid_ci],
+                    lows[valid_ci],
+                    highs[valid_ci],
+                    color=WORKFLOW_COLORS[workflow],
+                    alpha=0.14,
+                )
+
+        ax.set_title(exposure_display_name(exposed))
+        ax.set_xticks(MAIN_ROUND_INDICES)
+        ax.set_xticklabels(
+            [f"Main {index}" for index in range(1, len(MAIN_ROUND_INDICES) + 1)]
+        )
+        ax.set_xlabel("Free-choice main round")
+        ax.set_ylim(QUALITY_Y_MIN, QUALITY_Y_MAX)
+
+        if panel_index == 0:
+            ax.set_ylabel("Mean overall quality (1-5)")
+
+        apply_standard_axes_style(ax)
+
+    axes[-1].legend(
+        title="Workflow",
+        bbox_to_anchor=(1.02, 1),
+        loc="upper left",
+    )
+
+    fig.suptitle(
+        "Mean Overall Quality Across Main Rounds by Error Exposure",
+        fontsize=12,
+        y=0.98,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
+
+    save_figure(
+        fig,
+        slug,
+        "Mean Overall Quality Across Main Rounds by Error Exposure",
+        "Descriptive workflow-level quality trends in Main rounds, shown "
+        "separately for participants exposed and not exposed to the injected "
+        "AI error in round 5.",
+    )
+
+
 # ---------------------------------------------------------------------------
-# 44: Interview awareness among exposed participants
+# 45: Interview awareness among exposed participants
 # ---------------------------------------------------------------------------
 
 
 def plot_injected_error_awareness(prepared) -> None:
     """Show whether exposed interview respondents noticed the injected error."""
-    slug = "44_injected_error_awareness"
+    slug = "45_injected_error_awareness"
 
     notes = load_participant_interview_notes(prepared)
     required = {"injectedErrorExperience"}
@@ -590,13 +721,13 @@ def plot_injected_error_awareness(prepared) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 45: Other AI error types reported in interviews
+# 46: Other AI error types reported in interviews
 # ---------------------------------------------------------------------------
 
 
 def plot_other_ai_error_types(prepared) -> None:
     """Show non-injected AI issues reported by interview respondents."""
-    slug = "45_reported_other_ai_error_types"
+    slug = "46_reported_other_ai_error_types"
 
     notes = load_participant_interview_notes(prepared)
     required = {"reportedOtherAiErrorTypes"}
@@ -713,8 +844,13 @@ def plot_error_exposure(df, feedback_df) -> None:
 
     ranking_rows, _ = build_valid_ranking_rows(feedback_df)
 
+    main_df = phase_data(prepared, "main")
+    if main_df.empty:
+        return
+
     plot_round5_workflow_choice(prepared)
     plot_post_error_workflow_choices_by_exposure(prepared)
     plot_final_workflow_preference_by_reported_ai_errors(ranking_rows, df)
+    plot_main_round_quality_by_error_exposure(df)
     plot_injected_error_awareness(prepared)
     plot_other_ai_error_types(prepared)

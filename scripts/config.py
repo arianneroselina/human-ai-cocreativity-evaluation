@@ -105,6 +105,9 @@ QUALITY_DIMENSION_LABELS = {
     "meanOverallQuality": "Overall quality",
 }
 
+QUALITY_Y_MIN = QUALITY_SCALE_MIN - 0.5
+QUALITY_Y_MAX = QUALITY_SCALE_MAX + 0.5
+CI_Z_VALUE = 1.96
 
 # ---------------------------------------------------------------------------
 # Evaluator ratings configuration

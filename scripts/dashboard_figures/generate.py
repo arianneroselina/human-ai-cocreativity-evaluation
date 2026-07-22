@@ -7,6 +7,7 @@ tables, and the dashboard manifest.
 import matplotlib
 
 from scripts.dashboard_figures.helpers import prepare_round_data
+from scripts.dashboard_figures.plots_efficiency import plot_efficiency
 
 # Must be set before importing modules that may import pyplot.
 matplotlib.use("Agg")
@@ -46,6 +47,7 @@ def main() -> None:
     plot_workflow(prepared_round_df, feedback_df)
     plot_experience(prepared_round_df)
     plot_quality(prepared_round_df)
+    plot_efficiency(prepared_round_df)
     plot_constraints(prepared_round_df)
     plot_error_exposure(prepared_round_df, feedback_df)
     plot_evaluators()

@@ -1,6 +1,7 @@
 import json
 import re
 
+import numpy as np
 import pandas as pd
 
 from scripts.config import (
@@ -10,6 +11,8 @@ from scripts.config import (
     EXPOSURE_LABELS,
     EVALUATOR_LABELS,
     WORKFLOW_ORDER,
+    QUALITY_PRIMARY_METRIC,
+    CI_Z_VALUE,
 )
 from scripts.utils import parse_bool, require_columns
 
@@ -362,3 +365,22 @@ def ranking_summary(ranking_rows):
     )
 
     return rank_counts
+
+
+def quality_summary(
+    dataframe: pd.DataFrame,
+    group_columns: list[str],
+    metric: str = QUALITY_PRIMARY_METRIC,
+) -> pd.DataFrame:
+    """Calculate descriptive mean, spread, and normal-approximation 95% CI."""
+    summary = (
+        dataframe.groupby(group_columns, dropna=False)[metric]
+        .agg(mean="mean", median="median", std="std", count="count")
+        .reset_index()
+    )
+    summary["se"] = summary["std"] / np.sqrt(summary["count"])
+    summary["ciLow"] = summary["mean"] - CI_Z_VALUE * summary["se"]
+    summary["ciHigh"] = summary["mean"] + CI_Z_VALUE * summary["se"]
+    summary.loc[summary["count"] < 2, ["std", "se", "ciLow", "ciHigh"]] = np.nan
+
+    return summary
