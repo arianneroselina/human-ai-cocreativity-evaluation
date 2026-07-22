@@ -1,36 +1,30 @@
-"""Constraint fulfillment analysis.
+"""Practice-round constraint fulfillment analysis.
 
 Figures
 -------
-21  Full constraint-pass rate by workflow in main rounds
-22  Constraint-score distribution by workflow in main rounds
-23  Failure breakdown by constraint type in main rounds
-24  Full constraint fulfillment across Main rounds by error-exposure group
-25  Line-count failures in injected-error Main Round 1
-26  Line-count failure pattern across Main rounds by error-exposure group
+21  Full constraint-pass rate by workflow in practice rounds
+22  Constraint-failure profiles by workflow in practice rounds
+23  Failure breakdown by constraint type in practice rounds
 """
 
 from __future__ import annotations
-
-import json
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 from scripts.config import (
-    ERROR_ROUND_INDEX,
     WORKFLOW_COLORS,
     WORKFLOW_ORDER,
 )
 from scripts.dashboard_figures.helpers import (
     workflow_display_name,
-    exposure_display_name,
     phase_data,
-    ordered_exposure_groups,
+    pass_summary,
+    parse_requirement_results,
+    add_passed_numeric,
 )
 from scripts.dashboard_figures.style import (
-    BAR_EDGE_COLOR,
     apply_standard_axes_style,
 )
 from scripts.utils import (
@@ -79,23 +73,14 @@ FAILURE_PROFILE_COLORS = {
 # ---------------------------------------------------------------------------
 
 
-def _prepare_constraint_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Add constraint-analysis variables to prepared participant-round data."""
-    prepared = df.copy()
+def _prepare_constraint_data(
+    df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Add variables required for constraint analysis."""
+    prepared = add_passed_numeric(df)
 
     if prepared.empty:
         return prepared
-
-    if "passed" in prepared.columns:
-        prepared["passedNumeric"] = prepared["passed"].apply(
-            lambda value: (
-                1.0
-                if parse_bool_or_none(value) is True
-                else 0.0
-                if parse_bool_or_none(value) is False
-                else np.nan
-            )
-        )
 
     if "constraintScore" in prepared.columns:
         prepared["constraintScore"] = pd.to_numeric(
@@ -110,59 +95,14 @@ def _prepare_constraint_data(df: pd.DataFrame) -> pd.DataFrame:
         )
     elif "timeMs" in prepared.columns:
         prepared["effectiveTimeMinutes"] = (
-            pd.to_numeric(prepared["timeMs"], errors="coerce") / 60_000
+            pd.to_numeric(
+                prepared["timeMs"],
+                errors="coerce",
+            )
+            / 60_000
         )
 
     return prepared
-
-
-def _wilson_interval(
-    successes: int,
-    total: int,
-    z: float = 1.96,
-) -> tuple[float, float]:
-    """Return a 95% Wilson interval in percentage points."""
-    if total <= 0:
-        return np.nan, np.nan
-
-    proportion = successes / total
-    denominator = 1 + z**2 / total
-    centre = (proportion + z**2 / (2 * total)) / denominator
-    margin = (
-        z
-        * np.sqrt(proportion * (1 - proportion) / total + z**2 / (4 * total**2))
-        / denominator
-    )
-    return max(0, (centre - margin) * 100), min(100, (centre + margin) * 100)
-
-
-def _pass_summary(
-    dataframe: pd.DataFrame,
-    group_columns: list[str],
-) -> pd.DataFrame:
-    """Summarise complete constraint-pass rates with Wilson intervals."""
-    data = dataframe.dropna(subset=["passedNumeric"]).copy()
-    if data.empty:
-        return pd.DataFrame()
-
-    summary = (
-        data.groupby(group_columns)["passedNumeric"]
-        .agg(totalRounds="count", passedRounds="sum")
-        .reset_index()
-    )
-    summary["passedRounds"] = summary["passedRounds"].astype(int)
-    summary["passRatePercent"] = summary["passedRounds"] / summary["totalRounds"] * 100
-
-    intervals = summary.apply(
-        lambda row: _wilson_interval(
-            int(row["passedRounds"]),
-            int(row["totalRounds"]),
-        ),
-        axis=1,
-        result_type="expand",
-    )
-    summary[["lowerCI", "upperCI"]] = intervals
-    return summary
 
 
 def _constraint_type(rule_id: str) -> str:
@@ -172,33 +112,7 @@ def _constraint_type(rule_id: str) -> str:
     return "Special format"
 
 
-def _parse_requirement_results(value) -> list[dict]:
-    """Safely parse the JSON requirement-results field."""
-    if pd.isna(value):
-        return []
-
-    try:
-        parsed = json.loads(value)
-    except (TypeError, json.JSONDecodeError):
-        return []
-
-    return parsed if isinstance(parsed, list) else []
-
-
-def _line_count_error(value) -> bool | None:
-    """Return whether the single line-count rule failed for one round."""
-    for item in _parse_requirement_results(value):
-        rule_id = str(item.get("id", ""))
-        if not rule_id.startswith("lines-"):
-            continue
-
-        passed = parse_bool_or_none(item.get("passed"))
-        return None if passed is None else not passed
-
-    return None
-
-
-def _failure_profile(
+def _constraint_failure_profile(
     passed_numeric: float,
     requirement_results,
 ) -> str | None:
@@ -211,7 +125,7 @@ def _failure_profile(
 
     failed_rule_ids = []
 
-    for item in _parse_requirement_results(requirement_results):
+    for item in parse_requirement_results(requirement_results):
         if parse_bool_or_none(item.get("passed")) is False:
             failed_rule_ids.append(str(item.get("id", "")))
 
@@ -236,7 +150,7 @@ def _explode_requirement_results(dataframe: pd.DataFrame) -> pd.DataFrame:
     rows = []
 
     for _, record in dataframe.iterrows():
-        for item in _parse_requirement_results(record.get("requirementResults")):
+        for item in parse_requirement_results(record.get("requirementResults")):
             passed = parse_bool_or_none(item.get("passed"))
             if passed is None:
                 continue
@@ -247,7 +161,6 @@ def _explode_requirement_results(dataframe: pd.DataFrame) -> pd.DataFrame:
                     "participantId": record.get("participantId"),
                     "roundIndex": record.get("roundIndex"),
                     "workflow": record.get("workflow"),
-                    "errorExposed": record.get("errorExposed"),
                     "constraintType": _constraint_type(rule_id),
                     "constraintLabel": item.get("label", rule_id),
                     "passed": passed,
@@ -258,20 +171,20 @@ def _explode_requirement_results(dataframe: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# 21: Compare constraint pass rates by workflow in main rounds
+# 21: Compare constraint pass rates by workflow in practice rounds
 # ---------------------------------------------------------------------------
 
 
-def plot_main_constraint_pass_rate_by_workflow(main_df) -> None:
-    """Compare complete constraint-fulfillment rates across workflows.
+def plot_practice_constraint_pass_rate_by_workflow(practice_df) -> None:
+    """Compare complete constraint-fulfillment rates across practice workflows.
 
-    Each point is the observed proportion of main rounds in which every
+    Each point is the observed proportion of practice rounds in which every
     task constraint was fulfilled. Horizontal whiskers show 95% Wilson
     confidence intervals.
     """
-    slug = "21_main_constraint_pass_rate_by_workflow"
+    slug = "21_practice_constraint_pass_rate_by_workflow"
 
-    summary = _pass_summary(main_df, ["workflow"])
+    summary = pass_summary(practice_df, ["workflow"])
     if summary.empty:
         return
 
@@ -362,7 +275,7 @@ def plot_main_constraint_pass_rate_by_workflow(main_df) -> None:
 
     ax.set_xlabel("Rounds fully meeting every constraint", labelpad=10)
 
-    ax.set_title("Complete Constraint Fulfillment Rate by Workflow in Main Rounds")
+    ax.set_title("Complete Constraint Fulfillment Rate by Workflow in Practice Rounds")
 
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -389,8 +302,8 @@ def plot_main_constraint_pass_rate_by_workflow(main_df) -> None:
     save_figure(
         fig,
         slug,
-        "Complete Constraint Fulfillment Rate by Workflow in Main Rounds",
-        "Points show the observed percentage of main-round poems that fulfilled "
+        "Complete Constraint Fulfillment Rate by Workflow in Practice Rounds",
+        "Points show the observed percentage of practice-round poems that fulfilled "
         "every task constraint. Horizontal whiskers show 95% Wilson confidence "
         "intervals. Labels show the number of fully successful rounds out of all "
         "evaluated rounds for each workflow.",
@@ -398,18 +311,18 @@ def plot_main_constraint_pass_rate_by_workflow(main_df) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 22: Constraint-failure profiles by workflow in main rounds
+# 22: Constraint-failure profiles by workflow in practice rounds
 # ---------------------------------------------------------------------------
 
 
-def plot_main_constraint_failure_profile_by_workflow(main_df) -> None:
-    """Show why Main-round outputs did not fully meet all constraints."""
-    slug = "22_main_constraint_failure_profile_by_workflow"
+def plot_practice_constraint_failure_profile_by_workflow(practice_df) -> None:
+    """Show why practice-round outputs did not fully meet all constraints."""
+    slug = "22_practice_constraint_failure_profile_by_workflow"
 
-    profile_df = main_df.dropna(subset=["passedNumeric", "workflow"]).copy()
+    profile_df = practice_df.dropna(subset=["passedNumeric", "workflow"]).copy()
 
     profile_df["failureProfile"] = [
-        _failure_profile(
+        _constraint_failure_profile(
             row.passedNumeric,
             row.requirementResults,
         )
@@ -523,8 +436,8 @@ def plot_main_constraint_failure_profile_by_workflow(main_df) -> None:
     ax.set_xlim(0, 112)
     ax.set_xticks([0, 25, 50, 75, 100])
     ax.set_xticklabels(["0%", "25%", "50%", "75%", "100%"])
-    ax.set_xlabel("Share of Main-round outputs (%)")
-    ax.set_title("Constraint Failure Profiles by Workflow in Main Rounds")
+    ax.set_xlabel("Share of practice-round outputs (%)")
+    ax.set_title("Constraint Failure Profiles by Workflow in Practice Rounds")
 
     ax.legend(
         loc="upper center",
@@ -546,8 +459,8 @@ def plot_main_constraint_failure_profile_by_workflow(main_df) -> None:
     save_figure(
         fig,
         slug,
-        "Constraint Failure Profiles by Workflow in Main Rounds",
-        "Each bar represents all Main-round outputs within one selected workflow. "
+        "Constraint Failure Profiles by Workflow in Practice Rounds",
+        "Each bar represents all practice-round outputs within one assigned workflow. "
         "Categories are mutually exclusive. “Line-count rule only” means that "
         "the line-count check was the sole failed requirement; “Multiple rules "
         "failed” can include the line-count rule alongside other failed checks.",
@@ -555,15 +468,15 @@ def plot_main_constraint_failure_profile_by_workflow(main_df) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 23: Failure breakdown by constraint type in main rounds
+# 23: Failure breakdown by constraint type in practice rounds
 # ---------------------------------------------------------------------------
 
 
-def plot_main_failure_breakdown_by_constraint_type(main_df) -> None:
+def plot_practice_failure_breakdown_by_constraint_type(practice_df) -> None:
     """Identify requirement types that produce failures under each workflow."""
-    slug = "23_main_failure_breakdown_by_constraint_type"
+    slug = "23_practice_failure_breakdown_by_constraint_type"
 
-    exploded = _explode_requirement_results(main_df)
+    exploded = _explode_requirement_results(practice_df)
     if exploded.empty:
         return
 
@@ -624,341 +537,15 @@ def plot_main_failure_breakdown_by_constraint_type(main_df) -> None:
     ax.set_yticklabels([workflow_display_name(workflow) for workflow in workflow_order])
     ax.set_xlabel("Constraint type")
     ax.set_ylabel("Assigned workflow")
-    ax.set_title("Constraint Failure Breakdown by Type in Main Rounds")
+    ax.set_title("Constraint Failure Breakdown by Type in Practice Rounds")
     fig.colorbar(image, ax=ax, label="Failure rate (%)")
 
     save_figure(
         fig,
         slug,
-        "Constraint Failure Breakdown by Type in Main Rounds",
+        "Constraint Failure Breakdown by Type in Practice Rounds",
         "Failure rates by requirement type and assigned workflow. Each cell also "
         "shows the number of individual requirement checks supporting the rate.",
-    )
-
-
-# ---------------------------------------------------------------------------
-# 24: Full constraint fulfillment by error exposure in main rounds
-# ---------------------------------------------------------------------------
-
-
-def plot_main_constraint_fulfillment_by_exposure(main_df) -> None:
-    """Show descriptive Main-round pass-rate patterns after the error opportunity."""
-    slug = "24_main_constraint_fulfillment_by_error_exposure"
-
-    main_df = main_df.dropna(subset=["errorExposed", "passedNumeric"])
-    groups = ordered_exposure_groups(main_df)
-    if main_df.empty or not groups:
-        return
-
-    main_rounds = sorted(main_df["roundIndex"].unique().tolist())
-    summary = _pass_summary(
-        main_df,
-        ["errorExposed", "roundIndex"],
-    )
-    if summary.empty:
-        return
-
-    summary["exposureLabel"] = summary["errorExposed"].map(exposure_display_name)
-    save_table(summary, slug, index=False)
-
-    fig, ax = plt.subplots(figsize=(8.6, 5.1))
-    offsets = np.linspace(-0.08, 0.08, len(groups))
-
-    for offset, group in zip(offsets, groups):
-        group_summary = (
-            summary[summary["errorExposed"].eq(group)]
-            .set_index("roundIndex")
-            .reindex(main_rounds)
-            .dropna(subset=["passRatePercent"])
-        )
-        if group_summary.empty:
-            continue
-
-        x_values = group_summary.index.to_numpy(dtype=float) + offset
-        y_values = group_summary["passRatePercent"].to_numpy(dtype=float)
-        lower_errors = y_values - group_summary["lowerCI"].to_numpy(dtype=float)
-        upper_errors = group_summary["upperCI"].to_numpy(dtype=float) - y_values
-
-        ax.errorbar(
-            x_values,
-            y_values,
-            yerr=np.vstack([lower_errors, upper_errors]),
-            marker="o",
-            capsize=4,
-            linewidth=1.8,
-            label=exposure_display_name(group),
-        )
-
-        for x_value, (_, row) in zip(x_values, group_summary.iterrows()):
-            ax.text(
-                x_value,
-                max(2, row["lowerCI"] - 6),
-                f"n={int(row['totalRounds'])}",
-                ha="center",
-                va="top",
-                fontsize=8,
-            )
-
-    ax.axvline(
-        ERROR_ROUND_INDEX,
-        linestyle="--",
-        linewidth=1,
-        color="black",
-        alpha=0.6,
-    )
-    ax.text(
-        ERROR_ROUND_INDEX + 0.05,
-        103,
-        "Injected-error round",
-        ha="left",
-        va="bottom",
-        fontsize=8,
-    )
-    ax.set_xticks(main_rounds)
-    ax.set_xticklabels([f"Main {index + 1}" for index in range(len(main_rounds))])
-    ax.set_ylim(-8, 113)
-    ax.set_xlabel("Free-choice main round")
-    ax.set_ylabel("Rounds with all constraints fulfilled (%)")
-    ax.set_title("Constraint Fulfillment Across Main Rounds by Error Exposure")
-    ax.legend(title="Exposure group", bbox_to_anchor=(1.02, 1), loc="upper left")
-    apply_standard_axes_style(ax, grid_axis="y")
-
-    save_figure(
-        fig,
-        slug,
-        "Constraint Fulfillment Across Main Rounds by Error Exposure",
-        "Descriptive complete constraint-pass rates across Main rounds, "
-        "stratified by actual error exposure. Error bars show 95% Wilson intervals.",
-    )
-
-
-# ---------------------------------------------------------------------------
-# 25: Main Round 1 line-count manipulation check
-# ---------------------------------------------------------------------------
-
-
-def plot_injected_error_round_line_count_failures(main_df) -> None:
-    """Show line-count failures in the round containing the injected AI error."""
-    slug = "25_injected_error_round_line_count_failures"
-
-    error_round_df = main_df[main_df["roundIndex"].eq(ERROR_ROUND_INDEX)].copy()
-    error_round_df["lineCountError"] = error_round_df["requirementResults"].apply(
-        _line_count_error
-    )
-    error_round_df = error_round_df.dropna(subset=["lineCountError", "errorExposed"])
-    if error_round_df.empty:
-        return
-
-    error_round_df["lineCountError"] = error_round_df["lineCountError"].astype(bool)
-    summary = (
-        error_round_df.groupby(["errorExposed", "workflow"])["lineCountError"]
-        .agg(totalRounds="count", failedLineCount="sum")
-        .reset_index()
-    )
-    summary["failedLineCount"] = summary["failedLineCount"].astype(int)
-    summary["lineCountFailureRatePercent"] = (
-        summary["failedLineCount"] / summary["totalRounds"] * 100
-    )
-
-    intervals = summary.apply(
-        lambda row: _wilson_interval(
-            int(row["failedLineCount"]),
-            int(row["totalRounds"]),
-        ),
-        axis=1,
-        result_type="expand",
-    )
-    summary[["lowerCI", "upperCI"]] = intervals
-    summary["workflowLabel"] = summary["workflow"].map(workflow_display_name)
-    summary["exposureLabel"] = summary["errorExposed"].map(exposure_display_name)
-    save_table(summary, slug, index=False)
-
-    categories = [
-        (group, workflow)
-        for group in ordered_exposure_groups(error_round_df)
-        for workflow in WORKFLOW_ORDER
-        if (
-            (summary["errorExposed"].eq(group)) & (summary["workflow"].eq(workflow))
-        ).any()
-    ]
-    if not categories:
-        return
-
-    plot_summary = pd.DataFrame(
-        [
-            summary[
-                summary["errorExposed"].eq(group) & summary["workflow"].eq(workflow)
-            ].iloc[0]
-            for group, workflow in categories
-        ]
-    )
-
-    labels = [
-        f"{exposure_display_name(group)}\n{workflow_display_name(workflow)}"
-        for group, workflow in categories
-    ]
-    colors = [WORKFLOW_COLORS[workflow] for _, workflow in categories]
-    positions = np.arange(len(plot_summary))
-    values = plot_summary["lineCountFailureRatePercent"].to_numpy(dtype=float)
-    lower_errors = values - plot_summary["lowerCI"].to_numpy(dtype=float)
-    upper_errors = plot_summary["upperCI"].to_numpy(dtype=float) - values
-
-    fig, ax = plt.subplots(figsize=(max(8.6, 1.65 * len(labels)), 5.2))
-    ax.bar(
-        positions,
-        values,
-        color=colors,
-        edgecolor=BAR_EDGE_COLOR,
-        linewidth=0.8,
-        zorder=2,
-    )
-    ax.errorbar(
-        positions,
-        values,
-        yerr=np.vstack([lower_errors, upper_errors]),
-        fmt="none",
-        color="black",
-        capsize=4,
-        linewidth=1.1,
-        zorder=4,
-    )
-
-    for index, (_, row) in enumerate(plot_summary.iterrows()):
-        ax.text(
-            index,
-            min(104, row["upperCI"] + 3),
-            (
-                f"{int(row['failedLineCount'])}/{int(row['totalRounds'])}\n"
-                f"({row['lineCountFailureRatePercent']:.1f}%)"
-            ),
-            ha="center",
-            va="bottom",
-            fontsize=8,
-        )
-
-    ax.set_xticks(positions)
-    ax.set_xticklabels(labels, rotation=15, ha="right")
-    ax.set_ylim(0, 114)
-    ax.set_xlabel("Main Round 1 group and selected workflow")
-    ax.set_ylabel("Line-count failure rate (%)")
-    ax.set_title("Line-Count Failures in the Injected-Error Round")
-    apply_standard_axes_style(ax, grid_axis="y")
-
-    save_figure(
-        fig,
-        slug,
-        "Line-Count Failures in the Injected-Error Round",
-        "Line-count constraint failures in Main Round 1, grouped by actual error "
-        "exposure and selected workflow. Error bars show 95% Wilson intervals.",
-    )
-
-
-# ---------------------------------------------------------------------------
-# 26: Line-count failure rate by error exposure in main rounds
-# ---------------------------------------------------------------------------
-
-
-def plot_main_line_count_error_by_exposure(main_df) -> None:
-    """Show descriptive line-count failure patterns across Main rounds."""
-    slug = "26_main_line_count_error_by_error_exposure"
-
-    main_df["lineCountError"] = main_df["requirementResults"].apply(_line_count_error)
-    main_df = main_df.dropna(subset=["lineCountError", "errorExposed"])
-    if main_df.empty:
-        return
-
-    main_df["lineCountError"] = main_df["lineCountError"].astype(bool)
-    summary = (
-        main_df.groupby(["errorExposed", "roundIndex"])["lineCountError"]
-        .agg(totalRounds="count", failedLineCount="sum")
-        .reset_index()
-    )
-    summary["failedLineCount"] = summary["failedLineCount"].astype(int)
-    summary["lineCountFailureRatePercent"] = (
-        summary["failedLineCount"] / summary["totalRounds"] * 100
-    )
-    intervals = summary.apply(
-        lambda row: _wilson_interval(
-            int(row["failedLineCount"]),
-            int(row["totalRounds"]),
-        ),
-        axis=1,
-        result_type="expand",
-    )
-    summary[["lowerCI", "upperCI"]] = intervals
-    summary["exposureLabel"] = summary["errorExposed"].map(exposure_display_name)
-    save_table(summary, slug, index=False)
-
-    groups = ordered_exposure_groups(main_df)
-    main_rounds = sorted(main_df["roundIndex"].unique().tolist())
-    fig, ax = plt.subplots(figsize=(8.6, 5.1))
-    offsets = np.linspace(-0.08, 0.08, len(groups))
-
-    for offset, group in zip(offsets, groups):
-        group_summary = (
-            summary[summary["errorExposed"].eq(group)]
-            .set_index("roundIndex")
-            .reindex(main_rounds)
-            .dropna(subset=["lineCountFailureRatePercent"])
-        )
-        if group_summary.empty:
-            continue
-
-        x_values = group_summary.index.to_numpy(dtype=float) + offset
-        values = group_summary["lineCountFailureRatePercent"].to_numpy(dtype=float)
-        lower_errors = values - group_summary["lowerCI"].to_numpy(dtype=float)
-        upper_errors = group_summary["upperCI"].to_numpy(dtype=float) - values
-
-        ax.errorbar(
-            x_values,
-            values,
-            yerr=np.vstack([lower_errors, upper_errors]),
-            marker="o",
-            capsize=4,
-            linewidth=1.8,
-            label=exposure_display_name(group),
-        )
-
-        for x_value, (_, row) in zip(x_values, group_summary.iterrows()):
-            ax.text(
-                x_value,
-                max(1, row["lowerCI"] - 5),
-                f"n={int(row['totalRounds'])}",
-                ha="center",
-                va="top",
-                fontsize=8,
-            )
-
-    ax.axvline(
-        ERROR_ROUND_INDEX,
-        linestyle="--",
-        linewidth=1,
-        color="black",
-        alpha=0.6,
-    )
-    ax.text(
-        ERROR_ROUND_INDEX + 0.05,
-        103,
-        "Injected-error round",
-        ha="left",
-        va="bottom",
-        fontsize=8,
-    )
-    ax.set_xticks(main_rounds)
-    ax.set_xticklabels([f"Main {index + 1}" for index in range(len(main_rounds))])
-    ax.set_ylim(-8, 113)
-    ax.set_xlabel("Free-choice main round")
-    ax.set_ylabel("Line-count failure rate (%)")
-    ax.set_title("Line-Count Failure Pattern Across Main Rounds by Error Exposure")
-    ax.legend(title="Exposure group", bbox_to_anchor=(1.02, 1), loc="upper left")
-    apply_standard_axes_style(ax, grid_axis="y")
-
-    save_figure(
-        fig,
-        slug,
-        "Line-Count Failure Pattern Across Main Rounds by Error Exposure",
-        "Descriptive line-count failure rates across Main rounds, stratified by "
-        "actual error exposure. Error bars show 95% Wilson intervals.",
     )
 
 
@@ -968,21 +555,18 @@ def plot_main_line_count_error_by_exposure(main_df) -> None:
 
 
 def plot_constraints(df: pd.DataFrame) -> None:
-    """Generate controlled, Main-round, and diagnostic constraint figures."""
+    """Generate practice-round constraint-fulfillment figures."""
     prepared = _prepare_constraint_data(df)
-    main_df = phase_data(prepared, "main")
+    practice_df = phase_data(prepared, "practice")
 
-    required = {"requirementResults", "errorExposed", "passedNumeric"}
-    if main_df.empty or not require_columns(
-        main_df,
+    required = {"requirementResults", "workflow", "passedNumeric"}
+    if practice_df.empty or not require_columns(
+        practice_df,
         required,
-        "main-round constraint fulfillment",
+        "practice-round constraint fulfillment",
     ):
         return
 
-    plot_main_constraint_pass_rate_by_workflow(main_df)
-    plot_main_constraint_failure_profile_by_workflow(main_df)
-    plot_main_failure_breakdown_by_constraint_type(main_df)
-    plot_main_constraint_fulfillment_by_exposure(main_df)
-    plot_injected_error_round_line_count_failures(main_df)
-    plot_main_line_count_error_by_exposure(main_df)
+    plot_practice_constraint_pass_rate_by_workflow(practice_df)
+    plot_practice_constraint_failure_profile_by_workflow(practice_df)
+    plot_practice_failure_breakdown_by_constraint_type(practice_df)

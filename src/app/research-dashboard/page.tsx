@@ -81,9 +81,9 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
     {
       id: "constraints-figures",
       title: "Constraint Fulfillment",
-      description: "Whether submitted poems fulfilled the task constraints.",
+      description: "Whether submitted poems fulfilled the task constraints in practice rounds.",
       figures: figures.filter((figure) =>
-        ["21_", "22_", "23_", "24_", "25_", "26_"].some((prefix) => figure.slug.startsWith(prefix))
+        ["21_", "22_", "23_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
     {
@@ -100,7 +100,9 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       description:
         "Round-5 error exposure, line-count error, post-error behaviour, and subjective reactions.",
       figures: figures.filter((figure) =>
-        ["41_", "42_", "43_", "44_", "45_", "46_"].some((prefix) => figure.slug.startsWith(prefix))
+        ["41_", "42_", "43_", "44_", "45_", "46_", "47_", "48_", "49_"].some((prefix) =>
+          figure.slug.startsWith(prefix)
+        )
       ),
     },
   ].filter((group) => group.figures.length > 0);
@@ -119,24 +121,25 @@ const FAVORITE_FIGURE_NUMBERS = [
   "16_",
   "17_", // efficiency
   "21_",
-  "23_",
-  "25_", // constraints fulfillment
+  "23_", // constraints fulfillment
   "32_",
   "33_", // participant experience
   "42_",
   "43_",
   "44_",
-  "45_", // ai error exposure
+  "46_",
+  "47_",
+  "48_", // ai error exposure
 ];
 
 const INTERESTING_FIGURE_NUMBERS = [
   "09_", // workflow behavior
   "63_", // evaluator agreement
   "12_", // output quality
-  "24_",
-  "26_", // constraints fulfillment
+  // constraints fulfillment
   "31_", // participant experience
-  "46_", // ai error exposure
+  "45_",
+  "49_", // ai error exposure
 ];
 
 export default async function ResearchDashboardPage() {

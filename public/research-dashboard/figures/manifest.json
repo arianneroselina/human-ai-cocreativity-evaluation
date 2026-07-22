@@ -154,46 +154,25 @@
     "pdfUrl": "/research-dashboard/figures/17_quality_time_efficiency_profile_practice_rounds.pdf"
   },
   {
-    "slug": "21_main_constraint_pass_rate_by_workflow",
-    "title": "Complete Constraint Fulfillment Rate by Workflow in Main Rounds",
-    "description": "Points show the observed percentage of main-round poems that fulfilled every task constraint. Horizontal whiskers show 95% Wilson confidence intervals. Labels show the number of fully successful rounds out of all evaluated rounds for each workflow.",
-    "pngUrl": "/research-dashboard/figures/21_main_constraint_pass_rate_by_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/21_main_constraint_pass_rate_by_workflow.pdf"
+    "slug": "21_practice_constraint_pass_rate_by_workflow",
+    "title": "Complete Constraint Fulfillment Rate by Workflow in Practice Rounds",
+    "description": "Points show the observed percentage of practice-round poems that fulfilled every task constraint. Horizontal whiskers show 95% Wilson confidence intervals. Labels show the number of fully successful rounds out of all evaluated rounds for each workflow.",
+    "pngUrl": "/research-dashboard/figures/21_practice_constraint_pass_rate_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/21_practice_constraint_pass_rate_by_workflow.pdf"
   },
   {
-    "slug": "22_main_constraint_failure_profile_by_workflow",
-    "title": "Constraint Failure Profiles by Workflow in Main Rounds",
-    "description": "Each bar represents all Main-round outputs within one selected workflow. Categories are mutually exclusive. “Line-count rule only” means that the line-count check was the sole failed requirement; “Multiple rules failed” can include the line-count rule alongside other failed checks.",
-    "pngUrl": "/research-dashboard/figures/22_main_constraint_failure_profile_by_workflow.png",
-    "pdfUrl": "/research-dashboard/figures/22_main_constraint_failure_profile_by_workflow.pdf"
+    "slug": "22_practice_constraint_failure_profile_by_workflow",
+    "title": "Constraint Failure Profiles by Workflow in Practice Rounds",
+    "description": "Each bar represents all practice-round outputs within one assigned workflow. Categories are mutually exclusive. “Line-count rule only” means that the line-count check was the sole failed requirement; “Multiple rules failed” can include the line-count rule alongside other failed checks.",
+    "pngUrl": "/research-dashboard/figures/22_practice_constraint_failure_profile_by_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/22_practice_constraint_failure_profile_by_workflow.pdf"
   },
   {
-    "slug": "23_main_failure_breakdown_by_constraint_type",
-    "title": "Constraint Failure Breakdown by Type in Main Rounds",
+    "slug": "23_practice_failure_breakdown_by_constraint_type",
+    "title": "Constraint Failure Breakdown by Type in Practice Rounds",
     "description": "Failure rates by requirement type and assigned workflow. Each cell also shows the number of individual requirement checks supporting the rate.",
-    "pngUrl": "/research-dashboard/figures/23_main_failure_breakdown_by_constraint_type.png",
-    "pdfUrl": "/research-dashboard/figures/23_main_failure_breakdown_by_constraint_type.pdf"
-  },
-  {
-    "slug": "24_main_constraint_fulfillment_by_error_exposure",
-    "title": "Constraint Fulfillment Across Main Rounds by Error Exposure",
-    "description": "Descriptive complete constraint-pass rates across Main rounds, stratified by actual error exposure. Error bars show 95% Wilson intervals.",
-    "pngUrl": "/research-dashboard/figures/24_main_constraint_fulfillment_by_error_exposure.png",
-    "pdfUrl": "/research-dashboard/figures/24_main_constraint_fulfillment_by_error_exposure.pdf"
-  },
-  {
-    "slug": "25_injected_error_round_line_count_failures",
-    "title": "Line-Count Failures in the Injected-Error Round",
-    "description": "Line-count constraint failures in Main Round 1, grouped by actual error exposure and selected workflow. Error bars show 95% Wilson intervals.",
-    "pngUrl": "/research-dashboard/figures/25_injected_error_round_line_count_failures.png",
-    "pdfUrl": "/research-dashboard/figures/25_injected_error_round_line_count_failures.pdf"
-  },
-  {
-    "slug": "26_main_line_count_error_by_error_exposure",
-    "title": "Line-Count Failure Pattern Across Main Rounds by Error Exposure",
-    "description": "Descriptive line-count failure rates across Main rounds, stratified by actual error exposure. Error bars show 95% Wilson intervals.",
-    "pngUrl": "/research-dashboard/figures/26_main_line_count_error_by_error_exposure.png",
-    "pdfUrl": "/research-dashboard/figures/26_main_line_count_error_by_error_exposure.pdf"
+    "pngUrl": "/research-dashboard/figures/23_practice_failure_breakdown_by_constraint_type.png",
+    "pdfUrl": "/research-dashboard/figures/23_practice_failure_breakdown_by_constraint_type.pdf"
   },
   {
     "slug": "41_main_round1_workflow_choice",
@@ -224,18 +203,39 @@
     "pdfUrl": "/research-dashboard/figures/44_main_round_quality_by_error_exposure.pdf"
   },
   {
-    "slug": "45_injected_error_awareness",
-    "title": "Awareness of the Injected AI Error",
-    "description": "Interview-coded awareness among respondents actually exposed to the injected error in Main Round 1.",
-    "pngUrl": "/research-dashboard/figures/45_injected_error_awareness.png",
-    "pdfUrl": "/research-dashboard/figures/45_injected_error_awareness.pdf"
+    "slug": "45_main_constraint_fulfillment_by_error_exposure",
+    "title": "Constraint Fulfillment Across Main Rounds by Error Exposure",
+    "description": "Descriptive complete constraint-pass rates across Main rounds, stratified by actual error exposure. Error bars show 95% Wilson intervals.",
+    "pngUrl": "/research-dashboard/figures/45_main_constraint_fulfillment_by_error_exposure.png",
+    "pdfUrl": "/research-dashboard/figures/45_main_constraint_fulfillment_by_error_exposure.pdf"
   },
   {
-    "slug": "46_reported_other_ai_error_types",
+    "slug": "46_injected_error_round_line_count_failures",
+    "title": "Line-Count Failures in the Injected-Error Round",
+    "description": "Line-count constraint failures in Main Round 1, grouped by actual error exposure and selected workflow. Error bars show 95% Wilson intervals.",
+    "pngUrl": "/research-dashboard/figures/46_injected_error_round_line_count_failures.png",
+    "pdfUrl": "/research-dashboard/figures/46_injected_error_round_line_count_failures.pdf"
+  },
+  {
+    "slug": "47_main_line_count_error_by_error_exposure",
+    "title": "Line-Count Failure Pattern Across Main Rounds by Error Exposure",
+    "description": "Descriptive line-count failure rates across Main rounds, stratified by actual error exposure. Error bars show 95% Wilson intervals.",
+    "pngUrl": "/research-dashboard/figures/47_main_line_count_error_by_error_exposure.png",
+    "pdfUrl": "/research-dashboard/figures/47_main_line_count_error_by_error_exposure.pdf"
+  },
+  {
+    "slug": "48_injected_error_awareness",
+    "title": "Awareness of the Injected AI Error",
+    "description": "Interview-coded awareness among respondents actually exposed to the injected error in Main Round 1.",
+    "pngUrl": "/research-dashboard/figures/48_injected_error_awareness.png",
+    "pdfUrl": "/research-dashboard/figures/48_injected_error_awareness.pdf"
+  },
+  {
+    "slug": "49_reported_other_ai_error_types",
     "title": "Other AI Error Types Reported in Interviews",
     "description": "Interview-coded non-injected AI issues reported by participants. Categories are not mutually exclusive.",
-    "pngUrl": "/research-dashboard/figures/46_reported_other_ai_error_types.png",
-    "pdfUrl": "/research-dashboard/figures/46_reported_other_ai_error_types.pdf"
+    "pngUrl": "/research-dashboard/figures/49_reported_other_ai_error_types.png",
+    "pdfUrl": "/research-dashboard/figures/49_reported_other_ai_error_types.pdf"
   },
   {
     "slug": "61_overall_quality_rating_distribution",

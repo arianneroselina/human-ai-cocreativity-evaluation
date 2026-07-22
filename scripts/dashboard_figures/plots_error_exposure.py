@@ -4,8 +4,11 @@
 42  Workflow choices in Main Rounds 2-3 by Round-5 exposure group
 43  Final workflow preference by reported AI error
 44  Main-round quality patterns by AI error exposure
-45  Awareness of the injected error among exposed interview respondents
-46  Other AI error types reported in interviews
+45  Full constraint fulfillment across Main rounds by error-exposure group
+46  Line-count failures in injected-error Main Round 1
+47  Line-count failure pattern across Main rounds by error-exposure group
+48  Awareness of the injected error among exposed interview respondents
+49  Other AI error types reported in interviews
 
 Exposure is determined by the workflow voluntarily selected in Main Round 1.
 Post-error comparisons are therefore descriptive, not randomized causal effects.
@@ -37,6 +40,10 @@ from scripts.dashboard_figures.helpers import (
     ordered_exposure_groups,
     quality_summary,
     phase_data,
+    pass_summary,
+    parse_requirement_results,
+    wilson_interval,
+    add_passed_numeric,
 )
 from scripts.dashboard_figures.loaders import load_participant_interview_notes
 from scripts.dashboard_figures.plots_workflow import RANK_COLORS
@@ -45,6 +52,7 @@ from scripts.utils import (
     require_columns,
     save_figure,
     save_table,
+    parse_bool_or_none,
 )
 
 
@@ -645,13 +653,352 @@ def plot_main_round_quality_by_error_exposure(main_df) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 45: Interview awareness among exposed participants
+# 45: Full constraint fulfillment by error exposure in main rounds
+# ---------------------------------------------------------------------------
+
+
+def plot_main_constraint_fulfillment_by_exposure(main_df) -> None:
+    """Show descriptive Main-round pass-rate patterns after the error opportunity."""
+    slug = "45_main_constraint_fulfillment_by_error_exposure"
+
+    main_df = main_df.dropna(subset=["errorExposed", "passedNumeric"])
+    groups = ordered_exposure_groups(main_df)
+    if main_df.empty or not groups:
+        return
+
+    main_rounds = sorted(main_df["roundIndex"].unique().tolist())
+    summary = pass_summary(
+        main_df,
+        ["errorExposed", "roundIndex"],
+    )
+    if summary.empty:
+        return
+
+    summary["exposureLabel"] = summary["errorExposed"].map(exposure_display_name)
+    save_table(summary, slug, index=False)
+
+    fig, ax = plt.subplots(figsize=(8.6, 5.1))
+    offsets = np.linspace(-0.08, 0.08, len(groups))
+
+    for offset, group in zip(offsets, groups):
+        group_summary = (
+            summary[summary["errorExposed"].eq(group)]
+            .set_index("roundIndex")
+            .reindex(main_rounds)
+            .dropna(subset=["passRatePercent"])
+        )
+        if group_summary.empty:
+            continue
+
+        x_values = group_summary.index.to_numpy(dtype=float) + offset
+        y_values = group_summary["passRatePercent"].to_numpy(dtype=float)
+        lower_errors = y_values - group_summary["lowerCI"].to_numpy(dtype=float)
+        upper_errors = group_summary["upperCI"].to_numpy(dtype=float) - y_values
+
+        ax.errorbar(
+            x_values,
+            y_values,
+            yerr=np.vstack([lower_errors, upper_errors]),
+            marker="o",
+            capsize=4,
+            linewidth=1.8,
+            label=exposure_display_name(group),
+        )
+
+        for x_value, (_, row) in zip(x_values, group_summary.iterrows()):
+            ax.text(
+                x_value,
+                max(2, row["lowerCI"] - 6),
+                f"n={int(row['totalRounds'])}",
+                ha="center",
+                va="top",
+                fontsize=8,
+            )
+
+    ax.axvline(
+        ERROR_ROUND_INDEX,
+        linestyle="--",
+        linewidth=1,
+        color="black",
+        alpha=0.6,
+    )
+    ax.text(
+        ERROR_ROUND_INDEX + 0.05,
+        103,
+        "Injected-error round",
+        ha="left",
+        va="bottom",
+        fontsize=8,
+    )
+    ax.set_xticks(main_rounds)
+    ax.set_xticklabels([f"Main {index + 1}" for index in range(len(main_rounds))])
+    ax.set_ylim(-8, 113)
+    ax.set_xlabel("Free-choice main round")
+    ax.set_ylabel("Rounds with all constraints fulfilled (%)")
+    ax.set_title("Constraint Fulfillment Across Main Rounds by Error Exposure")
+    ax.legend(title="Exposure group", bbox_to_anchor=(1.02, 1), loc="upper left")
+    apply_standard_axes_style(ax, grid_axis="y")
+
+    save_figure(
+        fig,
+        slug,
+        "Constraint Fulfillment Across Main Rounds by Error Exposure",
+        "Descriptive complete constraint-pass rates across Main rounds, "
+        "stratified by actual error exposure. Error bars show 95% Wilson intervals.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# 46: Main Round 1 line-count manipulation check
+# ---------------------------------------------------------------------------
+
+
+def _line_count_error(value) -> bool | None:
+    """Return whether the single line-count rule failed for one round."""
+    for item in parse_requirement_results(value):
+        rule_id = str(item.get("id", ""))
+        if not rule_id.startswith("lines-"):
+            continue
+
+        passed = parse_bool_or_none(item.get("passed"))
+        return None if passed is None else not passed
+
+    return None
+
+
+def plot_injected_error_round_line_count_failures(main_df) -> None:
+    """Show line-count failures in the round containing the injected AI error."""
+    slug = "46_injected_error_round_line_count_failures"
+
+    error_round_df = main_df[main_df["roundIndex"].eq(ERROR_ROUND_INDEX)].copy()
+    error_round_df["lineCountError"] = error_round_df["requirementResults"].apply(
+        _line_count_error
+    )
+    error_round_df = error_round_df.dropna(subset=["lineCountError", "errorExposed"])
+    if error_round_df.empty:
+        return
+
+    error_round_df["lineCountError"] = error_round_df["lineCountError"].astype(bool)
+    summary = (
+        error_round_df.groupby(["errorExposed", "workflow"])["lineCountError"]
+        .agg(totalRounds="count", failedLineCount="sum")
+        .reset_index()
+    )
+    summary["failedLineCount"] = summary["failedLineCount"].astype(int)
+    summary["lineCountFailureRatePercent"] = (
+        summary["failedLineCount"] / summary["totalRounds"] * 100
+    )
+
+    intervals = summary.apply(
+        lambda row: wilson_interval(
+            int(row["failedLineCount"]),
+            int(row["totalRounds"]),
+        ),
+        axis=1,
+        result_type="expand",
+    )
+    summary[["lowerCI", "upperCI"]] = intervals
+    summary["workflowLabel"] = summary["workflow"].map(workflow_display_name)
+    summary["exposureLabel"] = summary["errorExposed"].map(exposure_display_name)
+    save_table(summary, slug, index=False)
+
+    categories = [
+        (group, workflow)
+        for group in ordered_exposure_groups(error_round_df)
+        for workflow in WORKFLOW_ORDER
+        if (
+            (summary["errorExposed"].eq(group)) & (summary["workflow"].eq(workflow))
+        ).any()
+    ]
+    if not categories:
+        return
+
+    plot_summary = pd.DataFrame(
+        [
+            summary[
+                summary["errorExposed"].eq(group) & summary["workflow"].eq(workflow)
+            ].iloc[0]
+            for group, workflow in categories
+        ]
+    )
+
+    labels = [
+        f"{exposure_display_name(group)}\n{workflow_display_name(workflow)}"
+        for group, workflow in categories
+    ]
+    colors = [WORKFLOW_COLORS[workflow] for _, workflow in categories]
+    positions = np.arange(len(plot_summary))
+    values = plot_summary["lineCountFailureRatePercent"].to_numpy(dtype=float)
+    lower_errors = values - plot_summary["lowerCI"].to_numpy(dtype=float)
+    upper_errors = plot_summary["upperCI"].to_numpy(dtype=float) - values
+
+    fig, ax = plt.subplots(figsize=(max(8.6, 1.65 * len(labels)), 5.2))
+    ax.bar(
+        positions,
+        values,
+        color=colors,
+        edgecolor=BAR_EDGE_COLOR,
+        linewidth=0.8,
+        zorder=2,
+    )
+    ax.errorbar(
+        positions,
+        values,
+        yerr=np.vstack([lower_errors, upper_errors]),
+        fmt="none",
+        color="black",
+        capsize=4,
+        linewidth=1.1,
+        zorder=4,
+    )
+
+    for index, (_, row) in enumerate(plot_summary.iterrows()):
+        ax.text(
+            index,
+            min(104, row["upperCI"] + 3),
+            (
+                f"{int(row['failedLineCount'])}/{int(row['totalRounds'])}\n"
+                f"({row['lineCountFailureRatePercent']:.1f}%)"
+            ),
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+
+    ax.set_xticks(positions)
+    ax.set_xticklabels(labels, rotation=15, ha="right")
+    ax.set_ylim(0, 114)
+    ax.set_xlabel("Main Round 1 group and selected workflow")
+    ax.set_ylabel("Line-count failure rate (%)")
+    ax.set_title("Line-Count Failures in the Injected-Error Round")
+    apply_standard_axes_style(ax, grid_axis="y")
+
+    save_figure(
+        fig,
+        slug,
+        "Line-Count Failures in the Injected-Error Round",
+        "Line-count constraint failures in Main Round 1, grouped by actual error "
+        "exposure and selected workflow. Error bars show 95% Wilson intervals.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# 47: Line-count failure rate by error exposure in main rounds
+# ---------------------------------------------------------------------------
+
+
+def plot_main_line_count_error_by_exposure(main_df) -> None:
+    """Show descriptive line-count failure patterns across Main rounds."""
+    slug = "47_main_line_count_error_by_error_exposure"
+
+    main_df["lineCountError"] = main_df["requirementResults"].apply(_line_count_error)
+    main_df = main_df.dropna(subset=["lineCountError", "errorExposed"])
+    if main_df.empty:
+        return
+
+    main_df["lineCountError"] = main_df["lineCountError"].astype(bool)
+    summary = (
+        main_df.groupby(["errorExposed", "roundIndex"])["lineCountError"]
+        .agg(totalRounds="count", failedLineCount="sum")
+        .reset_index()
+    )
+    summary["failedLineCount"] = summary["failedLineCount"].astype(int)
+    summary["lineCountFailureRatePercent"] = (
+        summary["failedLineCount"] / summary["totalRounds"] * 100
+    )
+    intervals = summary.apply(
+        lambda row: wilson_interval(
+            int(row["failedLineCount"]),
+            int(row["totalRounds"]),
+        ),
+        axis=1,
+        result_type="expand",
+    )
+    summary[["lowerCI", "upperCI"]] = intervals
+    summary["exposureLabel"] = summary["errorExposed"].map(exposure_display_name)
+    save_table(summary, slug, index=False)
+
+    groups = ordered_exposure_groups(main_df)
+    main_rounds = sorted(main_df["roundIndex"].unique().tolist())
+    fig, ax = plt.subplots(figsize=(8.6, 5.1))
+    offsets = np.linspace(-0.08, 0.08, len(groups))
+
+    for offset, group in zip(offsets, groups):
+        group_summary = (
+            summary[summary["errorExposed"].eq(group)]
+            .set_index("roundIndex")
+            .reindex(main_rounds)
+            .dropna(subset=["lineCountFailureRatePercent"])
+        )
+        if group_summary.empty:
+            continue
+
+        x_values = group_summary.index.to_numpy(dtype=float) + offset
+        values = group_summary["lineCountFailureRatePercent"].to_numpy(dtype=float)
+        lower_errors = values - group_summary["lowerCI"].to_numpy(dtype=float)
+        upper_errors = group_summary["upperCI"].to_numpy(dtype=float) - values
+
+        ax.errorbar(
+            x_values,
+            values,
+            yerr=np.vstack([lower_errors, upper_errors]),
+            marker="o",
+            capsize=4,
+            linewidth=1.8,
+            label=exposure_display_name(group),
+        )
+
+        for x_value, (_, row) in zip(x_values, group_summary.iterrows()):
+            ax.text(
+                x_value,
+                max(1, row["lowerCI"] - 5),
+                f"n={int(row['totalRounds'])}",
+                ha="center",
+                va="top",
+                fontsize=8,
+            )
+
+    ax.axvline(
+        ERROR_ROUND_INDEX,
+        linestyle="--",
+        linewidth=1,
+        color="black",
+        alpha=0.6,
+    )
+    ax.text(
+        ERROR_ROUND_INDEX + 0.05,
+        103,
+        "Injected-error round",
+        ha="left",
+        va="bottom",
+        fontsize=8,
+    )
+    ax.set_xticks(main_rounds)
+    ax.set_xticklabels([f"Main {index + 1}" for index in range(len(main_rounds))])
+    ax.set_ylim(-8, 113)
+    ax.set_xlabel("Free-choice main round")
+    ax.set_ylabel("Line-count failure rate (%)")
+    ax.set_title("Line-Count Failure Pattern Across Main Rounds by Error Exposure")
+    ax.legend(title="Exposure group", bbox_to_anchor=(1.02, 1), loc="upper left")
+    apply_standard_axes_style(ax, grid_axis="y")
+
+    save_figure(
+        fig,
+        slug,
+        "Line-Count Failure Pattern Across Main Rounds by Error Exposure",
+        "Descriptive line-count failure rates across Main rounds, stratified by "
+        "actual error exposure. Error bars show 95% Wilson intervals.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# 48: Interview awareness among exposed participants
 # ---------------------------------------------------------------------------
 
 
 def plot_injected_error_awareness(prepared) -> None:
     """Show whether exposed interview respondents noticed the injected error."""
-    slug = "45_injected_error_awareness"
+    slug = "48_injected_error_awareness"
 
     notes = load_participant_interview_notes(prepared)
     required = {"injectedErrorExperience"}
@@ -721,13 +1068,13 @@ def plot_injected_error_awareness(prepared) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 46: Other AI error types reported in interviews
+# 49: Other AI error types reported in interviews
 # ---------------------------------------------------------------------------
 
 
 def plot_other_ai_error_types(prepared) -> None:
     """Show non-injected AI issues reported by interview respondents."""
-    slug = "46_reported_other_ai_error_types"
+    slug = "49_reported_other_ai_error_types"
 
     notes = load_participant_interview_notes(prepared)
     required = {"reportedOtherAiErrorTypes"}
@@ -825,18 +1172,18 @@ def plot_other_ai_error_types(prepared) -> None:
     )
 
 
-def plot_error_exposure(df, feedback_df) -> None:
+def plot_error_exposure(prepared, feedback_df) -> None:
     """Generate injected-error exposure and interview-coding figures."""
     required = {"participantId", "roundIndex", "workflow", "errorExposed"}
 
-    if df.empty or not require_columns(
-        df,
+    if prepared.empty or not require_columns(
+        prepared,
         required,
         "error-exposure data",
     ):
         return
 
-    prepared = df.copy()
+    prepared = add_passed_numeric(prepared)
     prepared["participantId"] = prepared["participantId"].astype(str)
 
     if prepared.empty:
@@ -850,7 +1197,10 @@ def plot_error_exposure(df, feedback_df) -> None:
 
     plot_round5_workflow_choice(prepared)
     plot_post_error_workflow_choices_by_exposure(prepared)
-    plot_final_workflow_preference_by_reported_ai_errors(ranking_rows, df)
-    plot_main_round_quality_by_error_exposure(df)
+    plot_final_workflow_preference_by_reported_ai_errors(ranking_rows, prepared)
+    plot_main_round_quality_by_error_exposure(main_df)
+    plot_main_constraint_fulfillment_by_exposure(main_df)
+    plot_injected_error_round_line_count_failures(main_df)
+    plot_main_line_count_error_by_exposure(main_df)
     plot_injected_error_awareness(prepared)
     plot_other_ai_error_types(prepared)
