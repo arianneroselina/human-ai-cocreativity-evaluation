@@ -9,7 +9,6 @@ export type DashboardFigure = {
   description: string;
   pngUrl: string;
   pdfUrl: string;
-  svgUrl: string;
 };
 
 const MANIFEST_PATH = path.join(

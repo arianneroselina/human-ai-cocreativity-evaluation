@@ -21,15 +21,17 @@ from scripts.config import (
     WORKFLOW_COLORS,
     WORKFLOW_ORDER,
     AWARENESS_LABELS,
-    INTERVIEW_NOTES_PATH,
     OTHER_AI_ERROR_LABELS,
 )
 from scripts.dashboard_figures.helpers import (
     exposure_display_name,
     workflow_display_name,
     round_display_name,
+    build_valid_ranking_rows,
+    ranking_summary,
 )
 from scripts.dashboard_figures.loaders import load_participant_interview_notes
+from scripts.dashboard_figures.plots_workflow import RANK_COLORS
 from scripts.dashboard_figures.style import BAR_EDGE_COLOR, apply_standard_axes_style
 from scripts.utils import (
     require_columns,
@@ -250,13 +252,275 @@ def plot_post_error_workflow_choices_by_exposure(prepared) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 43: Interview awareness among exposed participants
+# 43: Workflow ranking by reported AI error
+# ---------------------------------------------------------------------------
+
+
+def _reported_ai_error_groups(
+    round_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Return one reported-AI-error group per participant session."""
+    notes = load_participant_interview_notes(round_df)
+
+    if notes.empty or "sessionId" not in notes.columns:
+        return pd.DataFrame()
+
+    notes = notes.dropna(subset=["sessionId"]).copy()
+    notes["sessionId"] = notes["sessionId"].astype(str)
+
+    injected_error_count = (
+        notes["injectedErrorExperience"].eq("noticed").astype(int)
+        if "injectedErrorExperience" in notes.columns
+        else pd.Series(0, index=notes.index, dtype=int)
+    )
+
+    if "reportedOtherAiErrorTypes" in notes.columns:
+        other_error_counts = (
+            notes[["participantId", "reportedOtherAiErrorTypes"]]
+            .dropna(subset=["reportedOtherAiErrorTypes"])
+            .assign(
+                errorType=lambda data: (
+                    data["reportedOtherAiErrorTypes"]
+                    .astype("string")
+                    .str.lower()
+                    .str.split(";")
+                )
+            )
+            .explode("errorType")
+            .assign(errorType=lambda data: data["errorType"].str.strip())
+            .loc[lambda data: data["errorType"].notna() & data["errorType"].ne("")]
+            .groupby("participantId")["errorType"]
+            .nunique()
+        )
+
+        notes["otherAiErrorCount"] = (
+            notes["participantId"].map(other_error_counts).fillna(0).astype(int)
+        )
+    else:
+        notes["otherAiErrorCount"] = 0
+
+    notes["reportedAiErrorCount"] = injected_error_count + notes["otherAiErrorCount"]
+
+    notes["errorGroup"] = pd.cut(
+        notes["reportedAiErrorCount"],
+        bins=[-1, 0, 1, np.inf],
+        labels=[
+            "No reported AI errors",
+            "1 reported AI error",
+            "2+ reported AI errors",
+        ],
+    )
+
+    return notes[
+        [
+            "sessionId",
+            "reportedAiErrorCount",
+            "errorGroup",
+        ]
+    ].dropna(subset=["errorGroup"])
+
+
+def plot_final_workflow_preference_by_reported_ai_errors(
+    ranking_rows: pd.DataFrame,
+    prepared: pd.DataFrame,
+) -> None:
+    """Show final workflow-ranking distributions by reported AI-error count."""
+    slug = "43_final_workflow_preference_by_reported_ai_errors"
+
+    error_groups = _reported_ai_error_groups(prepared)
+    if ranking_rows.empty or error_groups.empty:
+        return
+
+    ranking_df = ranking_rows.copy()
+    ranking_df["sessionId"] = ranking_df["sessionId"].astype(str)
+
+    ranking_df = ranking_df.merge(
+        error_groups,
+        on="sessionId",
+        how="inner",
+        validate="many_to_one",
+    )
+
+    if ranking_df.empty:
+        return
+
+    group_order = [
+        "No reported AI errors",
+        "1 reported AI error",
+        "2+ reported AI errors",
+    ]
+    observed_groups = [
+        group for group in group_order if group in set(ranking_df["errorGroup"])
+    ]
+
+    if not observed_groups:
+        return
+
+    rank_columns = list(range(1, len(WORKFLOW_ORDER) + 1))
+
+    # Use the overall preference order consistently in every panel.
+    overall_summary = ranking_summary(ranking_df)
+    workflow_order = overall_summary["meanRank"].sort_values().index.tolist()
+
+    group_sizes = {
+        group: ranking_df.loc[
+            ranking_df["errorGroup"].eq(group),
+            "sessionId",
+        ].nunique()
+        for group in observed_groups
+    }
+
+    export_rows = []
+
+    fig, axes = plt.subplots(
+        1,
+        len(observed_groups),
+        figsize=(4.9 * len(observed_groups), 5.3),
+        sharex=True,
+        sharey=True,
+        layout="constrained",
+        squeeze=False,
+    )
+    axes = axes.flatten()
+
+    for ax, group in zip(axes, observed_groups):
+        group_df = ranking_df[ranking_df["errorGroup"].eq(group)]
+        participant_count = group_sizes[group]
+
+        summary = ranking_summary(group_df).reindex(workflow_order)
+
+        rank_counts = summary[rank_columns].fillna(0)
+        row_totals = rank_counts.sum(axis=1)
+        rank_percentages = rank_counts.div(row_totals, axis=0) * 100
+
+        positions = np.arange(len(workflow_order))
+        left = np.zeros(len(workflow_order))
+
+        for rank in rank_columns:
+            percentages = rank_percentages[rank].to_numpy()
+            counts = rank_counts[rank].astype(int).to_numpy()
+
+            bars = ax.barh(
+                positions,
+                percentages,
+                left=left,
+                label=f"Rank {rank}",
+                color=RANK_COLORS[rank - 1],
+                edgecolor=BAR_EDGE_COLOR,
+            )
+
+            # Show participant counts only in sufficiently wide segments.
+            for index, (bar, percentage, count) in enumerate(
+                zip(bars, percentages, counts)
+            ):
+                if percentage >= 18:
+                    ax.text(
+                        left[index] + percentage / 2,
+                        bar.get_y() + bar.get_height() / 2,
+                        str(count),
+                        ha="center",
+                        va="center",
+                        fontsize=8,
+                    )
+
+            left += percentages
+
+        # Display the mean rank as a separate aligned value.
+        for index, workflow in enumerate(workflow_order):
+            mean_rank = summary.loc[workflow, "meanRank"]
+
+            ax.text(
+                102,
+                index,
+                f"{mean_rank:.2f}",
+                va="center",
+                ha="left",
+                fontsize=9,
+                fontweight="bold",
+                clip_on=False,
+            )
+
+            export_rows.append(
+                {
+                    "errorGroup": group,
+                    "participants": participant_count,
+                    "workflow": workflow_display_name(workflow),
+                    "meanRank": mean_rank,
+                    **{
+                        f"Rank {rank} count": int(rank_counts.loc[workflow, rank])
+                        for rank in rank_columns
+                    },
+                }
+            )
+
+        ax.set_title(
+            f"{group}\n(n={participant_count})",
+            fontsize=11,
+        )
+        ax.set_xlabel("Participants assigning each rank (%)")
+        ax.set_xlim(0, 112)
+        ax.set_xticks([0, 25, 50, 75, 100])
+
+        ax.set_yticks(positions)
+        ax.set_yticklabels(
+            [workflow_display_name(workflow) for workflow in workflow_order]
+        )
+        ax.invert_yaxis()
+
+        apply_standard_axes_style(ax, grid_axis="x")
+
+        # Header for the aligned mean-rank values.
+        ax.text(
+            102,
+            -0.65,
+            "Mean\nrank",
+            ha="left",
+            va="bottom",
+            fontsize=8,
+            color="0.35",
+            clip_on=False,
+        )
+
+    save_table(
+        pd.DataFrame(export_rows),
+        slug,
+        index=False,
+    )
+
+    axes[-1].legend(
+        title="Assigned rank",
+        bbox_to_anchor=(1.08, 1),
+        loc="upper left",
+    )
+
+    fig.suptitle(
+        "Final Workflow Preference by Number of Reported AI Errors",
+        fontsize=13,
+    )
+
+    save_figure(
+        fig,
+        slug,
+        "Final Workflow Preference by Number of Reported AI Errors",
+        (
+            "Percentage distribution and mean rank of final workflow preferences, "
+            "grouped by the number of AI errors participants reported noticing. "
+            "Rank 1 indicates the strongest preference. Numbers inside sufficiently "
+            "large segments show participant counts. The groups are descriptive; "
+            "reporting no error does not necessarily indicate that no AI error "
+            "occurred or was encountered."
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# 44: Interview awareness among exposed participants
 # ---------------------------------------------------------------------------
 
 
 def plot_injected_error_awareness(prepared) -> None:
     """Show whether exposed interview respondents noticed the injected error."""
-    slug = "43_injected_error_awareness"
+    slug = "44_injected_error_awareness"
 
     notes = load_participant_interview_notes(prepared)
     required = {"injectedErrorExperience"}
@@ -326,13 +590,13 @@ def plot_injected_error_awareness(prepared) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 44: Other AI error types reported in interviews
+# 45: Other AI error types reported in interviews
 # ---------------------------------------------------------------------------
 
 
 def plot_other_ai_error_types(prepared) -> None:
     """Show non-injected AI issues reported by interview respondents."""
-    slug = "44_reported_other_ai_error_types"
+    slug = "45_reported_other_ai_error_types"
 
     notes = load_participant_interview_notes(prepared)
     required = {"reportedOtherAiErrorTypes"}
@@ -430,7 +694,7 @@ def plot_other_ai_error_types(prepared) -> None:
     )
 
 
-def plot_error_exposure(df: pd.DataFrame) -> None:
+def plot_error_exposure(df, feedback_df) -> None:
     """Generate injected-error exposure and interview-coding figures."""
     required = {"participantId", "roundIndex", "workflow", "errorExposed"}
 
@@ -447,7 +711,10 @@ def plot_error_exposure(df: pd.DataFrame) -> None:
     if prepared.empty:
         return
 
+    ranking_rows, _ = build_valid_ranking_rows(feedback_df)
+
     plot_round5_workflow_choice(prepared)
     plot_post_error_workflow_choices_by_exposure(prepared)
+    plot_final_workflow_preference_by_reported_ai_errors(ranking_rows, df)
     plot_injected_error_awareness(prepared)
     plot_other_ai_error_types(prepared)

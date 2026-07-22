@@ -362,7 +362,7 @@ def plot_main_constraint_pass_rate_by_workflow(main_df) -> None:
 
     ax.set_xlabel("Rounds fully meeting every constraint", labelpad=10)
 
-    ax.set_title("Complete Constraint Fulfillment Rate by Workflow")
+    ax.set_title("Complete Constraint Fulfillment Rate by Workflow in Main Rounds")
 
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -389,7 +389,7 @@ def plot_main_constraint_pass_rate_by_workflow(main_df) -> None:
     save_figure(
         fig,
         slug,
-        "Complete Constraint Fulfillment Rate by Workflow",
+        "Complete Constraint Fulfillment Rate by Workflow in Main Rounds",
         "Points show the observed percentage of main-round poems that fulfilled "
         "every task constraint. Horizontal whiskers show 95% Wilson confidence "
         "intervals. Labels show the number of fully successful rounds out of all "

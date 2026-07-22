@@ -111,11 +111,8 @@ def save_figure(
     """Save one figure in dashboard formats and register it in the manifest."""
     png_path = FIGURE_DIR / f"{slug}.png"
     pdf_path = FIGURE_DIR / f"{slug}.pdf"
-    svg_path = FIGURE_DIR / f"{slug}.svg"
-
     fig.savefig(png_path, bbox_inches="tight")
     fig.savefig(pdf_path, bbox_inches="tight")
-    fig.savefig(svg_path, bbox_inches="tight")
     plt.close(fig)
 
     MANIFEST.append(
@@ -125,7 +122,6 @@ def save_figure(
             "description": description,
             "pngUrl": f"/research-dashboard/figures/{slug}.png",
             "pdfUrl": f"/research-dashboard/figures/{slug}.pdf",
-            "svgUrl": f"/research-dashboard/figures/{slug}.svg",
         }
     )
 

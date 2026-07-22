@@ -34,12 +34,20 @@ function NavLink({ href, children }: { href: string; children: ReactNode }) {
 function groupFigures<T extends { slug: string }>(figures: T[]) {
   return [
     {
+      id: "participant-figures",
+      title: "Participant Information",
+      description: "Age, gender, education, language, and AI attitude distributions.",
+      figures: figures.filter((figure) =>
+        ["51_", "52_", "53_", "54_", "55_", "56_"].some((prefix) => figure.slug.startsWith(prefix))
+      ),
+    },
+    {
       id: "workflow-figures",
-      title: "Workflow Behavior",
+      title: "Workflow Behaviour",
       description: "Workflow choices, transitions, and final preferences.",
       figures: figures.filter((figure) =>
-        ["01_", "02_", "03_", "04_", "05_", "05b_", "06_", "07_", "08_", "08b_", "09_"].some(
-          (prefix) => figure.slug.startsWith(prefix)
+        ["01_", "02_", "03_", "04_", "05_", "05b_", "06_", "07_", "08_", "09_"].some((prefix) =>
+          figure.slug.startsWith(prefix)
         )
       ),
     },
@@ -83,38 +91,42 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       id: "error-exposure-figures",
       title: "AI Error Exposure",
       description:
-        "Round-5 error exposure, line-count error, post-error behavior, and subjective reactions.",
+        "Round-5 error exposure, line-count error, post-error behaviour, and subjective reactions.",
       figures: figures.filter((figure) =>
-        ["41_", "42_", "43_", "44_"].some((prefix) => figure.slug.startsWith(prefix))
-      ),
-    },
-    {
-      id: "participant-figures",
-      title: "Participant Information",
-      description: "Age, gender, education, language, and AI attitude distributions.",
-      figures: figures.filter((figure) =>
-        ["51_", "52_", "53_", "54_", "55_", "56_"].some((prefix) => figure.slug.startsWith(prefix))
+        ["41_", "42_", "43_", "44_", "45_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
   ].filter((group) => group.figures.length > 0);
 }
 
 const FAVORITE_FIGURE_NUMBERS = [
-  "02_", "03_", "07_", "08_", "08b_", // workflow behavior
-  "11_", "13_", // output quality
-  "62_", "64_", // evaluator agreement
-  "21_", "23_", "25_", // constraints fulfillment
-  "32_", "33_", // participant experience
-  "42_", "43_", // ai error exposure
+  "02_",
+  "03_",
+  "07_",
+  "08_", // workflow behaviour
+  "11_",
+  "13_", // output quality
+  "62_",
+  "64_", // evaluator agreement
+  "21_",
+  "23_",
+  "25_", // constraints fulfillment
+  "32_",
+  "33_", // participant experience
+  "42_",
+  "43_",
+  "44_", // ai error exposure
 ];
 
 const INTERESTING_FIGURE_NUMBERS = [
   "09_", // workflow behavior
-  "12_", "16_", // output quality
+  "12_",
+  "16_", // output quality
   // evaluator agreement
-  "24_", "26_", // constraints fulfillment
+  "24_",
+  "26_", // constraints fulfillment
   "31_", // participant experience
-  "44_", // ai error exposure
+  "45_", // ai error exposure
 ];
 
 export default async function ResearchDashboardPage() {

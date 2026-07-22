@@ -67,15 +67,6 @@ function DownloadMenu({ figure }: { figure: DashboardFigure }) {
           >
             PDF
           </a>
-
-          <a
-            href={figure.svgUrl}
-            download
-            onClick={() => setOpen(false)}
-            className="block px-3 py-2 hover:bg-gray-50"
-          >
-            SVG
-          </a>
         </div>
       )}
     </div>

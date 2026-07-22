@@ -47,7 +47,7 @@ def main() -> None:
     plot_experience(prepared_round_df)
     plot_quality(prepared_round_df)
     plot_constraints(prepared_round_df)
-    plot_error_exposure(prepared_round_df)
+    plot_error_exposure(prepared_round_df, feedback_df)
     plot_evaluators()
     plot_participant_info(participant_info_df)
     generate_feedback_summaries(prepared_round_df, feedback_df)

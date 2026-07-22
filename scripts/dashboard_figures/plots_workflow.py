@@ -2,20 +2,17 @@
 
 Core workflow figures
 ---------------------
-01  Total workflow usage across all main rounds
-02  First voluntary workflow choice after practice rounds
-03  Workflow distribution across Main Rounds 1–3
-04  Participant-level workflow trajectories across the main rounds
+01  Total workflow usage across Main Rounds
+02  First voluntary workflow choice after Practice Rounds
+03  Workflow distribution across Main Rounds
+04  Participant-level workflow trajectories across Main Rounds
 05a Final practice workflow -> first voluntary workflow choice
 05b Main-round workflow transition heatmaps (Main 1 -> 2 and Main 2 -> 3)
-06  Workflow retention after a voluntary choice
-07  Number and pattern of workflow switches
-08  Participant-reported workflow preference rank distribution
-09  Stated workflow preference versus revealed workflow behaviour
+06  Workflow retention across Main Rounds
+07  Number and pattern of workflow switches across Main Rounds
+08  Final workflow preference rank average and distribution
+09  Final workflow preference versus observed workflow behaviour
 """
-
-import json
-import re
 
 import numpy as np
 import pandas as pd
@@ -35,14 +32,14 @@ from scripts.dashboard_figures.helpers import (
     workflow_display_name,
     round_display_name,
     phase_data,
+    ranking_summary,
+    build_valid_ranking_rows,
 )
-from scripts.dashboard_figures.loaders import load_participant_interview_notes
 from scripts.dashboard_figures.style import (
     BAR_EDGE_COLOR,
     apply_standard_axes_style,
 )
 from scripts.utils import (
-    require_columns,
     save_figure,
     save_table,
 )
@@ -108,145 +105,64 @@ def _transition_matrix(transitions):
     return counts, row_percentages, row_totals.astype(int)
 
 
-def _save_transition_heatmap(
-    transitions,
-    slug,
-    title,
-    source_axis_label,
-    target_axis_label,
-    description,
+def _plot_transition_heatmap(
+    ax,
+    counts: pd.DataFrame,
+    percentages: pd.DataFrame,
+    totals: pd.Series,
+    *,
+    title: str,
+    source_label: str,
+    target_label: str,
 ):
-    """Save a transition heatmap with counts and source-row percentages."""
-    if transitions.empty:
-        return
-
-    counts, row_percentages, row_totals = _transition_matrix(transitions)
-
-    display_counts = counts.rename(index=WORKFLOW_LABELS, columns=WORKFLOW_LABELS)
-    display_percentages = row_percentages.rename(
-        index=WORKFLOW_LABELS,
-        columns=WORKFLOW_LABELS,
-    )
-
-    save_table(display_counts, f"{slug}_counts")
-    save_table(display_percentages.round(2), f"{slug}_row_percentages")
-
-    fig, ax = plt.subplots(figsize=(7.2, 5.8))
+    """Draw one transition matrix with counts and row percentages."""
     image = ax.imshow(
-        row_percentages.values,
+        percentages.to_numpy(),
         vmin=0,
         vmax=100,
         cmap="Blues",
     )
 
-    x_labels = [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER]
-    y_labels = [
-        (f"{workflow_display_name(workflow)}\n(n={int(row_totals.loc[workflow])})")
-        if row_totals.loc[workflow] > 0
-        else workflow_display_name(workflow)
-        for workflow in WORKFLOW_ORDER
-    ]
-
     ax.set_title(title)
-    ax.set_xlabel(target_axis_label)
-    ax.set_ylabel(source_axis_label)
+    ax.set_xlabel(target_label)
+    ax.set_ylabel(source_label)
+
     ax.set_xticks(range(len(WORKFLOW_ORDER)))
-    ax.set_xticklabels(x_labels, rotation=30, ha="right")
+    ax.set_xticklabels(
+        [workflow_display_name(w) for w in WORKFLOW_ORDER],
+        rotation=30,
+        ha="right",
+    )
+
     ax.set_yticks(range(len(WORKFLOW_ORDER)))
-    ax.set_yticklabels(y_labels)
+    ax.set_yticklabels(
+        [
+            (
+                f"{workflow_display_name(w)}\n(n={int(totals.loc[w])})"
+                if totals.loc[w] > 0
+                else workflow_display_name(w)
+            )
+            for w in WORKFLOW_ORDER
+        ]
+    )
 
-    for row_index, from_workflow in enumerate(WORKFLOW_ORDER):
-        for column_index, to_workflow in enumerate(WORKFLOW_ORDER):
-            count = int(counts.loc[from_workflow, to_workflow])
-            percentage = float(row_percentages.loc[from_workflow, to_workflow])
+    for row, source in enumerate(WORKFLOW_ORDER):
+        for column, target in enumerate(WORKFLOW_ORDER):
+            total = int(totals.loc[source])
+            count = int(counts.loc[source, target])
+            percentage = float(percentages.loc[source, target])
 
-            if row_totals.loc[from_workflow] == 0:
-                label = "–"
-            else:
-                label = f"{count}\n{percentage:.0f}%"
-
-            text_color = "white" if percentage >= 55 else "black"
             ax.text(
-                column_index,
-                row_index,
-                label,
+                column,
+                row,
+                "–" if total == 0 else f"{count}\n{percentage:.0f}%",
                 ha="center",
                 va="center",
-                color=text_color,
-                fontsize=9,
+                fontsize=8.5,
+                color="white" if percentage >= 55 else "black",
             )
 
-    fig.colorbar(
-        image,
-        ax=ax,
-        label="Share within source workflow (%)",
-    )
-
-    save_figure(fig, slug, title, description)
-
-
-def _reported_ai_error_groups(
-    round_df: pd.DataFrame,
-) -> pd.DataFrame:
-    """Return one reported-AI-error group per participant session."""
-    notes = load_participant_interview_notes(round_df)
-
-    if notes.empty or "sessionId" not in notes.columns:
-        return pd.DataFrame()
-
-    notes = notes.dropna(subset=["sessionId"]).copy()
-    notes["sessionId"] = notes["sessionId"].astype(str)
-
-    injected_error_count = (
-        notes["injectedErrorExperience"].eq("noticed").astype(int)
-        if "injectedErrorExperience" in notes.columns
-        else pd.Series(0, index=notes.index, dtype=int)
-    )
-
-    if "reportedOtherAiErrorTypes" in notes.columns:
-        other_error_counts = (
-            notes[["participantId", "reportedOtherAiErrorTypes"]]
-            .dropna(subset=["reportedOtherAiErrorTypes"])
-            .assign(
-                errorType=lambda data: (
-                    data["reportedOtherAiErrorTypes"]
-                    .astype("string")
-                    .str.lower()
-                    .str.split(";")
-                )
-            )
-            .explode("errorType")
-            .assign(errorType=lambda data: data["errorType"].str.strip())
-            .loc[lambda data: data["errorType"].notna() & data["errorType"].ne("")]
-            .groupby("participantId")["errorType"]
-            .nunique()
-        )
-
-        notes["otherAiErrorCount"] = (
-            notes["participantId"].map(other_error_counts).fillna(0).astype(int)
-        )
-    else:
-        notes["otherAiErrorCount"] = 0
-
-    notes["reportedAiErrorCount"] = injected_error_count + notes["otherAiErrorCount"]
-
-    notes["errorGroup"] = pd.cut(
-        notes["reportedAiErrorCount"],
-        bins=[-1, 0, 1, np.inf],
-        labels=[
-            "No reported AI errors",
-            "1 reported AI error",
-            "2+ reported AI errors",
-        ],
-    )
-
-    return notes[
-        [
-            "sessionId",
-            "reportedAiErrorCount",
-            "errorGroup",
-        ]
-    ].dropna(subset=["errorGroup"])
+    return image
 
 
 # -----------------------------------------------------------------------------
@@ -336,7 +252,7 @@ def plot_first_voluntary_workflow_choice(main_df):
     slug = "02_first_voluntary_workflow_choice"
 
     main_rounds = sorted(main_df["roundIndex"].dropna().unique())
-    if len(main_rounds) < 2:
+    if MAIN_ROUND_INDICES[0] not in main_rounds:
         return
 
     first_choice_df = main_df[main_df["roundIndex"] == MAIN_ROUND_INDICES[0]].copy()
@@ -403,7 +319,7 @@ def plot_first_voluntary_workflow_choice(main_df):
         fig,
         slug,
         "First Voluntary Workflow Choice After Practice",
-        "Distribution of workflow selections in Main 1, the first main"
+        "Distribution of workflow selections in Main 1, the first main "
         f"round after practice (N={total}).",
     )
 
@@ -638,49 +554,15 @@ def plot_practice_to_first_choice_transition(prepared: pd.DataFrame) -> None:
 
     fig, ax = plt.subplots(figsize=(7.2, 5.8))
 
-    image = ax.imshow(
-        percentages.values,
-        vmin=0,
-        vmax=100,
-        cmap="Blues",
+    image = _plot_transition_heatmap(
+        ax,
+        counts,
+        percentages,
+        totals,
+        title="Final Practice Workflow to First Voluntary Choice",
+        source_label=f"Assigned workflow in {from_label}",
+        target_label=f"Chosen workflow in {to_label}",
     )
-
-    ax.set_title("Final Practice Workflow to First Voluntary Choice")
-    ax.set_xlabel(f"Chosen workflow in {to_label}")
-    ax.set_ylabel(f"Assigned workflow in {from_label}")
-
-    ax.set_xticks(range(len(WORKFLOW_ORDER)))
-    ax.set_xticklabels(
-        [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER],
-        rotation=30,
-        ha="right",
-    )
-
-    ax.set_yticks(range(len(WORKFLOW_ORDER)))
-    ax.set_yticklabels(
-        [
-            (f"{workflow_display_name(workflow)}\n(n={int(totals.loc[workflow])})")
-            if totals.loc[workflow] > 0
-            else workflow_display_name(workflow)
-            for workflow in WORKFLOW_ORDER
-        ]
-    )
-
-    for row, source_workflow in enumerate(WORKFLOW_ORDER):
-        for col, target_workflow in enumerate(WORKFLOW_ORDER):
-            total = totals.loc[source_workflow]
-            count = counts.loc[source_workflow, target_workflow]
-            percentage = percentages.loc[source_workflow, target_workflow]
-
-            ax.text(
-                col,
-                row,
-                "–" if total == 0 else f"{int(count)}\n{percentage:.0f}%",
-                ha="center",
-                va="center",
-                fontsize=9,
-                color="white" if percentage >= 55 else "black",
-            )
 
     fig.colorbar(
         image,
@@ -754,53 +636,15 @@ def plot_main_workflow_transitions(main_df) -> None:
     for index, (ax, data) in enumerate(zip(axes, transition_data)):
         from_label, to_label, counts, percentages, totals = data
 
-        image = ax.imshow(
-            percentages.values,
-            vmin=0,
-            vmax=100,
-            cmap="Blues",
+        image = _plot_transition_heatmap(
+            ax,
+            counts,
+            percentages,
+            totals,
+            title="Final Practice Workflow to First Voluntary Choice",
+            source_label=f"Assigned workflow in {from_label}",
+            target_label=f"Chosen workflow in {to_label}",
         )
-
-        ax.set_title(f"{from_label} → {to_label}")
-        ax.set_xlabel(f"Workflow in {to_label}")
-        ax.set_xticks(range(len(WORKFLOW_ORDER)))
-        ax.set_xticklabels(
-            [workflow_display_name(w) for w in WORKFLOW_ORDER],
-            rotation=30,
-            ha="right",
-        )
-
-        ax.set_yticks(range(len(WORKFLOW_ORDER)))
-        ax.set_yticklabels(
-            [
-                (f"{workflow_display_name(w)}\n(n={int(totals.loc[w])})")
-                if totals.loc[w] > 0
-                else workflow_display_name(w)
-                for w in WORKFLOW_ORDER
-            ]
-        )
-        ax.tick_params(axis="y", labelleft=True)
-
-        if index == 0:
-            ax.set_ylabel(f"Workflow in {from_label}")
-
-        for row, source_workflow in enumerate(WORKFLOW_ORDER):
-            for col, target_workflow in enumerate(WORKFLOW_ORDER):
-                total = totals.loc[source_workflow]
-                count = counts.loc[source_workflow, target_workflow]
-                percentage = percentages.loc[source_workflow, target_workflow]
-
-                label = "–" if total == 0 else f"{int(count)}\n{percentage:.0f}%"
-
-                ax.text(
-                    col,
-                    row,
-                    label,
-                    ha="center",
-                    va="center",
-                    fontsize=8.5,
-                    color="white" if percentage >= 55 else "black",
-                )
 
     fig.colorbar(
         image,
@@ -949,9 +793,9 @@ def _classify_switch_pattern(sequence):
     return "Other switching pattern"
 
 
-def plot_workflow_switching_behavior(main_df):
+def plot_workflow_switching_behaviour(main_df):
     """Plot the number and pattern of switches across all main rounds."""
-    slug = "07_workflow_switching_behavior"
+    slug = "07_workflow_switching_behaviour"
 
     sequences = _complete_main_sequences(main_df)
     if sequences.empty:
@@ -1103,123 +947,12 @@ def plot_workflow_switching_behavior(main_df):
 # -----------------------------------------------------------------------------
 
 
-def normalize_ranking(items):
-    """Normalise ranking entries to configured workflow identifiers."""
-    result = []
-
-    for item in items:
-        normalized = str(item).strip().lower()
-        normalized = normalized.replace(" ", "_")
-        normalized = normalized.replace("-", "_")
-        normalized = normalized.replace("→", "_")
-        normalized = re.sub(r"_+", "_", normalized)
-
-        if normalized in WORKFLOW_ORDER:
-            result.append(normalized)
-
-    return result
-
-
-def parse_workflow_ranking(value):
-    """Parse JSON and legacy string representations of a workflow ranking."""
-    if pd.isna(value):
-        return []
-
-    raw = str(value).strip()
-
-    try:
-        parsed = json.loads(raw)
-        if isinstance(parsed, list):
-            ranking = []
-
-            for item in parsed:
-                if isinstance(item, str):
-                    ranking.append(item)
-                elif isinstance(item, dict) and "workflow" in item:
-                    ranking.append(str(item["workflow"]))
-
-            return normalize_ranking(ranking)
-    except json.JSONDecodeError:
-        pass
-
-    raw = raw.strip("{}[]()")
-    return normalize_ranking(re.split(r"[>,;|\n]+", raw))
-
-
-def _build_valid_ranking_rows(feedback_df):
-    """Return complete rankings plus an audit table for invalid entries."""
-    required = {"sessionId", "workflowRanking"}
-
-    if feedback_df.empty or not require_columns(
-        feedback_df,
-        required,
-        "workflow preference ranking",
-    ):
-        return pd.DataFrame(), pd.DataFrame()
-
-    feedback = feedback_df.drop_duplicates(
-        "sessionId",
-        keep="last",
-    ).copy()
-    ranking_rows = []
-    audit_rows = []
-    expected_workflows = set(WORKFLOW_ORDER)
-
-    for _, row in feedback.iterrows():
-        ranking = parse_workflow_ranking(row["workflowRanking"])
-        is_valid = (
-            len(ranking) == len(WORKFLOW_ORDER) and set(ranking) == expected_workflows
-        )
-
-        audit_rows.append(
-            {
-                "sessionId": row["sessionId"],
-                "validRanking": is_valid,
-                "parsedWorkflowCount": len(ranking),
-                "ranking": " > ".join(ranking),
-            }
-        )
-
-        if not is_valid:
-            continue
-
-        for rank, workflow in enumerate(ranking, start=1):
-            ranking_rows.append(
-                {
-                    "sessionId": row["sessionId"],
-                    "workflow": workflow,
-                    "rank": rank,
-                }
-            )
-
-    return pd.DataFrame(ranking_rows), pd.DataFrame(audit_rows)
-
-
-def _ranking_summary(ranking_rows):
-    """Build rank counts and mean rank for complete valid rankings."""
-    rank_counts = (
-        ranking_rows.groupby(["workflow", "rank"])
-        .size()
-        .unstack(fill_value=0)
-        .reindex(
-            index=WORKFLOW_ORDER,
-            columns=range(1, len(WORKFLOW_ORDER) + 1),
-            fill_value=0,
-        )
-    )
-    rank_counts["meanRank"] = (
-        ranking_rows.groupby("workflow")["rank"].mean().reindex(WORKFLOW_ORDER)
-    )
-
-    return rank_counts
-
-
-def plot_workflow_preference_ranking(
+def plot_final_workflow_preference(
     ranking_rows: pd.DataFrame,
     audit_df: pd.DataFrame,
 ) -> None:
-    """Visualise rank distributions and mean stated preference."""
-    slug = "08_workflow_preference_rank_distribution"
+    """Visualise average stated rank and the full rank distribution."""
+    slug = "08_final_workflow_preference"
 
     if not audit_df.empty:
         save_table(audit_df, f"{slug}_ranking_audit", index=False)
@@ -1227,172 +960,157 @@ def plot_workflow_preference_ranking(
     if ranking_rows.empty:
         return
 
-    summary = _ranking_summary(ranking_rows)
+    summary = ranking_summary(ranking_rows)
+    rank_columns = list(range(1, len(WORKFLOW_ORDER) + 1))
+
+    # Lower mean rank indicates stronger preference.
     workflow_order = summary["meanRank"].sort_values().index.tolist()
     display_summary = summary.loc[workflow_order].copy()
 
+    valid_participants = ranking_rows["sessionId"].nunique()
+
+    # Export counts and mean ranks.
     export_df = display_summary.rename(index=WORKFLOW_LABELS).rename(
-        columns={rank: f"Rank {rank}" for rank in range(1, len(WORKFLOW_ORDER) + 1)}
+        columns={rank: f"Rank {rank}" for rank in rank_columns}
     )
     save_table(export_df, slug)
 
-    fig, ax = plt.subplots(figsize=(9.2, 5.2))
-    positions = np.arange(len(workflow_order))
-    left = np.zeros(len(workflow_order))
-    valid_participants = ranking_rows["sessionId"].nunique()
+    # Convert rank counts to percentages for the distribution panel.
+    rank_counts = display_summary[rank_columns]
+    row_totals = rank_counts.sum(axis=1)
+    rank_percentages = rank_counts.div(row_totals, axis=0) * 100
 
-    for rank in range(1, len(WORKFLOW_ORDER) + 1):
-        values = display_summary[rank].values
-        ax.barh(
+    positions = np.arange(len(workflow_order))
+
+    fig, (ax_mean, ax_distribution) = plt.subplots(
+        ncols=2,
+        figsize=(11.8, 5.2),
+        sharey=True,
+        gridspec_kw={"width_ratios": [1.0, 1.8]},
+    )
+
+    # ------------------------------------------------------------
+    # Left panel: average rank
+    # ------------------------------------------------------------
+    mean_ranks = display_summary["meanRank"].to_numpy()
+
+    ax_mean.hlines(
+        y=positions,
+        xmin=1,
+        xmax=mean_ranks,
+        color="0.75",
+        linewidth=2,
+        zorder=1,
+    )
+
+    for index, workflow in enumerate(workflow_order):
+        mean_rank = display_summary.loc[workflow, "meanRank"]
+        first_choice_count = int(display_summary.loc[workflow, 1])
+
+        ax_mean.scatter(
+            mean_rank,
+            index,
+            s=95,
+            color=WORKFLOW_COLORS[workflow],
+            edgecolor=BAR_EDGE_COLOR,
+            zorder=2,
+        )
+
+        ax_mean.text(
+            mean_rank + 0.08,
+            index,
+            f"{mean_rank:.2f}",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+        )
+
+        ax_mean.text(
+            mean_rank + 0.08,
+            index + 0.16,
+            f"{first_choice_count} first-choice votes",
+            va="center",
+            fontsize=8,
+            color="0.35",
+        )
+
+    ax_mean.set_yticks(positions)
+    ax_mean.set_yticklabels(
+        [
+            f"{position + 1}. {workflow_display_name(workflow)}"
+            for position, workflow in enumerate(workflow_order)
+        ]
+    )
+    ax_mean.invert_yaxis()
+
+    ax_mean.set_xlim(0.8, 4.35)
+    ax_mean.set_xticks([1, 2, 3, 4])
+    ax_mean.set_xticklabels(["1\nBest", "2", "3", "4\nWorst"])
+    ax_mean.set_xlabel("Average assigned rank")
+    ax_mean.set_title("Average preference rank")
+
+    apply_standard_axes_style(ax_mean, grid_axis="x")
+
+    # ------------------------------------------------------------
+    # Right panel: complete rank distribution
+    # ------------------------------------------------------------
+    left = np.zeros(len(workflow_order))
+
+    for rank in rank_columns:
+        percentages = rank_percentages[rank].to_numpy()
+
+        bars = ax_distribution.barh(
             positions,
-            values,
+            percentages,
             left=left,
             label=f"Rank {rank}",
             color=RANK_COLORS[rank - 1],
             edgecolor=BAR_EDGE_COLOR,
         )
-        left += values
 
-    apply_standard_axes_style(ax, grid_axis="x")
+        # Add percentages only where the segment is wide enough.
+        for index, (bar, percentage) in enumerate(zip(bars, percentages)):
+            if percentage >= 8:
+                ax_distribution.text(
+                    left[index] + percentage / 2,
+                    bar.get_y() + bar.get_height() / 2,
+                    f"{percentage:.0f}%",
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                )
 
-    for index, workflow in enumerate(workflow_order):
-        mean_rank = display_summary.loc[workflow, "meanRank"]
-        ax.text(
-            valid_participants + max(valid_participants * 0.02, 0.15),
-            index,
-            f"Mean rank: {mean_rank:.2f}",
-            va="center",
-            fontsize=9,
-        )
+        left += percentages
 
-    ax.set_yticks(positions)
-    ax.set_yticklabels([workflow_display_name(workflow) for workflow in workflow_order])
-    ax.invert_yaxis()
-    ax.set_xlim(0, valid_participants * 1.24)
-    ax.set_title("Participant-Reported Workflow Preference Ranking")
-    ax.set_xlabel("Participants")
-    ax.legend(
-        title="Assigned rank",
-        bbox_to_anchor=(1.02, 1),
-        loc="upper left",
-    )
+    ax_distribution.set_xlim(0, 100)
+    ax_distribution.set_xlabel("Participants assigning each rank (%)")
+    ax_distribution.set_title("Distribution of assigned ranks")
 
-    save_figure(
-        fig,
-        slug,
-        "Participant-Reported Workflow Preference Ranking",
-        "Distribution of first through fourth preference rankings (N={valid_participants}). Lower mean rank "
-        "indicates stronger stated preference.",
-    )
+    apply_standard_axes_style(ax_distribution, grid_axis="x")
 
-
-def plot_workflow_ranking_by_reported_ai_errors(
-    ranking_rows: pd.DataFrame,
-    prepared: pd.DataFrame,
-) -> None:
-    """Show final workflow rankings by reported AI-error count."""
-    slug = "08b_workflow_ranking_by_reported_ai_errors"
-
-    error_groups = _reported_ai_error_groups(prepared)
-    if ranking_rows.empty or error_groups.empty:
-        return
-
-    ranking_df = ranking_rows.copy()
-    ranking_df["sessionId"] = ranking_df["sessionId"].astype(str)
-
-    ranking_df = ranking_df.merge(
-        error_groups,
-        on="sessionId",
-        how="inner",
-        validate="many_to_one",
-    )
-
-    if ranking_df.empty:
-        return
-
-    group_order = [
-        "No reported AI errors",
-        "1 reported AI error",
-        "2+ reported AI errors",
-    ]
-    observed_groups = [
-        group for group in group_order if group in set(ranking_df["errorGroup"])
-    ]
-
-    if not observed_groups:
-        return
-
-    group_sizes = {
-        group: ranking_df.loc[
-            ranking_df["errorGroup"].eq(group),
-            "sessionId",
-        ].nunique()
-        for group in observed_groups
-    }
-    max_participant_count = max(group_sizes.values())
-
-    fig, axes = plt.subplots(
-        1,
-        len(observed_groups),
-        figsize=(5.0 * len(observed_groups), 5.2),
-        sharex=True,
-        sharey=True,
-        layout="constrained",
-        squeeze=False,
-    )
-    axes = axes.flatten()
-
-    for ax, group in zip(axes, observed_groups):
-        group_df = ranking_df[ranking_df["errorGroup"].eq(group)]
-        participant_count = group_sizes[group]
-
-        summary = _ranking_summary(group_df)
-        positions = np.arange(len(WORKFLOW_ORDER))
-        left = np.zeros(len(WORKFLOW_ORDER))
-
-        for rank in range(1, len(WORKFLOW_ORDER) + 1):
-            values = summary[rank].to_numpy()
-
-            ax.barh(
-                positions,
-                values,
-                left=left,
-                label=f"Rank {rank}",
-                color=RANK_COLORS[rank - 1],
-                edgecolor=BAR_EDGE_COLOR,
-            )
-            left += values
-
-        ax.set_title(f"{group}\n(n={participant_count})")
-        ax.set_xlabel("Participants")
-        ax.set_xlim(0, max_participant_count)
-
-        ax.set_yticks(positions)
-        ax.set_yticklabels(
-            [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER]
-        )
-        ax.invert_yaxis()
-
-        apply_standard_axes_style(ax, grid_axis="x")
-
-    axes[-1].legend(
+    ax_distribution.legend(
         title="Assigned rank",
         bbox_to_anchor=(1.02, 1),
         loc="upper left",
     )
 
     fig.suptitle(
-        "Final Workflow Ranking by Reported AI Errors",
-        fontsize=13,
+        f"Final Workflow Preference (N={valid_participants})",
+        fontsize=14,
     )
+
+    fig.tight_layout()
 
     save_figure(
         fig,
         slug,
-        "Final Workflow Ranking by Reported AI Errors",
-        "Final workflow rankings grouped by the number of AI errors participants "
-        "reported noticing. The injected error contributes only when participants "
-        "reported noticing it; other reported AI-error types are counted once each.",
+        "Final Workflow Preference",
+        (
+            f"Average and distribution of final workflow rankings from "
+            f"{valid_participants} participants. Rank 1 represents the strongest "
+            "preference. Each participant ranked every workflow once; rankings "
+            "were not weighted by the frequency of workflow use in the main rounds."
+        ),
     )
 
 
@@ -1401,218 +1119,375 @@ def plot_workflow_ranking_by_reported_ai_errors(
 # -----------------------------------------------------------------------------
 
 
-def _plot_choice_crosstab(ax, matrix, title, row_label, column_label):
-    """Draw a workflow-by-workflow crosstab heatmap."""
-    image = ax.imshow(matrix.values, cmap="Blues")
-    ax.set_title(title)
-    ax.set_xlabel(column_label)
-    ax.set_ylabel(row_label)
-    ax.set_xticks(range(len(WORKFLOW_ORDER)))
-    ax.set_xticklabels(
-        [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER],
-        rotation=30,
-        ha="right",
+def _plot_row_percentage_crosstab(
+    ax,
+    counts: pd.DataFrame,
+    title: str,
+    ylabel: str,
+    xlabel: str,
+    column_labels: list[str],
+):
+    """
+    Plot a crosstab using within-row percentages.
+
+    Cell labels show:
+        raw participant count
+        within-row percentage
+    """
+    counts = counts.astype(int)
+    row_totals = counts.sum(axis=1)
+
+    percentages = (
+        counts.div(
+            row_totals.replace(0, np.nan),
+            axis=0,
+        )
+        * 100
     )
-    ax.set_yticks(range(len(WORKFLOW_ORDER)))
-    ax.set_yticklabels([workflow_display_name(workflow) for workflow in WORKFLOW_ORDER])
 
-    maximum = matrix.values.max()
+    image = ax.imshow(
+        percentages.fillna(0).to_numpy(),
+        cmap="Blues",
+        vmin=0,
+        vmax=100,
+        aspect="auto",
+    )
 
-    for row_index in range(matrix.shape[0]):
-        for column_index in range(matrix.shape[1]):
-            value = int(matrix.iloc[row_index, column_index])
-            text_color = "white" if maximum > 0 and value > maximum / 2 else "black"
+    for row_index, workflow in enumerate(counts.index):
+        row_total = int(row_totals.loc[workflow])
+
+        for column_index, column in enumerate(counts.columns):
+            count = int(counts.loc[workflow, column])
+
+            if row_total == 0:
+                continue
+
+            percentage = percentages.loc[workflow, column]
+
+            text_color = "white" if percentage >= 55 else "black"
+
             ax.text(
                 column_index,
                 row_index,
-                str(value),
+                f"{count}\n({percentage:.0f}%)",
                 ha="center",
                 va="center",
+                fontsize=8.5,
                 color=text_color,
             )
+
+    ax.set_xticks(np.arange(len(column_labels)))
+    ax.set_xticklabels(
+        column_labels,
+        rotation=28,
+        ha="right",
+    )
+
+    ax.set_yticks(np.arange(len(counts.index)))
+    ax.set_yticklabels(
+        [
+            f"{workflow_display_name(workflow)} (n={int(row_totals.loc[workflow])})"
+            for workflow in counts.index
+        ]
+    )
+
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
     return image
 
 
-def plot_stated_vs_revealed_workflow_behavior(
+def plot_stated_vs_observed_workflow_behaviour(
     ranking_rows: pd.DataFrame,
     main_df: pd.DataFrame,
 ) -> None:
-    """Compare stated top preference with first and modal actual choices."""
-    slug = "09_stated_vs_revealed_workflow_behavior"
+    """
+    Compare final Rank-1 preference with observed main-round choices.
 
-    if ranking_rows.empty:
+    The first panel compares Rank 1 with the first voluntary choice.
+    The second panel retains participants without a unique most-used workflow.
+    """
+    slug = "09_stated_vs_observed_workflow_behaviour"
+
+    if ranking_rows.empty or main_df.empty:
         return
 
-    stated_top = ranking_rows[ranking_rows["rank"] == 1].rename(
-        columns={"workflow": "statedTop"}
-    )[["sessionId", "statedTop"]]
+    stated_top = (
+        ranking_rows[ranking_rows["rank"].eq(1)]
+        .rename(columns={"workflow": "statedTop"})[["sessionId", "statedTop"]]
+        .copy()
+    )
+    stated_top["sessionId"] = stated_top["sessionId"].astype(str)
+
+    active_stated_workflows = [
+        workflow
+        for workflow in WORKFLOW_ORDER
+        if stated_top["statedTop"].eq(workflow).any()
+    ]
+
+    # ------------------------------------------------------------
+    # First voluntary choice
+    # ------------------------------------------------------------
     first_choice = (
-        main_df[main_df["roundIndex"] == MAIN_ROUND_INDICES[0]][
+        main_df[main_df["roundIndex"].eq(MAIN_ROUND_INDICES[0])][
             ["sessionId", "workflow"]
         ]
         .drop_duplicates("sessionId", keep="last")
         .rename(columns={"workflow": "firstChoice"})
+        .copy()
     )
+    first_choice["sessionId"] = first_choice["sessionId"].astype(str)
 
     first_joined = stated_top.merge(
         first_choice,
         on="sessionId",
         how="inner",
+        validate="one_to_one",
     )
+
     if first_joined.empty:
         return
 
     first_matrix = pd.crosstab(
-        first_joined["statedTop"], first_joined["firstChoice"]
+        first_joined["statedTop"],
+        first_joined["firstChoice"],
     ).reindex(
-        index=WORKFLOW_ORDER,
+        index=active_stated_workflows,
         columns=WORKFLOW_ORDER,
         fill_value=0,
     )
-    save_table(first_matrix, f"{slug}_first_choice")
 
     first_agreement = int(
-        (first_joined["statedTop"] == first_joined["firstChoice"]).sum()
+        first_joined["statedTop"].eq(first_joined["firstChoice"]).sum()
     )
     first_n = len(first_joined)
 
+    save_table(
+        first_matrix,
+        f"{slug}_first_choice_counts",
+    )
+
+    first_percentages = (
+        first_matrix.div(
+            first_matrix.sum(axis=1).replace(0, np.nan),
+            axis=0,
+        )
+        * 100
+    )
+
+    save_table(
+        first_percentages,
+        f"{slug}_first_choice_row_percentages",
+    )
+
+    # ------------------------------------------------------------
+    # Most-used workflow, retaining ties
+    # ------------------------------------------------------------
     sequences = _complete_main_sequences(main_df)
+
     session_by_participant = (
         main_df[["participantId", "sessionId"]]
         .dropna()
         .drop_duplicates("participantId", keep="last")
+        .assign(sessionId=lambda df: df["sessionId"].astype(str))
         .set_index("participantId")["sessionId"]
     )
 
+    tie_key = "__no_unique_modal__"
     modal_rows = []
+
     for participant_id, row in sequences.iterrows():
-        modes = row.value_counts()
-        top_workflows = modes[modes == modes.max()].index.tolist()
+        counts = row.value_counts()
+        top_workflows = counts[counts.eq(counts.max())].index.tolist()
+
+        unique_modal = len(top_workflows) == 1
+
         modal_rows.append(
             {
                 "participantId": participant_id,
-                "modalChoice": (top_workflows[0] if len(top_workflows) == 1 else pd.NA),
-                "modalTie": len(top_workflows) > 1,
+                "modalChoice": (top_workflows[0] if unique_modal else tie_key),
+                "hasUniqueModal": unique_modal,
             }
         )
 
     modal_choice = pd.DataFrame(modal_rows)
-    if not modal_choice.empty:
-        modal_choice["sessionId"] = modal_choice["participantId"].map(
-            session_by_participant
-        )
-        modal_choice = modal_choice.dropna(subset=["sessionId"])
 
     if modal_choice.empty:
-        modal_joined = pd.DataFrame()
-        modal_matrix = pd.DataFrame(
-            0,
-            index=WORKFLOW_ORDER,
-            columns=WORKFLOW_ORDER,
-        )
-        modal_agreement = 0
-        modal_n = 0
-        modal_ties = 0
-    else:
-        modal_joined = stated_top.merge(
-            modal_choice.dropna(subset=["modalChoice"])[["sessionId", "modalChoice"]],
-            on="sessionId",
-            how="inner",
-        )
-        modal_matrix = pd.crosstab(
-            modal_joined["statedTop"],
-            modal_joined["modalChoice"],
-        ).reindex(
-            index=WORKFLOW_ORDER,
-            columns=WORKFLOW_ORDER,
-            fill_value=0,
-        )
-        modal_agreement = int(
-            (modal_joined["statedTop"] == modal_joined["modalChoice"]).sum()
-        )
-        modal_n = len(modal_joined)
-        modal_ties = int(modal_choice["modalTie"].sum())
+        return
 
-    save_table(modal_matrix, f"{slug}_modal_choice")
+    modal_choice["sessionId"] = modal_choice["participantId"].map(
+        session_by_participant
+    )
+
+    modal_choice = modal_choice.dropna(subset=["sessionId"])
+
+    modal_joined = stated_top.merge(
+        modal_choice[
+            [
+                "sessionId",
+                "modalChoice",
+                "hasUniqueModal",
+            ]
+        ],
+        on="sessionId",
+        how="inner",
+        validate="one_to_one",
+    )
+
+    modal_columns = [
+        *WORKFLOW_ORDER,
+        tie_key,
+    ]
+
+    modal_matrix = pd.crosstab(
+        modal_joined["statedTop"],
+        modal_joined["modalChoice"],
+    ).reindex(
+        index=active_stated_workflows,
+        columns=modal_columns,
+        fill_value=0,
+    )
+
+    modal_n = len(modal_joined)
+    modal_ties = int((~modal_joined["hasUniqueModal"]).sum())
+
+    unique_modal_joined = modal_joined[modal_joined["hasUniqueModal"]]
+
+    unique_modal_n = len(unique_modal_joined)
+    unique_modal_agreement = int(
+        unique_modal_joined["statedTop"].eq(unique_modal_joined["modalChoice"]).sum()
+    )
+
+    overall_modal_matches = int(
+        modal_joined["statedTop"].eq(modal_joined["modalChoice"]).sum()
+    )
+
+    save_table(
+        modal_matrix,
+        f"{slug}_modal_choice_counts",
+    )
+
+    modal_percentages = (
+        modal_matrix.div(
+            modal_matrix.sum(axis=1).replace(0, np.nan),
+            axis=0,
+        )
+        * 100
+    )
+
+    save_table(
+        modal_percentages,
+        f"{slug}_modal_choice_row_percentages",
+    )
 
     agreement_summary = pd.DataFrame(
         [
             {
-                "comparison": "Stated Rank 1 vs first voluntary choice",
-                "pairedParticipants": first_n,
+                "comparison": ("Final Rank 1 versus first voluntary choice"),
+                "participants": first_n,
                 "agreementCount": first_agreement,
-                "agreementPercentage": round(
-                    first_agreement / first_n * 100,
-                    2,
-                ),
-                "excludedModalTies": 0,
+                "agreementPercentage": (first_agreement / first_n * 100),
+                "ties": 0,
             },
             {
-                "comparison": ("Stated Rank 1 vs unique modal main-round choice"),
-                "pairedParticipants": modal_n,
-                "agreementCount": modal_agreement,
+                "comparison": ("Final Rank 1 versus unique most-used workflow"),
+                "participants": unique_modal_n,
+                "agreementCount": unique_modal_agreement,
                 "agreementPercentage": (
-                    round(modal_agreement / modal_n * 100, 2) if modal_n else np.nan
+                    unique_modal_agreement / unique_modal_n * 100
+                    if unique_modal_n
+                    else np.nan
                 ),
-                "excludedModalTies": modal_ties,
+                "ties": modal_ties,
+            },
+            {
+                "comparison": (
+                    "Final Rank 1 versus most-used workflow, all participants"
+                ),
+                "participants": modal_n,
+                "agreementCount": overall_modal_matches,
+                "agreementPercentage": (
+                    overall_modal_matches / modal_n * 100 if modal_n else np.nan
+                ),
+                "ties": modal_ties,
             },
         ]
     )
+
     save_table(
         agreement_summary,
         f"{slug}_agreement_summary",
         index=False,
     )
 
+    # ------------------------------------------------------------
+    # Figure
+    # ------------------------------------------------------------
     fig, (first_ax, modal_ax) = plt.subplots(
         1,
         2,
-        figsize=(13.0, 5.4),
+        figsize=(14.2, 5.6),
         layout="constrained",
     )
 
-    first_image = _plot_choice_crosstab(
+    first_image = _plot_row_percentage_crosstab(
         first_ax,
         first_matrix,
         (
-            f"First voluntary choice\nAgreement: "
-            f"{first_agreement}/{first_n} "
+            "First Voluntary Workflow Choice\n"
+            f"Exact match: {first_agreement}/{first_n} "
             f"({first_agreement / first_n * 100:.0f}%)"
         ),
-        "Stated Rank 1 preference",
+        "Final Rank-1 preference",
         "First voluntary choice",
+        [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER],
     )
 
-    modal_title = (
-        "Most-used workflow across main rounds\n"
-        f"Agreement: {modal_agreement}/{modal_n} "
-        f"({modal_agreement / modal_n * 100:.0f}%)"
-        if modal_n
-        else ("Most-used workflow across main rounds\nNo unique modal choices")
+    unique_agreement_text = (
+        (
+            f"{unique_modal_agreement}/{unique_modal_n} "
+            f"({unique_modal_agreement / unique_modal_n * 100:.0f}%)"
+        )
+        if unique_modal_n
+        else "not available"
     )
-    _plot_choice_crosstab(
+
+    _plot_row_percentage_crosstab(
         modal_ax,
         modal_matrix,
-        modal_title,
-        "Stated Rank 1 preference",
-        "Unique modal workflow",
+        (
+            "Most-Used Workflow Across Main Rounds\n"
+            f"Unique-mode agreement: {unique_agreement_text}; "
+            f"{modal_ties} ties"
+        ),
+        "Final Rank-1 preference",
+        "Observed most-used workflow",
+        [
+            *[workflow_display_name(workflow) for workflow in WORKFLOW_ORDER],
+            "No unique\nmost-used workflow",
+        ],
     )
 
     fig.colorbar(
         first_image,
         ax=[first_ax, modal_ax],
-        label="Participants",
+        label="Within stated-preference group (%)",
+    )
+
+    fig.suptitle(
+        "Final Workflow Preference and Observed Main-Round Behaviour",
+        fontsize=13,
     )
 
     save_figure(
         fig,
         slug,
-        "Stated Workflow Preference Versus Revealed Workflow Behaviour",
-        "Rows show the participant's stated top-ranked workflow and columns show "
-        "their actual first or uniquely most-used main-round workflow. Participants "
-        "with a tie for most-used workflow are excluded only from the modal-choice "
-        "panel.",
+        "Final Workflow Preference and Observed Main-Round Behaviour",
+        (
+            "Rows show final Rank-1 preference; cells show counts and row percentages for first and "
+            "most-used main-round workflows."
+        ),
     )
 
 
@@ -1627,7 +1502,7 @@ def plot_workflow(df, feedback_df):
     if main_df.empty:
         return
 
-    ranking_rows, audit_df = _build_valid_ranking_rows(feedback_df)
+    ranking_rows, audit_df = build_valid_ranking_rows(feedback_df)
 
     plot_total_workflow_usage_counts(main_df)
     plot_first_voluntary_workflow_choice(main_df)
@@ -1636,7 +1511,6 @@ def plot_workflow(df, feedback_df):
     plot_practice_to_first_choice_transition(df)
     plot_main_workflow_transitions(main_df)
     plot_workflow_retention(main_df)
-    plot_workflow_switching_behavior(main_df)
-    plot_workflow_preference_ranking(ranking_rows, audit_df)
-    plot_workflow_ranking_by_reported_ai_errors(ranking_rows, df)
-    plot_stated_vs_revealed_workflow_behavior(ranking_rows, main_df)
+    plot_workflow_switching_behaviour(main_df)
+    plot_final_workflow_preference(ranking_rows, audit_df)
+    plot_stated_vs_observed_workflow_behaviour(ranking_rows, main_df)
