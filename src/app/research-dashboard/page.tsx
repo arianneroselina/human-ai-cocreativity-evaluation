@@ -99,9 +99,9 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       id: "error-exposure-figures",
       title: "AI Error Exposure",
       description:
-        "Round-5 error exposure, line-count error, post-error behaviour, and subjective reactions.",
+        "Round-5 error exposure, line-count error, post-error behaviour, awareness, and influences.",
       figures: figures.filter((figure) =>
-        ["41_", "42_", "43_", "44_", "45_", "46_", "47_", "48_", "49_"].some((prefix) =>
+        ["101_", "102_", "103_", "104_", "105_", "106_", "107_", "108_", "109_", "110_", "111_", "112_"].some((prefix) =>
           figure.slug.startsWith(prefix)
         )
       ),
@@ -125,12 +125,11 @@ const FAVORITE_FIGURE_NUMBERS = [
   "23_", // constraints fulfillment
   "32_",
   "33_", // participant experience
-  "42_",
-  "43_",
-  "44_",
-  "46_",
-  "47_",
-  "48_", // ai error exposure
+  "103_",
+  "105_",
+  "106_",
+  "109_",
+  "110_", // ai error exposure
 ];
 
 const INTERESTING_FIGURE_NUMBERS = [
@@ -139,8 +138,11 @@ const INTERESTING_FIGURE_NUMBERS = [
   "12_", // output quality
   // constraints fulfillment
   "31_", // participant experience
-  "45_",
-  "49_", // ai error exposure
+  "102_",
+  "104_",
+  "107_",
+  "108_",
+  "111_", // ai error exposure
 ];
 
 export default async function ResearchDashboardPage() {

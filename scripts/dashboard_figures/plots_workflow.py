@@ -37,15 +37,13 @@ from scripts.dashboard_figures.helpers import (
 )
 from scripts.dashboard_figures.style import (
     BAR_EDGE_COLOR,
+    RANK_COLORS,
     apply_standard_axes_style,
 )
 from scripts.utils import (
     save_figure,
     save_table,
 )
-
-
-RANK_COLORS = ["C0", "C1", "C2", "C3"]
 
 
 # -----------------------------------------------------------------------------

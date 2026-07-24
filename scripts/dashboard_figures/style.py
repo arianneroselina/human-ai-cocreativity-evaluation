@@ -17,6 +17,8 @@ BAR_EDGE_COLOR = "white"
 
 WORKFLOW_PLOT_COLORS = [WORKFLOW_COLORS[workflow] for workflow in WORKFLOW_ORDER]
 
+RANK_COLORS = ["C0", "C1", "C2", "C3"]
+
 
 def configure_matplotlib() -> None:
     """Apply the dashboard-wide Matplotlib defaults once per generation run."""

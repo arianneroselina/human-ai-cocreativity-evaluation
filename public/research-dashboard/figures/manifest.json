@@ -175,67 +175,81 @@
     "pdfUrl": "/research-dashboard/figures/23_practice_failure_breakdown_by_constraint_type.pdf"
   },
   {
-    "slug": "41_main_round1_workflow_choice",
+    "slug": "101_main_round1_workflow_choice",
     "title": "Workflow Choices in Main Round 1",
     "description": "Voluntary workflow selections in the first Main round. Participants selecting an AI-supported workflow encountered the injected-error condition.",
-    "pngUrl": "/research-dashboard/figures/41_main_round1_workflow_choice.png",
-    "pdfUrl": "/research-dashboard/figures/41_main_round1_workflow_choice.pdf"
+    "pngUrl": "/research-dashboard/figures/101_main_round1_workflow_choice.png",
+    "pdfUrl": "/research-dashboard/figures/101_main_round1_workflow_choice.pdf"
   },
   {
-    "slug": "42_post_error_workflow_choices_by_exposure",
+    "slug": "102_main_round_satisfaction_by_exposure_and_workflow",
+    "title": "Participant Satisfaction by Main Round, Workflow, and Error Exposure",
+    "description": "Separate mean satisfaction estimates for each Main round workflow cell, shown by actual error-exposure group. Points are not connected because workflow-group membership could change between rounds. Error bars show approximate 95% confidence intervals; cells with one observation have no confidence interval.",
+    "pngUrl": "/research-dashboard/figures/102_main_round_satisfaction_by_exposure_and_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/102_main_round_satisfaction_by_exposure_and_workflow.pdf"
+  },
+  {
+    "slug": "103_main_round_ai_experience_by_exposure_and_workflow",
+    "title": "AI Interaction Ratings by Main Round, Workflow, and Error Exposure",
+    "description": "Separate mean AI interaction ratings for each Main round, AI supported workflow, and actual error exposure group. Points are not connected because participants could switch workflows between Main rounds. Error bars show approximate 95% confidence intervals for cells with at least three observations.",
+    "pngUrl": "/research-dashboard/figures/103_main_round_ai_experience_by_exposure_and_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/103_main_round_ai_experience_by_exposure_and_workflow.pdf"
+  },
+  {
+    "slug": "104_main_round_tlx_by_exposure_round_and_workflow",
+    "title": "Raw NASA-TLX Workload in Main Rounds by Error Exposure",
+    "description": "Separate mean Raw NASA-TLX estimates for each Main round, selected workflow, and actual error exposure group. Points are not connected because workflow-group membership could change between Main rounds. Error bars show approximate 95% confidence intervals for cells with at least three observations.",
+    "pngUrl": "/research-dashboard/figures/104_main_round_tlx_by_exposure_round_and_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/104_main_round_tlx_by_exposure_round_and_workflow.pdf"
+  },
+  {
+    "slug": "105_post_error_workflow_choices_by_exposure",
     "title": "Post-Error Workflow Choices by Main Round 1 Exposure",
     "description": "Distribution of voluntary workflow choices in Main Rounds 2-3 by error exposure.",
-    "pngUrl": "/research-dashboard/figures/42_post_error_workflow_choices_by_exposure.png",
-    "pdfUrl": "/research-dashboard/figures/42_post_error_workflow_choices_by_exposure.pdf"
+    "pngUrl": "/research-dashboard/figures/105_post_error_workflow_choices_by_exposure.png",
+    "pdfUrl": "/research-dashboard/figures/105_post_error_workflow_choices_by_exposure.pdf"
   },
   {
-    "slug": "43_final_workflow_preference_by_reported_ai_errors",
-    "title": "Final Workflow Preference by Number of Reported AI Errors",
-    "description": "Percentage distribution and mean rank of final workflow preferences, grouped by the number of AI errors participants reported noticing. Rank 1 indicates the strongest preference. Numbers inside sufficiently large segments show participant counts. The groups are descriptive; reporting no error does not necessarily indicate that no AI error occurred or was encountered.",
-    "pngUrl": "/research-dashboard/figures/43_final_workflow_preference_by_reported_ai_errors.png",
-    "pdfUrl": "/research-dashboard/figures/43_final_workflow_preference_by_reported_ai_errors.pdf"
+    "slug": "106_main_round_quality_by_error_exposure",
+    "title": "Mean Overall Quality by Main Round, Workflow, and Error Exposure",
+    "description": "Separate mean overall-quality estimates for each Main round, selected workflow, and actual error-exposure group. Points are not connected because workflow membership could change between rounds. Whiskers show approximate 95% confidence intervals and labels show observation counts.",
+    "pngUrl": "/research-dashboard/figures/106_main_round_quality_by_error_exposure.png",
+    "pdfUrl": "/research-dashboard/figures/106_main_round_quality_by_error_exposure.pdf"
   },
   {
-    "slug": "44_main_round_quality_by_error_exposure",
-    "title": "Mean Overall Quality Across Main Rounds by Error Exposure",
-    "description": "Descriptive workflow-level quality trends in Main rounds, shown separately for participants exposed and not exposed to the injected AI error in round 5.",
-    "pngUrl": "/research-dashboard/figures/44_main_round_quality_by_error_exposure.png",
-    "pdfUrl": "/research-dashboard/figures/44_main_round_quality_by_error_exposure.pdf"
+    "slug": "107_main_constraint_fulfillment_by_error_exposure_round_and_workflow",
+    "title": "Complete Constraint Fulfillment by Main Round, Workflow, and Error Exposure",
+    "description": "Complete constraint-fulfillment rates for each Main round and selected workflow, shown separately by actual Main 1 error exposure. Points show pass-rate estimates, whiskers show 95% Wilson confidence intervals, and labels report successful rounds divided by observed rounds.",
+    "pngUrl": "/research-dashboard/figures/107_main_constraint_fulfillment_by_error_exposure_round_and_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/107_main_constraint_fulfillment_by_error_exposure_round_and_workflow.pdf"
   },
   {
-    "slug": "45_main_constraint_fulfillment_by_error_exposure",
-    "title": "Constraint Fulfillment Across Main Rounds by Error Exposure",
-    "description": "Descriptive complete constraint-pass rates across Main rounds, stratified by actual error exposure. Error bars show 95% Wilson intervals.",
-    "pngUrl": "/research-dashboard/figures/45_main_constraint_fulfillment_by_error_exposure.png",
-    "pdfUrl": "/research-dashboard/figures/45_main_constraint_fulfillment_by_error_exposure.pdf"
+    "slug": "108_main_line_count_error_by_error_exposure_round_and_workflow",
+    "title": "Line-Count Failure Rate by Main Round, Workflow, and Error Exposure",
+    "description": "Line-count failure rates for each Main round and selected workflow, shown separately by actual Main 1 error exposure. Points show failure-rate estimates, whiskers show 95% Wilson confidence intervals, and labels report failed rounds divided by observed rounds.",
+    "pngUrl": "/research-dashboard/figures/108_main_line_count_error_by_error_exposure_round_and_workflow.png",
+    "pdfUrl": "/research-dashboard/figures/108_main_line_count_error_by_error_exposure_round_and_workflow.pdf"
   },
   {
-    "slug": "46_injected_error_round_line_count_failures",
-    "title": "Line-Count Failures in the Injected-Error Round",
-    "description": "Line-count constraint failures in Main Round 1, grouped by actual error exposure and selected workflow. Error bars show 95% Wilson intervals.",
-    "pngUrl": "/research-dashboard/figures/46_injected_error_round_line_count_failures.png",
-    "pdfUrl": "/research-dashboard/figures/46_injected_error_round_line_count_failures.pdf"
+    "slug": "109_final_workflow_preference_by_reported_ai_errors",
+    "title": "Final Workflow Preference by Reported AI Errors",
+    "description": "Average final workflow rank and first-choice share, separated by the number of AI errors participants reported. Lower mean ranks represent stronger preference. The full counts and percentages for every assigned rank are retained in the exported table.",
+    "pngUrl": "/research-dashboard/figures/109_final_workflow_preference_by_reported_ai_errors.png",
+    "pdfUrl": "/research-dashboard/figures/109_final_workflow_preference_by_reported_ai_errors.pdf"
   },
   {
-    "slug": "47_main_line_count_error_by_error_exposure",
-    "title": "Line-Count Failure Pattern Across Main Rounds by Error Exposure",
-    "description": "Descriptive line-count failure rates across Main rounds, stratified by actual error exposure. Error bars show 95% Wilson intervals.",
-    "pngUrl": "/research-dashboard/figures/47_main_line_count_error_by_error_exposure.png",
-    "pdfUrl": "/research-dashboard/figures/47_main_line_count_error_by_error_exposure.pdf"
-  },
-  {
-    "slug": "48_injected_error_awareness",
+    "slug": "110_injected_error_awareness",
     "title": "Awareness of the Injected AI Error",
     "description": "Interview-coded awareness among respondents actually exposed to the injected error in Main Round 1.",
-    "pngUrl": "/research-dashboard/figures/48_injected_error_awareness.png",
-    "pdfUrl": "/research-dashboard/figures/48_injected_error_awareness.pdf"
+    "pngUrl": "/research-dashboard/figures/110_injected_error_awareness.png",
+    "pdfUrl": "/research-dashboard/figures/110_injected_error_awareness.pdf"
   },
   {
-    "slug": "49_reported_other_ai_error_types",
+    "slug": "111_reported_other_ai_error_types",
     "title": "Other AI Error Types Reported in Interviews",
     "description": "Interview-coded non-injected AI issues reported by participants. Categories are not mutually exclusive.",
-    "pngUrl": "/research-dashboard/figures/49_reported_other_ai_error_types.png",
-    "pdfUrl": "/research-dashboard/figures/49_reported_other_ai_error_types.pdf"
+    "pngUrl": "/research-dashboard/figures/111_reported_other_ai_error_types.png",
+    "pdfUrl": "/research-dashboard/figures/111_reported_other_ai_error_types.pdf"
   },
   {
     "slug": "61_overall_quality_rating_distribution",
