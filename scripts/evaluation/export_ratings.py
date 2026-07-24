@@ -1,10 +1,10 @@
-import csv
-import psycopg
-from psycopg.rows import dict_row
+"""Export raw evaluator ratings with the associated poem metadata."""
 
-from scripts.config import PRISMA_DATABASE_URL, RATINGS_EXPORT_PATH
+from scripts.config import RATINGS_EXPORT_PATH
+from scripts.evaluation.database import fetch_all, write_csv_rows
 
-query = """
+
+RATINGS_EXPORT_QUERY = """
     SELECT
         r."id" AS "ratingId",
         r."poemId",
@@ -38,18 +38,16 @@ query = """
     ORDER BY p."participantId", p."roundIndex", s."evaluatorId";
 """
 
-with psycopg.connect(PRISMA_DATABASE_URL, row_factory=dict_row) as conn:
-    with conn.cursor() as cur:
-        cur.execute(query)
-        rows = cur.fetchall()
 
-if not rows:
-    print("No ratings found. CSV was not created.")
-    raise SystemExit(0)
+def main() -> None:
+    """Query and export all raw ratings."""
+    rows = fetch_all(RATINGS_EXPORT_QUERY)
+    if not write_csv_rows(rows, RATINGS_EXPORT_PATH):
+        print("No ratings found. CSV was not created.")
+        return
 
-with RATINGS_EXPORT_PATH.open("w", newline="", encoding="utf-8") as f:
-    writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-    writer.writeheader()
-    writer.writerows(rows)
+    print(f"Exported {len(rows)} ratings to {RATINGS_EXPORT_PATH}")
 
-print(f"Exported {len(rows)} ratings to {RATINGS_EXPORT_PATH}")
+
+if __name__ == "__main__":
+    main()

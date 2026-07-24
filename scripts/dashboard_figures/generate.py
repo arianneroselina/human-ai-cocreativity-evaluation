@@ -6,11 +6,11 @@ tables, and the dashboard manifest.
 
 import matplotlib
 
-from scripts.dashboard_figures.helpers import prepare_round_data
-from scripts.dashboard_figures.plots_efficiency import plot_efficiency
-
 # Must be set before importing modules that may import pyplot.
 matplotlib.use("Agg")
+
+from scripts.dashboard_figures.helpers import prepare_round_data
+from scripts.dashboard_figures.plots_efficiency import plot_efficiency
 
 from scripts.config import FIGURE_DIR, TABLE_DIR
 from scripts.dashboard_figures.loaders import (

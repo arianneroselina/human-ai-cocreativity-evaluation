@@ -1,57 +1,50 @@
-import psycopg
-from psycopg.rows import dict_row
+"""Print a compact completeness check for poem and evaluator data."""
 
-from scripts.config import PRISMA_DATABASE_URL, EXPECTED_EVALUATORS
-
-
-def print_table(title, rows):
-    print(f"\n{title}")
-    if not rows:
-        print("No rows.")
-        return
-
-    headers = list(rows[0].keys())
-    print(" | ".join(headers))
-    print("-" * 80)
-
-    for row in rows:
-        print(" | ".join(str(row[h]) for h in headers))
+from scripts.config import EXPECTED_EVALUATORS
+from scripts.evaluation.database import fetch_all
 
 
-with psycopg.connect(PRISMA_DATABASE_URL, row_factory=dict_row) as conn:
-    with conn.cursor() as cur:
-        cur.execute('SELECT COUNT(*) AS count FROM "Poem";')
-        total_poems = cur.fetchone()["count"]
-
-        cur.execute('SELECT COUNT(*) AS count FROM "Poem" WHERE "isEmpty" = false;')
-        non_empty_poems = cur.fetchone()["count"]
-
-        cur.execute('SELECT COUNT(*) AS count FROM "Poem" WHERE "isEmpty" = true;')
-        empty_poems = cur.fetchone()["count"]
-
-        cur.execute("""
-            SELECT COUNT(*) AS count
+EVALUATION_CHECK_QUERY = """
+    SELECT
+        (SELECT COUNT(*) FROM "Poem")::int AS "totalPoems",
+        (
+            SELECT COUNT(*) FROM "Poem" WHERE "isEmpty" = false
+        )::int AS "nonEmptyPoems",
+        (
+            SELECT COUNT(*) FROM "Poem" WHERE "isEmpty" = true
+        )::int AS "emptyPoems",
+        (
+            SELECT COUNT(*)
             FROM "Poem"
             WHERE "sessionId" IS NULL
                OR "participantId" IS NULL
-               OR "roundIndex" IS NULL;
-        """)
-        missing_metadata = cur.fetchone()["count"]
+               OR "roundIndex" IS NULL
+        )::int AS "missingMetadata",
+        (SELECT COUNT(*) FROM "EvaluationSession")::int AS "evaluatorSessions",
+        (SELECT COUNT(*) FROM "Rating")::int AS "totalRatings";
+"""
 
-        cur.execute('SELECT COUNT(*) AS count FROM "EvaluationSession";')
-        evaluator_sessions = cur.fetchone()["count"]
 
-        cur.execute('SELECT COUNT(*) AS count FROM "Rating";')
-        total_ratings = cur.fetchone()["count"]
+def main() -> None:
+    """Query and print the evaluation-data completeness summary."""
+    rows = fetch_all(EVALUATION_CHECK_QUERY)
+    if not rows:
+        print("Evaluation data check returned no result.")
+        return
 
-        expected_total_ratings = non_empty_poems * EXPECTED_EVALUATORS
+    summary = rows[0]
+    expected_total_ratings = summary["nonEmptyPoems"] * EXPECTED_EVALUATORS
 
-        print("\nEvaluation data check")
-        print("=" * 80)
-        print(f"Total poems:              {total_poems}")
-        print(f"Non-empty poems:          {non_empty_poems}")
-        print(f"Empty poems:              {empty_poems}")
-        print(f"Missing poem metadata:    {missing_metadata}")
-        print(f"Evaluator sessions:       {evaluator_sessions}")
-        print(f"Total ratings:            {total_ratings}")
-        print(f"Expected total ratings:   {expected_total_ratings}")
+    print("\nEvaluation data check")
+    print("=" * 80)
+    print(f"Total poems:              {summary['totalPoems']}")
+    print(f"Non-empty poems:          {summary['nonEmptyPoems']}")
+    print(f"Empty poems:              {summary['emptyPoems']}")
+    print(f"Missing poem metadata:    {summary['missingMetadata']}")
+    print(f"Evaluator sessions:       {summary['evaluatorSessions']}")
+    print(f"Total ratings:            {summary['totalRatings']}")
+    print(f"Expected total ratings:   {expected_total_ratings}")
+
+
+if __name__ == "__main__":
+    main()

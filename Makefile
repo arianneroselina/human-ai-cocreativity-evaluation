@@ -15,8 +15,8 @@ PYTHON ?= python
 run:
 	npm run dev
 
-.PHONY: format
-format:
+.PHONY: fmt
+fmt:
 	npm run format
 
 
@@ -114,6 +114,10 @@ clean-data:
 	rm -rf data/runtime/* data/work/*
 	rm -rf public/research-dashboard/figures/* public/research-dashboard/analysis/*
 
+.PHONY: test
+test:
+	$(PYTHON) -m unittest discover -s scripts/tests -v
+
 # ------------------------------------------------------------
 # AI Evaluator
 # ------------------------------------------------------------
@@ -133,7 +137,7 @@ help:
 	@echo ""
 	@echo "App:"
 	@echo "  make run                         Run dev server"
-	@echo "  make format                      Format files using Prettier"
+	@echo "  make fmt                      	  Format files using Prettier"
 	@echo ""
 	@echo "Prisma / Database:"
 	@echo "  make gen                         Generate Prisma Client"

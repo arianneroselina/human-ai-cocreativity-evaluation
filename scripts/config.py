@@ -13,8 +13,20 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(PROJECT_ROOT / ".env")
 
 PRISMA_DATABASE_URL = os.getenv("PRISMA_DATABASE_URL")
-if not PRISMA_DATABASE_URL:
-    raise RuntimeError("Missing PRISMA_DATABASE_URL in .env")
+
+
+def require_database_url() -> str:
+    """Return the configured database URL for database-backed scripts.
+
+    CSV-only dashboard modules can import the shared configuration without
+    requiring a database connection. Database scripts call this function at
+    runtime and receive a focused error when configuration is missing.
+    """
+    if not PRISMA_DATABASE_URL:
+        raise RuntimeError("Missing PRISMA_DATABASE_URL in .env")
+
+    return PRISMA_DATABASE_URL
+
 
 INPUTS_DIR = PROJECT_ROOT / "inputs"
 INTERVIEW_NOTES_PATH = INPUTS_DIR / "interview_error_notes.csv"
@@ -76,7 +88,8 @@ PHASES = ["practice", "main"]
 
 PRACTICE_ROUND_INDICES = [1, 2, 3, 4]
 MAIN_ROUND_INDICES = [5, 6, 7]
-ERROR_ROUND_INDEX = 5
+INJECTED_ERROR_ROUND_INDEX = 5
+INJECTED_ERROR_LABEL = "Injected AI error"
 
 ROUND_LABELS = {
     1: "Practice 1",
@@ -149,6 +162,15 @@ EVALUATOR_COLORS = {
     "2": "#8C564B",
     "ai-evaluator-gpt-4o-mini": "#17BECF",
 }
+
+EVALUATOR_FALLBACK_COLORS = [
+    "#4C78A8",
+    "#F58518",
+    "#54A24B",
+    "#B279A2",
+    "#E45756",
+    "#72B7B2",
+]
 
 
 # ---------------------------------------------------------------------------

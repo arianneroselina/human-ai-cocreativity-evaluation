@@ -101,9 +101,20 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       description:
         "Round-5 error exposure, line-count error, post-error behaviour, awareness, and influences.",
       figures: figures.filter((figure) =>
-        ["101_", "102_", "103_", "104_", "105_", "106_", "107_", "108_", "109_", "110_", "111_", "112_"].some((prefix) =>
-          figure.slug.startsWith(prefix)
-        )
+        [
+          "101_",
+          "102_",
+          "103_",
+          "104_",
+          "105_",
+          "106_",
+          "107_",
+          "108_",
+          "109_",
+          "110_",
+          "111_",
+          "112_",
+        ].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
   ].filter((group) => group.figures.length > 0);

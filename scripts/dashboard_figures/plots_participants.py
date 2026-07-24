@@ -149,7 +149,8 @@ def plot_participant_pie_distribution(participant_df, column, label, slug):
         fig,
         slug,
         label,
-        f"Participant distribution by {label.lower()} shown as a pie chart with counts and percentages.",
+        f"Participant distribution by {label.lower()} shown as a pie chart "
+        "with counts and percentages.",
     )
 
 
@@ -247,7 +248,8 @@ def plot_participant_likert_means(participant_df):
         fig,
         slug,
         "Participant Writing Confidence and AI Attitudes",
-        "Mean ratings for writing confidence and attitudes toward AI, shown with participant counts.",
+        "Mean ratings for writing confidence and attitudes toward AI, shown "
+        "with participant counts.",
     )
 
 

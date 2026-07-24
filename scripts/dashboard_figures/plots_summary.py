@@ -5,12 +5,10 @@ and calls the OpenAI API to produce short narrative summaries.
 Output: data/runtime/workflow_feedback_summaries.csv
 """
 
-import json
 import os
 from collections import defaultdict
 
 import pandas as pd
-from openai import OpenAI
 
 from scripts.config import TABLE_DIR, WORKFLOW_FEEDBACK_SUMMARY_PATH
 from scripts.dashboard_figures.helpers import workflow_display_name
@@ -151,7 +149,8 @@ def _summarize_comments(client, workflow_label, comments):
             {
                 "role": "system",
                 "content": (
-                    "You summarize participant feedback for an academic research dashboard. "
+                    "You summarize participant feedback for an academic "
+                    "research dashboard. "
                     "Use only the provided comments. "
                     "Write 3 to 5 concise sentences. "
                     "Cover the overall sentiment, main strengths, main frustrations, "
@@ -190,6 +189,12 @@ def generate_feedback_summaries(df, feedback_df):
 
     if not api_key:
         print("Skipping feedback summaries: OPENAI_API_KEY is not set.")
+        return
+
+    try:
+        from openai import OpenAI
+    except ImportError:
+        print("Skipping feedback summaries: install the optional 'openai' package.")
         return
 
     client = OpenAI(api_key=api_key)

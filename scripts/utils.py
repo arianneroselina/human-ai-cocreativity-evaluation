@@ -96,6 +96,7 @@ def save_table(
     index: bool = True,
 ) -> Path:
     """Export a dataframe or series as a CSV table."""
+    TABLE_DIR.mkdir(parents=True, exist_ok=True)
     table_path = TABLE_DIR / f"{slug}.csv"
     table.to_csv(table_path, index=index)
 
@@ -109,12 +110,14 @@ def save_figure(
     description: str,
 ) -> None:
     """Save one figure in dashboard formats and register it in the manifest."""
+    FIGURE_DIR.mkdir(parents=True, exist_ok=True)
     png_path = FIGURE_DIR / f"{slug}.png"
     pdf_path = FIGURE_DIR / f"{slug}.pdf"
     fig.savefig(png_path, bbox_inches="tight")
     fig.savefig(pdf_path, bbox_inches="tight")
     plt.close(fig)
 
+    MANIFEST[:] = [item for item in MANIFEST if item["slug"] != slug]
     MANIFEST.append(
         {
             "slug": slug,
@@ -128,6 +131,7 @@ def save_figure(
 
 def save_manifest() -> Path:
     """Write the registered figure metadata for the Next.js dashboard."""
+    FIGURE_DIR.mkdir(parents=True, exist_ok=True)
     manifest_path = FIGURE_DIR / "manifest.json"
 
     with manifest_path.open("w", encoding="utf-8") as file:
