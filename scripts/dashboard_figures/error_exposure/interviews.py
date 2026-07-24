@@ -83,16 +83,7 @@ def plot_injected_error_awareness(
     ax.set_ylabel("")
     ax.set_title("Awareness of the Injected AI Error")
     apply_standard_axes_style(ax, grid_axis="x")
-    fig.text(
-        0.01,
-        0.01,
-        f"Denominator: {denominator} interview respondent(s) confirmed as "
-        "error-exposed in Main Round 1. Non-exposed respondents are excluded.",
-        ha="left",
-        va="bottom",
-        fontsize=8.3,
-        color=FOOTNOTE_TEXT_COLOR,
-    )
+
     fig.tight_layout(rect=(0, 0.045, 1, 1))
 
     save_figure(

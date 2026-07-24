@@ -14,7 +14,6 @@ from scripts.dashboard_figures.helpers import (
 from scripts.dashboard_figures.loaders import load_participant_interview_notes
 from scripts.dashboard_figures.style import (
     BAR_EDGE_COLOR,
-    FOOTNOTE_TEXT_COLOR,
     apply_standard_axes_style,
 )
 from scripts.utils import (
@@ -432,7 +431,7 @@ def plot_final_workflow_preference_by_reported_ai_errors(
     fig.legend(
         handles=legend_handles,
         title="Reported AI errors",
-        bbox_to_anchor=(0.99, 0.5),
+        bbox_to_anchor=(0.85, 0.5),
         loc="center left",
     )
 
@@ -442,23 +441,6 @@ def plot_final_workflow_preference_by_reported_ai_errors(
         (f"Final Workflow Preference by Reported AI Errors (N={total_participants})"),
         fontsize=14,
         y=0.99,
-    )
-
-    fig.text(
-        0.01,
-        0.01,
-        (
-            "Lower average ranks indicate stronger preference. The right panel "
-            "shows the percentage of participants in each reported-error group "
-            "who ranked a workflow first. Reported errors reflect participants' "
-            "responses and do not necessarily indicate whether an AI error was "
-            "actually encountered or correctly identified. Group comparisons "
-            "are descriptive, particularly where group sizes are small."
-        ),
-        ha="left",
-        va="bottom",
-        fontsize=8.2,
-        color=FOOTNOTE_TEXT_COLOR,
     )
 
     fig.tight_layout(rect=(0, 0.08, 0.82, 0.94))

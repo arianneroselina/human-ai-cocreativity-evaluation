@@ -16,7 +16,7 @@ from scripts.create_master_dataset import (
 from scripts.dashboard_figures.helpers import (
     build_valid_ranking_rows,
     evaluator_color,
-    main_round_tick_labels,
+    round_tick_labels,
 )
 from scripts.dashboard_figures.summaries import grouped_metric_summary
 
@@ -36,10 +36,7 @@ class ConfigurationImportTests(unittest.TestCase):
 class LabelTests(unittest.TestCase):
     def test_main_round_labels_mark_only_injected_error_round(self) -> None:
         self.assertEqual(
-            main_round_tick_labels(
-                [5, 6, 7],
-                mark_injected_error=True,
-            ),
+            round_tick_labels([5, 6, 7]),
             ["Main 1\nInjected AI error", "Main 2", "Main 3"],
         )
 

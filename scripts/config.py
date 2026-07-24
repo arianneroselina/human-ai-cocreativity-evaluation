@@ -66,13 +66,6 @@ WORKFLOW_LABELS = {
     "ai_human": "AI → Human",
 }
 
-WORKFLOW_COLORS = {
-    "human": "#4C78A8",
-    "ai": "#F58518",
-    "human_ai": "#54A24B",
-    "ai_human": "#B279A2",
-}
-
 AI_SUPPORTED_WORKFLOWS = [
     "ai",
     "human_ai",
@@ -155,21 +148,6 @@ EVALUATOR_ORDER = [
     "1",
     "2",
     "ai-evaluator-gpt-4o-mini",
-]
-
-EVALUATOR_COLORS = {
-    "1": "#7F7F7F",
-    "2": "#8C564B",
-    "ai-evaluator-gpt-4o-mini": "#17BECF",
-}
-
-EVALUATOR_FALLBACK_COLORS = [
-    "#4C78A8",
-    "#F58518",
-    "#54A24B",
-    "#B279A2",
-    "#E45756",
-    "#72B7B2",
 ]
 
 

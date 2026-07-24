@@ -10,19 +10,19 @@ from matplotlib.ticker import MaxNLocator
 from scripts.config import (
     INJECTED_ERROR_ROUND_INDEX,
     SATISFACTION_COLUMN,
-    WORKFLOW_COLORS,
     WORKFLOW_ORDER,
+)
+from scripts.dashboard_figures.error_exposure.rate_plot import (
+    add_injected_error_round_marker,
+    _is_exposed,
 )
 from scripts.dashboard_figures.helpers import (
     exposure_display_name,
-    main_round_tick_labels,
+    round_tick_labels,
     ordered_exposure_groups,
     workflow_display_name,
 )
-from scripts.dashboard_figures.style import (
-    FOOTNOTE_TEXT_COLOR,
-    apply_standard_axes_style,
-)
+from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style
 from scripts.dashboard_figures.summaries import grouped_metric_summary
 from scripts.utils import (
     require_columns,
@@ -207,18 +207,12 @@ def plot_main_round_satisfaction_by_exposure(
                     color=WORKFLOW_COLORS[workflow],
                 )
 
-        axis.axvline(
-            INJECTED_ERROR_ROUND_INDEX,
-            linestyle="--",
-            linewidth=1,
-            color="black",
-            alpha=0.55,
-            zorder=1,
-        )
+        if _is_exposed(group):
+            add_injected_error_round_marker(axis, rounds)
 
         axis.set_title(exposure_display_name(group))
         axis.set_xticks(rounds)
-        axis.set_xticklabels(main_round_tick_labels(rounds))
+        axis.set_xticklabels(round_tick_labels(rounds))
         axis.set_xlabel("Main round")
         axis.set_ylim(0.7, 5.42)
         axis.yaxis.set_major_locator(MaxNLocator(integer=True))
@@ -241,7 +235,7 @@ def plot_main_round_satisfaction_by_exposure(
             list(legend_items.values()),
             list(legend_items.keys()),
             title="Workflow selected",
-            bbox_to_anchor=(0.99, 0.5),
+            bbox_to_anchor=(0.87, 0.5),
             loc="center left",
         )
 
@@ -249,21 +243,6 @@ def plot_main_round_satisfaction_by_exposure(
         "Participant Satisfaction by Main Round, Workflow, and Error Exposure",
         fontsize=13,
         y=0.99,
-    )
-
-    fig.text(
-        0.01,
-        0.01,
-        (
-            "Points show separate round-workflow means and are not connected "
-            "because participants could switch workflows between rounds. "
-            "The dashed line marks the injected-error round. Cells with very "
-            "small sample sizes should be interpreted cautiously."
-        ),
-        ha="left",
-        va="bottom",
-        fontsize=8.3,
-        color=FOOTNOTE_TEXT_COLOR,
     )
 
     fig.tight_layout(rect=(0, 0.06, 0.84, 0.96))

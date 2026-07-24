@@ -2,7 +2,7 @@
 
 import matplotlib
 
-from scripts.config import WORKFLOW_COLORS, WORKFLOW_ORDER
+from scripts.config import WORKFLOW_ORDER
 
 
 FIGURE_DPI = 220
@@ -16,11 +16,34 @@ GRID_ALPHA = 0.30
 BAR_EDGE_COLOR = "white"
 FOOTNOTE_TEXT_COLOR = "#4A4A4A"
 PANEL_NOTE_TEXT_COLOR = "#555555"
-INJECTED_ERROR_SPAN_COLOR = "#F1F1F1"
 
+INJECTED_ERROR_SPAN_COLOR = "#F1F1F1"
+INJECTED_ERROR_LABEL_COLOR = "#6F6F6F"
+
+WORKFLOW_COLORS = {
+    "human": "#4C78A8",
+    "ai": "#F58518",
+    "human_ai": "#54A24B",
+    "ai_human": "#B279A2",
+}
 WORKFLOW_PLOT_COLORS = [WORKFLOW_COLORS[workflow] for workflow in WORKFLOW_ORDER]
 
 RANK_COLORS = ["C0", "C1", "C2", "C3"]
+
+EVALUATOR_COLORS = {
+    "1": "#7F7F7F",
+    "2": "#8C564B",
+    "ai-evaluator-gpt-4o-mini": "#17BECF",
+}
+
+EVALUATOR_FALLBACK_COLORS = [
+    "#4C78A8",
+    "#F58518",
+    "#54A24B",
+    "#B279A2",
+    "#E45756",
+    "#72B7B2",
+]
 
 
 def configure_matplotlib() -> None:

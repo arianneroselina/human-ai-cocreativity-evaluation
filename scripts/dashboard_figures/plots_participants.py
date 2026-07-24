@@ -80,7 +80,7 @@ def plot_participant_age_distribution(participant_df):
         mean_age,
         color="darkred",
         linestyle="--",
-        linewidth=1.2,
+        linewidth=1,
         label=f"Mean = {mean_age:.1f}",
     )
 
@@ -88,7 +88,7 @@ def plot_participant_age_distribution(participant_df):
         median_age,
         color="darkgreen",
         linestyle=":",
-        linewidth=1.8,
+        linewidth=1,
         label=f"Median = {median_age:.1f}",
     )
 

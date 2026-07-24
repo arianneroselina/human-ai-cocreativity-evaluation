@@ -11,7 +11,6 @@ from matplotlib.colors import BoundaryNorm, ListedColormap
 from scripts.config import (
     AI_SUPPORTED_WORKFLOWS,
     MAIN_ROUND_INDICES,
-    WORKFLOW_COLORS,
     WORKFLOW_LABELS,
     WORKFLOW_ORDER,
 )
@@ -20,6 +19,7 @@ from scripts.dashboard_figures.helpers import (
     workflow_display_name,
 )
 from scripts.dashboard_figures.style import (
+    WORKFLOW_COLORS,
     BAR_EDGE_COLOR,
     apply_standard_axes_style,
 )
@@ -80,7 +80,7 @@ def plot_total_workflow_usage_counts(main_df):
     ax.set_xlabel("Workflow")
     ax.set_ylabel("Workflow selections")
     ax.set_ylim(0, max(counts.max() * 1.25, 1))
-    ax.tick_params(axis="x", rotation=15)
+    ax.tick_params(axis="x")
     ax.text(
         0.5,
         -0.22,
@@ -161,7 +161,7 @@ def plot_first_voluntary_workflow_choice(main_df):
     ax.set_xlabel("Workflow")
     ax.set_ylabel("Participants")
     ax.set_ylim(0, max(counts.max() * 1.25, 1))
-    ax.tick_params(axis="x", rotation=15)
+    ax.tick_params(axis="x")
     ax.text(
         0.5,
         -0.22,

@@ -79,7 +79,7 @@
   {
     "slug": "32_ai_experience_by_practice_round_and_workflow",
     "title": "AI Interaction Ratings by Practice Round and Workflow",
-    "description": "Mean ratings for AI understanding, collaboration quality, creativity support, and overall AI performance across the randomized practice phase. Error bars show approximate 95% confidence intervals; labels show observation counts.",
+    "description": "Mean ratings for AI understanding, collaboration quality, creativity support, and overall AI performance across the randomized practice phase. Error bars show approximate 95% confidence intervals.",
     "pngUrl": "/research-dashboard/figures/32_ai_experience_by_practice_round_and_workflow.png",
     "pdfUrl": "/research-dashboard/figures/32_ai_experience_by_practice_round_and_workflow.pdf"
   },

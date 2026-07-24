@@ -9,17 +9,20 @@ from matplotlib.ticker import MaxNLocator
 
 from scripts.config import (
     AI_EXPERIENCE_METRICS,
-    WORKFLOW_COLORS,
     WORKFLOW_ORDER,
 )
+from scripts.dashboard_figures.error_exposure.rate_plot import (
+    add_injected_error_round_marker,
+    _is_exposed,
+)
+from scripts.dashboard_figures.helper_modules.labels import round_display_name
 from scripts.dashboard_figures.helpers import (
     exposure_display_name,
-    main_round_display_name,
     ordered_exposure_groups,
     workflow_display_name,
 )
 from scripts.dashboard_figures.style import (
-    FOOTNOTE_TEXT_COLOR,
+    WORKFLOW_COLORS,
     apply_standard_axes_style,
 )
 from scripts.dashboard_figures.summaries import grouped_metric_summary
@@ -139,13 +142,7 @@ def plot_main_round_ai_experience_by_exposure(
     )
 
     round_labels = [
-        (
-            main_round_display_name(
-                round_index,
-                mark_injected_error=True,
-            )
-        )
-        for index, round_index in enumerate(rounds)
+        round_display_name(round_index) for index, round_index in enumerate(rounds)
     ]
 
     for row_index, metric in enumerate(available_metrics):
@@ -246,6 +243,9 @@ def plot_main_round_ai_experience_by_exposure(
                         color=WORKFLOW_COLORS[workflow],
                     )
 
+            if _is_exposed(group):
+                add_injected_error_round_marker(axis, rounds)
+
             axis.set_xticks(rounds)
             axis.set_xticklabels(round_labels)
             axis.set_ylim(0.7, 5.42)
@@ -277,7 +277,7 @@ def plot_main_round_ai_experience_by_exposure(
             list(legend_items.values()),
             list(legend_items.keys()),
             title="AI supported workflow",
-            bbox_to_anchor=(0.99, 0.5),
+            bbox_to_anchor=(0.87, 0.5),
             loc="center left",
         )
 
@@ -285,21 +285,6 @@ def plot_main_round_ai_experience_by_exposure(
         "AI Interaction Ratings by Main Round, Workflow, and Error Exposure",
         fontsize=13,
         y=0.995,
-    )
-
-    fig.text(
-        0.01,
-        0.01,
-        (
-            "Points show separate Main round and workflow means and are not "
-            "connected because participants could switch workflows between "
-            "rounds. Error bars are shown for cells with at least three "
-            "observations."
-        ),
-        ha="left",
-        va="bottom",
-        fontsize=8.3,
-        color=FOOTNOTE_TEXT_COLOR,
     )
 
     fig.tight_layout(rect=(0, 0.045, 0.84, 0.97))

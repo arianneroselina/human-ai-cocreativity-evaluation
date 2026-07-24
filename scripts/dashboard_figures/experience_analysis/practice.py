@@ -10,12 +10,11 @@ from matplotlib.ticker import MaxNLocator
 from scripts.config import (
     AI_EXPERIENCE_METRICS,
     SATISFACTION_COLUMN,
-    WORKFLOW_COLORS,
     WORKFLOW_ORDER,
 )
 from scripts.dashboard_figures.helpers import workflow_display_name
 from scripts.dashboard_figures.series import plot_workflow_round_series
-from scripts.dashboard_figures.style import apply_standard_axes_style
+from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style
 from scripts.dashboard_figures.summaries import grouped_metric_summary
 from scripts.utils import require_columns, save_figure, save_table
 
@@ -56,6 +55,13 @@ def plot_satisfaction_by_practice_round_and_workflow(
 
     fig, ax = plt.subplots(figsize=(9.6, 5.3))
 
+    workflow_offsets = dict(
+        zip(
+            WORKFLOW_ORDER,
+            np.linspace(-0.12, 0.12, len(WORKFLOW_ORDER)),
+        )
+    )
+
     for workflow in WORKFLOW_ORDER:
         plot_workflow_round_series(
             ax,
@@ -63,6 +69,8 @@ def plot_satisfaction_by_practice_round_and_workflow(
             workflow,
             rounds,
             SATISFACTION_COLUMN,
+            point_offset=workflow_offsets[workflow],
+            connect_points=False,
         )
 
     ax.set_title("Participant Satisfaction by Practice Round and Workflow")
@@ -131,14 +139,23 @@ def plot_ai_experience_by_practice_round_and_workflow(
     fig, axes = plt.subplots(
         n_rows,
         n_columns,
-        figsize=(12.4, 4.45 * n_rows),
+        figsize=(10.6, 3.9 * n_rows),
         sharex=True,
         sharey=True,
         squeeze=False,
     )
     axes_flat = axes.flatten()
 
-    for axis, metric in zip(axes_flat, available_metrics):
+    workflow_offsets = dict(
+        zip(
+            ai_workflows,
+            np.linspace(-0.09, 0.09, len(ai_workflows)),
+        )
+    )
+
+    for metric_index, (axis, metric) in enumerate(zip(axes_flat, available_metrics)):
+        row_index, column_index = divmod(metric_index, n_columns)
+
         for workflow in ai_workflows:
             plot_workflow_round_series(
                 axis,
@@ -146,15 +163,25 @@ def plot_ai_experience_by_practice_round_and_workflow(
                 workflow,
                 rounds,
                 metric,
+                point_offset=workflow_offsets[workflow],
+                connect_points=False,
             )
 
         axis.set_title(AI_EXPERIENCE_METRICS[metric])
         axis.set_xticks(rounds)
-        axis.set_xticklabels([f"Practice {index + 1}" for index in range(len(rounds))])
+
+        axis.set_xticklabels([f"Practice {int(round_index)}" for round_index in rounds])
+
         axis.set_ylim(0.7, 5.42)
         axis.yaxis.set_major_locator(MaxNLocator(integer=True))
-        axis.set_xlabel("Practice round")
-        axis.set_ylabel("Participant rating (1-5)")
+
+        # Avoid repeating axis titles unnecessarily.
+        if row_index == n_rows - 1:
+            axis.set_xlabel("Practice round")
+
+        if column_index == 0:
+            axis.set_ylabel("Participant rating (1–5)")
+
         apply_standard_axes_style(axis, grid_axis="y")
 
     for axis in axes_flat[len(available_metrics) :]:
@@ -165,7 +192,7 @@ def plot_ai_experience_by_practice_round_and_workflow(
         legend_handles,
         legend_labels,
         title="Assigned AI-supported workflow",
-        bbox_to_anchor=(0.99, 0.5),
+        bbox_to_anchor=(0.83, 0.5),
         loc="center left",
     )
     fig.suptitle(
@@ -173,17 +200,17 @@ def plot_ai_experience_by_practice_round_and_workflow(
         fontsize=13,
         y=0.995,
     )
-    fig.tight_layout(rect=(0, 0.02, 0.82, 0.97))
+    fig.tight_layout(rect=(0, 0.02, 0.81, 0.97))
 
     save_figure(
         fig,
         slug,
         "AI Interaction Ratings by Practice Round and Workflow",
         (
-            "Mean ratings for AI understanding, collaboration quality, creativity "
-            "support, and overall AI performance across the randomized practice "
-            "phase. Error bars show approximate 95% confidence intervals; labels "
-            "show observation counts."
+            "Mean ratings for AI understanding, collaboration quality, "
+            "creativity support, and overall AI performance across the "
+            "randomized practice phase. Error bars show approximate 95% "
+            "confidence intervals."
         ),
     )
 
@@ -266,7 +293,7 @@ def plot_tlx_score_by_workflow_in_practice_rounds(
         )
         ax.annotate(
             f"{row['mean']:.1f} (n={int(row['count'])})",
-            (row["mean"], position),
+            (row["upperCI"], position),
             xytext=(7, 0),
             textcoords="offset points",
             ha="left",

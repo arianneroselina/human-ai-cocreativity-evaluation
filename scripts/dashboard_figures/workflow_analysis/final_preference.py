@@ -7,7 +7,6 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.config import (
-    WORKFLOW_COLORS,
     WORKFLOW_LABELS,
     WORKFLOW_ORDER,
 )
@@ -16,6 +15,7 @@ from scripts.dashboard_figures.helpers import (
     workflow_display_name,
 )
 from scripts.dashboard_figures.style import (
+    WORKFLOW_COLORS,
     BAR_EDGE_COLOR,
     RANK_COLORS,
     apply_standard_axes_style,

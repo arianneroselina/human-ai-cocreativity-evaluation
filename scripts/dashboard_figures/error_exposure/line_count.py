@@ -107,13 +107,5 @@ def plot_main_line_count_error_by_exposure(
                 "confidence intervals, and labels report failed rounds divided "
                 "by observed rounds."
             ),
-            footnote=(
-                "Points show separate exposure-group, Main-round, and workflow "
-                "line-count failure rates. Whiskers show 95% Wilson confidence "
-                "intervals, and labels show failed/observed rounds. Points are "
-                "not connected because participants could switch workflows "
-                "between rounds. The injected line-count error occurred only "
-                "in Main 1 for participants selecting an AI-supported workflow."
-            ),
         ),
     )

@@ -7,13 +7,12 @@ from matplotlib.ticker import MaxNLocator
 
 from scripts.config import (
     INJECTED_ERROR_ROUND_INDEX,
-    WORKFLOW_COLORS,
     WORKFLOW_ORDER,
 )
 from scripts.dashboard_figures.helpers import workflow_display_name
 from scripts.dashboard_figures.style import (
+    WORKFLOW_COLORS,
     BAR_EDGE_COLOR,
-    FOOTNOTE_TEXT_COLOR,
     apply_standard_axes_style,
 )
 from scripts.utils import (
@@ -76,19 +75,6 @@ def plot_main_round1_workflow_choice(prepared) -> None:
     ax.set_title("Workflow Choices in Main Round 1")
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     apply_standard_axes_style(ax, grid_axis="y")
-
-    fig.text(
-        0.01,
-        0.01,
-        (
-            f"n = {total_participants}. AI-supported selections in this round "
-            "were the opportunity for participants to encounter the injected error."
-        ),
-        ha="left",
-        va="bottom",
-        fontsize=8.3,
-        color=FOOTNOTE_TEXT_COLOR,
-    )
 
     fig.tight_layout(rect=(0, 0.045, 1, 1))
 

@@ -77,12 +77,6 @@ def plot_overall_quality_icc_reliability(
             fontsize=9,
         )
 
-    ax.axvline(
-        0,
-        color="black",
-        linestyle="--",
-        linewidth=1,
-    )
     ax.set_xlim(-0.05, 1.02)
     ax.set_yticks(y_positions)
     ax.set_yticklabels(
@@ -95,18 +89,6 @@ def plot_overall_quality_icc_reliability(
     ax.set_title("Overall-Quality ICC Reliability")
     apply_standard_axes_style(ax, grid_axis="x")
 
-    fig.text(
-        0.01,
-        0.01,
-        (
-            f"ICC(A,1) describes one evaluator's score; ICC(A,k) describes the "
-            f"mean score across {len(evaluators)} evaluators for {len(wide_df)} poems."
-        ),
-        ha="left",
-        va="bottom",
-        fontsize=8.4,
-        color="#4a4a4a",
-    )
     fig.tight_layout(rect=(0, 0.07, 1, 1))
 
     save_figure(
@@ -190,12 +172,6 @@ def plot_pairwise_overall_quality_agreement(
             fontsize=8.4,
         )
 
-    ax.axvline(
-        0,
-        color="black",
-        linestyle="--",
-        linewidth=1,
-    )
     ax.set_xlim(-0.03, 1.0)
     ax.set_yticks(y_positions)
     ax.set_yticklabels(pairwise_plot["pairLabel"])
@@ -204,18 +180,6 @@ def plot_pairwise_overall_quality_agreement(
     ax.set_title("Pairwise Overall-Quality Agreement")
     apply_standard_axes_style(ax, grid_axis="x")
 
-    fig.text(
-        0.01,
-        0.01,
-        (
-            f"Pairwise agreement across {len(wide_df)} shared poems. "
-            "Brown bars involve the AI evaluator; the grey bar compares the two humans."
-        ),
-        ha="left",
-        va="bottom",
-        fontsize=8.4,
-        color="#4a4a4a",
-    )
     fig.tight_layout(rect=(0, 0.07, 1, 1))
 
     save_figure(

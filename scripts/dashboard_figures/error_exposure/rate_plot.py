@@ -9,23 +9,21 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.config import (
-    INJECTED_ERROR_LABEL,
     INJECTED_ERROR_ROUND_INDEX,
     MAIN_ROUND_INDICES,
-    WORKFLOW_COLORS,
     WORKFLOW_ORDER,
 )
 from scripts.dashboard_figures.helpers import (
     exposure_display_name,
-    main_round_tick_labels,
+    round_tick_labels,
     ordered_exposure_groups,
     workflow_display_name,
 )
 from scripts.dashboard_figures.style import (
-    FOOTNOTE_TEXT_COLOR,
+    WORKFLOW_COLORS,
     INJECTED_ERROR_SPAN_COLOR,
-    PANEL_NOTE_TEXT_COLOR,
     apply_standard_axes_style,
+    INJECTED_ERROR_LABEL_COLOR,
 )
 from scripts.utils import save_figure, save_table
 
@@ -41,7 +39,6 @@ class ExposureRatePlotConfig:
     y_label: str
     title: str
     description: str
-    footnote: str
     figure_height: float = 5.6
     layout_bottom: float = 0.095
 
@@ -59,20 +56,6 @@ def _is_exposed(value: object) -> bool:
         "exposed",
         "error-exposed",
     }
-
-
-def _panel_note(exposed: bool) -> str:
-    """Return the canonical explanation shown above each exposure panel."""
-    if exposed:
-        return (
-            "AI-supported workflow selected in Main 1;\n"
-            f"{INJECTED_ERROR_LABEL} delivered"
-        )
-
-    return (
-        f"{workflow_display_name('human')} selected in Main 1;\n"
-        f"No {INJECTED_ERROR_LABEL.lower()}"
-    )
 
 
 def plot_exposure_workflow_rate(
@@ -140,14 +123,8 @@ def plot_exposure_workflow_rate(
     for axis, group in zip(axes, groups):
         group_summary = plot_summary.loc[plot_summary["errorExposed"].eq(group)]
 
-        if INJECTED_ERROR_ROUND_INDEX in main_rounds:
-            axis.axvspan(
-                INJECTED_ERROR_ROUND_INDEX - 0.32,
-                INJECTED_ERROR_ROUND_INDEX + 0.32,
-                facecolor=INJECTED_ERROR_SPAN_COLOR,
-                edgecolor="none",
-                zorder=0,
-            )
+        if _is_exposed(group):
+            add_injected_error_round_marker(axis, main_rounds)
 
         for workflow in WORKFLOW_ORDER:
             workflow_summary = (
@@ -251,23 +228,8 @@ def plot_exposure_workflow_rate(
             fontsize=11.5,
             pad=34,
         )
-        axis.text(
-            0.5,
-            1.025,
-            _panel_note(_is_exposed(group)),
-            transform=axis.transAxes,
-            ha="center",
-            va="bottom",
-            fontsize=8.3,
-            color=PANEL_NOTE_TEXT_COLOR,
-        )
         axis.set_xticks(main_rounds)
-        axis.set_xticklabels(
-            main_round_tick_labels(
-                main_rounds,
-                mark_injected_error=True,
-            )
-        )
+        axis.set_xticklabels(round_tick_labels(main_rounds))
         axis.set_xlim(min(main_rounds) - 0.45, max(main_rounds) + 0.45)
         axis.set_ylim(-4, 108)
         axis.set_yticks([0, 20, 40, 60, 80, 100])
@@ -287,20 +249,11 @@ def plot_exposure_workflow_rate(
             list(legend_items.values()),
             list(legend_items.keys()),
             title="Workflow selected",
-            bbox_to_anchor=(0.99, 0.5),
+            bbox_to_anchor=(0.87, 0.5),
             loc="center left",
         )
 
     fig.suptitle(config.title, fontsize=13, y=0.99)
-    fig.text(
-        0.01,
-        0.01,
-        config.footnote,
-        ha="left",
-        va="bottom",
-        fontsize=8.2,
-        color=FOOTNOTE_TEXT_COLOR,
-    )
     fig.tight_layout(rect=(0, config.layout_bottom, 0.84, 0.94))
 
     save_figure(
@@ -308,4 +261,39 @@ def plot_exposure_workflow_rate(
         config.slug,
         config.title,
         config.description,
+    )
+
+
+from collections.abc import Sequence
+
+from matplotlib.axes import Axes
+
+
+def add_injected_error_round_marker(
+    axis: Axes,
+    rounds: Sequence[int],
+) -> None:
+    """Highlight the Main round containing the injected AI error."""
+    if INJECTED_ERROR_ROUND_INDEX not in rounds:
+        return
+
+    axis.axvspan(
+        INJECTED_ERROR_ROUND_INDEX - 0.32,
+        INJECTED_ERROR_ROUND_INDEX + 0.32,
+        facecolor=INJECTED_ERROR_SPAN_COLOR,
+        edgecolor="none",
+        zorder=0,
+    )
+
+    axis.text(
+        INJECTED_ERROR_ROUND_INDEX,
+        0.975,
+        "Injected AI error",
+        transform=axis.get_xaxis_transform(),
+        ha="center",
+        va="top",
+        fontsize=8,
+        color=INJECTED_ERROR_LABEL_COLOR,
+        fontstyle="italic",
+        zorder=5,
     )

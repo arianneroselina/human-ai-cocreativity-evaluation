@@ -150,12 +150,6 @@ def plot_overall_quality_ordinal_agreement(
         fontsize=10,
     )
 
-    ax.axvline(
-        0,
-        color="black",
-        linestyle="--",
-        linewidth=1,
-    )
     ax.set_xlim(-0.05, 1.02)
     ax.set_ylim(-0.65, 0.65)
     ax.set_yticks([0])
@@ -164,19 +158,6 @@ def plot_overall_quality_ordinal_agreement(
     ax.set_title("Overall-Quality Ordinal Inter-Rater Agreement")
     apply_standard_axes_style(ax, grid_axis="x")
 
-    fig.text(
-        0.01,
-        0.01,
-        (
-            f"Agreement across {len(wide_df)} poems rated by "
-            f"{len(evaluators)} evaluators. The confidence interval was estimated "
-            "by resampling poems."
-        ),
-        ha="left",
-        va="bottom",
-        fontsize=8.4,
-        color="#4a4a4a",
-    )
     fig.tight_layout(rect=(0, 0.07, 1, 1))
 
     save_figure(

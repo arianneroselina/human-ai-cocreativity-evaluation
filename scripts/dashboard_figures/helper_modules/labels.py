@@ -5,15 +5,15 @@ from __future__ import annotations
 import hashlib
 
 from scripts.config import (
-    EVALUATOR_COLORS,
-    EVALUATOR_FALLBACK_COLORS,
     EVALUATOR_LABELS,
     EXPOSURE_LABELS,
-    INJECTED_ERROR_LABEL,
-    INJECTED_ERROR_ROUND_INDEX,
     MAIN_ROUND_INDICES,
     ROUND_LABELS,
     WORKFLOW_LABELS,
+)
+from scripts.dashboard_figures.style import (
+    EVALUATOR_COLORS,
+    EVALUATOR_FALLBACK_COLORS,
 )
 
 
@@ -25,37 +25,9 @@ def round_display_name(round_index):
     return ROUND_LABELS.get(round_index, f"Round {round_index}")
 
 
-def main_round_display_name(
-    round_index: int,
-    *,
-    mark_injected_error: bool = False,
-) -> str:
-    """Return the canonical sequential label for a Main-round index."""
-    try:
-        position = MAIN_ROUND_INDICES.index(int(round_index)) + 1
-    except (TypeError, ValueError):
-        return round_display_name(round_index)
-
-    label = f"Main {position}"
-    if mark_injected_error and int(round_index) == INJECTED_ERROR_ROUND_INDEX:
-        return f"{label}\n{INJECTED_ERROR_LABEL}"
-
-    return label
-
-
-def main_round_tick_labels(
-    round_indices,
-    *,
-    mark_injected_error: bool = False,
-) -> list[str]:
+def round_tick_labels(round_indices) -> list[str]:
     """Return canonical labels for a sequence of Main-round indices."""
-    return [
-        main_round_display_name(
-            round_index,
-            mark_injected_error=mark_injected_error,
-        )
-        for round_index in round_indices
-    ]
+    return [round_display_name(round_index) for round_index in round_indices]
 
 
 def exposure_display_name(exposed: bool) -> str:

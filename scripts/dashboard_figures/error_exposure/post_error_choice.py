@@ -8,7 +8,6 @@ from matplotlib import pyplot as plt
 
 from scripts.config import (
     INJECTED_ERROR_ROUND_INDEX,
-    WORKFLOW_COLORS,
     WORKFLOW_ORDER,
 )
 from scripts.dashboard_figures.helpers import (
@@ -17,8 +16,8 @@ from scripts.dashboard_figures.helpers import (
     workflow_display_name,
 )
 from scripts.dashboard_figures.style import (
+    WORKFLOW_COLORS,
     BAR_EDGE_COLOR,
-    FOOTNOTE_TEXT_COLOR,
     apply_standard_axes_style,
 )
 from scripts.utils import (
@@ -124,22 +123,13 @@ def plot_post_error_workflow_choices_by_exposure(prepared) -> None:
         handles,
         labels,
         title="Workflow selected",
-        bbox_to_anchor=(0.99, 0.5),
+        bbox_to_anchor=(0.87, 0.5),
         loc="center left",
     )
     fig.suptitle(
         "Post-Error Workflow Choices by Main Round 1 Exposure", fontsize=13, y=0.99
     )
-    fig.text(
-        0.01,
-        0.01,
-        "Each bar contains all workflow choices in that round. Exposure was "
-        "defined from Main Round 1 and was not independently randomized.",
-        ha="left",
-        va="bottom",
-        fontsize=8.3,
-        color=FOOTNOTE_TEXT_COLOR,
-    )
+
     fig.tight_layout(rect=(0, 0.045, 0.84, 0.96))
 
     save_figure(

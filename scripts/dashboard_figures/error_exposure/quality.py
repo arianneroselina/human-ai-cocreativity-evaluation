@@ -11,20 +11,20 @@ from scripts.config import (
     MAIN_ROUND_INDICES,
     QUALITY_Y_MAX,
     QUALITY_Y_MIN,
-    WORKFLOW_COLORS,
     WORKFLOW_ORDER,
+)
+from scripts.dashboard_figures.error_exposure.rate_plot import (
+    add_injected_error_round_marker,
+    _is_exposed,
 )
 from scripts.dashboard_figures.helpers import (
     exposure_display_name,
-    main_round_tick_labels,
+    round_tick_labels,
     ordered_exposure_groups,
     quality_summary,
     workflow_display_name,
 )
-from scripts.dashboard_figures.style import (
-    FOOTNOTE_TEXT_COLOR,
-    apply_standard_axes_style,
-)
+from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style
 from scripts.utils import (
     require_columns,
     save_figure,
@@ -156,8 +156,8 @@ def plot_main_round_quality_by_error_exposure(
     )
     axes = axes.flatten()
 
-    for axis, exposed in zip(axes, groups):
-        group_summary = summary.loc[summary["errorExposed"].eq(exposed)]
+    for axis, group in zip(axes, groups):
+        group_summary = summary.loc[summary["errorExposed"].eq(group)]
 
         for workflow in WORKFLOW_ORDER:
             workflow_summary = (
@@ -259,20 +259,12 @@ def plot_main_round_quality_by_error_exposure(
                     zorder=5,
                 )
 
-        # Main 1 is the round in which exposure status was determined.
-        axis.axvline(
-            INJECTED_ERROR_ROUND_INDEX,
-            linestyle="--",
-            linewidth=1,
-            color="black",
-            alpha=0.55,
-            zorder=1,
-        )
+        if _is_exposed(group):
+            add_injected_error_round_marker(axis, rounds)
 
-        axis.set_title(exposure_display_name(exposed))
-
+        axis.set_title(exposure_display_name(group))
         axis.set_xticks(rounds)
-        axis.set_xticklabels(main_round_tick_labels(rounds))
+        axis.set_xticklabels(round_tick_labels(rounds))
         axis.set_xlim(
             min(rounds) - 0.45,
             max(rounds) + 0.45,
@@ -307,7 +299,7 @@ def plot_main_round_quality_by_error_exposure(
             list(legend_items.values()),
             list(legend_items.keys()),
             title="Workflow selected",
-            bbox_to_anchor=(0.99, 0.5),
+            bbox_to_anchor=(0.87, 0.5),
             loc="center left",
         )
 
@@ -315,22 +307,6 @@ def plot_main_round_quality_by_error_exposure(
         "Mean Overall Quality by Main Round, Workflow, and Error Exposure",
         fontsize=13,
         y=0.99,
-    )
-
-    fig.text(
-        0.01,
-        0.01,
-        (
-            "Points show separate Main-round and workflow means and are not "
-            "connected because participants could switch workflows between "
-            "rounds. Whiskers show approximate 95% confidence intervals. "
-            "The dashed line marks Main 1, when exposure status was determined. "
-            "Cells with very small sample sizes should be interpreted cautiously."
-        ),
-        ha="left",
-        va="bottom",
-        fontsize=8.3,
-        color=FOOTNOTE_TEXT_COLOR,
     )
 
     fig.tight_layout(rect=(0, 0.065, 0.84, 0.96))

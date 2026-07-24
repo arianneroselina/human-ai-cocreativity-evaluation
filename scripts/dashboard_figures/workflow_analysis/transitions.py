@@ -9,7 +9,6 @@ from matplotlib import pyplot as plt
 from scripts.config import (
     MAIN_ROUND_INDICES,
     PRACTICE_ROUND_INDICES,
-    WORKFLOW_COLORS,
     WORKFLOW_LABELS,
     WORKFLOW_ORDER,
 )
@@ -18,6 +17,7 @@ from scripts.dashboard_figures.helpers import (
     workflow_display_name,
 )
 from scripts.dashboard_figures.style import (
+    WORKFLOW_COLORS,
     BAR_EDGE_COLOR,
     apply_standard_axes_style,
 )
@@ -273,7 +273,7 @@ def plot_workflow_retention(main_df):
     ax.set_title("Workflow Retention in the Next Main Round")
     ax.set_xlabel("Workflow selected in the earlier round")
     ax.set_ylabel("Retained in next round (%)")
-    ax.tick_params(axis="x", rotation=15)
+    ax.tick_params(axis="x")
 
     save_figure(
         fig,

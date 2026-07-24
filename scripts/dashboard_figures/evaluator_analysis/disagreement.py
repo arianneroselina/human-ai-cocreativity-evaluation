@@ -157,7 +157,6 @@ def plot_evaluator_rating_tendency(
         abs(float(tendency_plot["lowerCI"].min())),
         abs(float(tendency_plot["upperCI"].max())),
     )
-    ax.axvline(0, color="black", linestyle="--", linewidth=1)
     ax.set_xlim(-max_abs * 1.25, max_abs * 1.25)
     ax.set_yticks(y_positions)
     ax.set_yticklabels(tendency_plot["evaluatorLabel"])

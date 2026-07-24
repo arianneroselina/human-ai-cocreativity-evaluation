@@ -8,13 +8,12 @@ import pandas as pd
 from scripts.config import (
     QUALITY_Y_MAX,
     QUALITY_Y_MIN,
-    WORKFLOW_COLORS,
 )
 from scripts.dashboard_figures.efficiency_analysis.common import (
     _workflow_efficiency_summary,
 )
 from scripts.dashboard_figures.helpers import workflow_display_name
-from scripts.dashboard_figures.style import apply_standard_axes_style
+from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style
 from scripts.utils import save_figure, save_table
 
 

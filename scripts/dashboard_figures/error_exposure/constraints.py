@@ -84,14 +84,6 @@ def plot_main_constraint_fulfillment_by_exposure(
                 "Wilson confidence intervals, and labels report successful "
                 "rounds divided by observed rounds."
             ),
-            footnote=(
-                "Points show separate exposure-group, Main-round, and workflow "
-                "pass-rate estimates. Whiskers show 95% Wilson confidence "
-                "intervals, and labels show passed/observed rounds. Points are "
-                "not connected because participants could switch workflows "
-                "between rounds. Main 1 determined exposure status; workflow "
-                "choice was unrestricted again in Main 2 and Main 3."
-            ),
             figure_height=5.5,
             layout_bottom=0.09,
         ),

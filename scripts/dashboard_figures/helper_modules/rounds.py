@@ -200,35 +200,6 @@ def shade_main_rounds_for_bar_axis(
         )
 
 
-def annotate_injected_error_round(ax, error_idx, y_top=5.0, text_y=5.25):
-    ax.axvline(
-        error_idx,
-        linestyle="--",
-        linewidth=1,
-        zorder=3,
-    )
-
-    ax.annotate(
-        INJECTED_ERROR_LABEL,
-        xy=(error_idx, y_top),
-        xytext=(error_idx + 0.12, text_y),
-        textcoords="data",
-        ha="left",
-        va="bottom",
-        fontsize=8,
-        arrowprops={
-            "arrowstyle": "->",
-            "linewidth": 0.8,
-        },
-        bbox={
-            "boxstyle": "round,pad=0.25",
-            "facecolor": "white",
-            "edgecolor": "lightgray",
-            "alpha": 0.9,
-        },
-    )
-
-
 def is_ai_supported_row(row):
     if "isAiSupportedWorkflow" in row.index:
         return parse_bool(row["isAiSupportedWorkflow"])

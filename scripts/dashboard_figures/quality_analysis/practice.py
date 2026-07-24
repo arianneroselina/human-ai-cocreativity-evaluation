@@ -11,14 +11,13 @@ from scripts.config import (
     QUALITY_PRIMARY_METRIC,
     QUALITY_Y_MAX,
     QUALITY_Y_MIN,
-    WORKFLOW_COLORS,
     WORKFLOW_ORDER,
 )
 from scripts.dashboard_figures.helpers import (
     quality_summary,
     workflow_display_name,
 )
-from scripts.dashboard_figures.style import apply_standard_axes_style
+from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style
 from scripts.utils import (
     save_figure,
     save_table,

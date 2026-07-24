@@ -5,11 +5,12 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 
-from scripts.config import WORKFLOW_COLORS, WORKFLOW_ORDER
+from scripts.config import WORKFLOW_ORDER
 from scripts.dashboard_figures.helpers import (
     pass_summary,
     workflow_display_name,
 )
+from scripts.dashboard_figures.style import WORKFLOW_COLORS
 from scripts.utils import save_figure, save_table
 
 
@@ -91,23 +92,21 @@ def plot_practice_constraint_pass_rate_by_workflow(practice_df) -> None:
             f"({row['passRatePercent']:.1f}%)"
         )
 
-        ax.text(
-            105,
-            position,
+        ax.annotate(
             label,
+            (row["upperCI"], position),
+            xytext=(7, 0),
+            textcoords="offset points",
             ha="left",
             va="center",
-            fontsize=9,
-            fontweight="bold",
+            fontsize=8.5,
+            color="#333333",
         )
 
     ax.set_yticks(y_positions)
     ax.set_yticklabels(summary["workflowLabel"], fontsize=10)
     ax.invert_yaxis()
 
-    # Here intermediate values are valid because this axis represents
-    # workflow-level pass-rate estimates, not the individual binary outcomes.
-    ax.set_xlim(-2, 128)
     ax.set_xticks([0, 25, 50, 75, 100])
     ax.set_xticklabels(["0%", "25%", "50%", "75%", "100%"])
 

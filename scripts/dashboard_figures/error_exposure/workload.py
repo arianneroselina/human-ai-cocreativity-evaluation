@@ -7,19 +7,19 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.config import (
-    WORKFLOW_COLORS,
     WORKFLOW_ORDER,
+)
+from scripts.dashboard_figures.error_exposure.rate_plot import (
+    add_injected_error_round_marker,
+    _is_exposed,
 )
 from scripts.dashboard_figures.helpers import (
     exposure_display_name,
-    main_round_display_name,
+    round_display_name,
     ordered_exposure_groups,
     workflow_display_name,
 )
-from scripts.dashboard_figures.style import (
-    FOOTNOTE_TEXT_COLOR,
-    apply_standard_axes_style,
-)
+from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style
 from scripts.dashboard_figures.summaries import grouped_metric_summary
 from scripts.utils import (
     require_columns,
@@ -236,14 +236,11 @@ def plot_main_round_tlx_by_exposure_and_workflow(
                 )
 
         round_labels = [
-            (
-                main_round_display_name(
-                    round_index,
-                    mark_injected_error=True,
-                )
-            )
-            for index, round_index in enumerate(rounds)
+            round_display_name(round_index) for index, round_index in enumerate(rounds)
         ]
+
+        if _is_exposed(group):
+            add_injected_error_round_marker(axis, rounds)
 
         axis.set_xticks(rounds)
         axis.set_xticklabels(round_labels)
@@ -277,7 +274,7 @@ def plot_main_round_tlx_by_exposure_and_workflow(
             list(legend_items.values()),
             list(legend_items.keys()),
             title="Workflow selected",
-            bbox_to_anchor=(0.99, 0.5),
+            bbox_to_anchor=(0.87, 0.5),
             loc="center left",
         )
 
@@ -285,21 +282,6 @@ def plot_main_round_tlx_by_exposure_and_workflow(
         "Raw NASA-TLX Workload in Main Rounds by Error Exposure",
         fontsize=13,
         y=0.99,
-    )
-
-    fig.text(
-        0.01,
-        0.01,
-        (
-            "Points show separate Main round and workflow means and are not "
-            "connected because participants could switch workflows between "
-            "rounds. Error bars are shown for cells with at least three "
-            "observations. Higher scores indicate greater perceived workload."
-        ),
-        ha="left",
-        va="bottom",
-        fontsize=8.3,
-        color=FOOTNOTE_TEXT_COLOR,
     )
 
     fig.tight_layout(rect=(0, 0.065, 0.84, 0.96))

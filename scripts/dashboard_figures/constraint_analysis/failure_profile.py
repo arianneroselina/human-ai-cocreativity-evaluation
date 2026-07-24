@@ -113,7 +113,6 @@ def plot_practice_constraint_failure_profile_by_workflow(practice_df) -> None:
                     ha="center",
                     va="center",
                     fontsize=8,
-                    fontweight="bold",
                 )
 
         left += values

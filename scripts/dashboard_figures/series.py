@@ -7,8 +7,8 @@ from collections.abc import Sequence
 import numpy as np
 import pandas as pd
 
-from scripts.config import WORKFLOW_COLORS
 from scripts.dashboard_figures.helpers import workflow_display_name
+from scripts.dashboard_figures.style import WORKFLOW_COLORS
 
 
 def plot_workflow_round_series(
@@ -19,6 +19,8 @@ def plot_workflow_round_series(
     metric: str,
     point_offset: float = 0.0,
     x_column: str = "roundIndex",
+    *,
+    connect_points: bool = True,
 ) -> None:
     """Plot one workflow mean series with confidence intervals.
 
@@ -40,10 +42,11 @@ def plot_workflow_round_series(
     color = WORKFLOW_COLORS[workflow]
 
     ax.plot(
-        x_values,
-        means,
+        x_values[valid_means],
+        means[valid_means],
         marker="o",
-        linewidth=1.8,
+        linestyle="-" if connect_points else "none",
+        linewidth=1.8 if connect_points else 0,
         markersize=5.5,
         color=color,
         label=workflow_display_name(workflow),
@@ -55,20 +58,15 @@ def plot_workflow_round_series(
         & workflow_summary["upperCI"].notna()
         & workflow_summary["mean"].notna()
     ).to_numpy()
+
     if not valid_intervals.any():
         return
 
-    interval_rows = workflow_summary.loc[
-        workflow_summary["lowerCI"].notna()
-        & workflow_summary["upperCI"].notna()
-        & workflow_summary["mean"].notna()
-    ]
-    lower_errors = means[valid_intervals] - interval_rows["lowerCI"].to_numpy(
-        dtype=float
-    )
-    upper_errors = (
-        interval_rows["upperCI"].to_numpy(dtype=float) - means[valid_intervals]
-    )
+    lower_ci = workflow_summary["lowerCI"].to_numpy(dtype=float)
+    upper_ci = workflow_summary["upperCI"].to_numpy(dtype=float)
+
+    lower_errors = means[valid_intervals] - lower_ci[valid_intervals]
+    upper_errors = upper_ci[valid_intervals] - means[valid_intervals]
 
     ax.errorbar(
         x_values[valid_intervals],
@@ -77,7 +75,8 @@ def plot_workflow_round_series(
         fmt="none",
         ecolor=color,
         capsize=3,
-        linewidth=1.0,
+        elinewidth=1.0,
+        capthick=1.0,
         alpha=0.9,
         zorder=2,
     )

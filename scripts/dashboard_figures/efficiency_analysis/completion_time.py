@@ -7,13 +7,13 @@ from matplotlib.lines import Line2D
 import numpy as np
 import pandas as pd
 
-from scripts.config import WORKFLOW_COLORS
 from scripts.dashboard_figures.efficiency_analysis.common import (
     _workflow_efficiency_summary,
     _workflow_order_present,
 )
 from scripts.dashboard_figures.helpers import workflow_display_name
 from scripts.dashboard_figures.style import (
+    WORKFLOW_COLORS,
     BAR_EDGE_COLOR,
     apply_standard_axes_style,
 )
