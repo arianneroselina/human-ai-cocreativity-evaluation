@@ -38,7 +38,7 @@ function groupFigures<T extends { slug: string }>(figures: T[]) {
       title: "Participant Information",
       description: "Age, gender, education, language, and AI attitude distributions.",
       figures: figures.filter((figure) =>
-        ["51_", "52_", "53_", "54_", "55_", "56_"].some((prefix) => figure.slug.startsWith(prefix))
+        ["51_", "52_", "53_", "54_", "55_", "56_", "57_"].some((prefix) => figure.slug.startsWith(prefix))
       ),
     },
     {

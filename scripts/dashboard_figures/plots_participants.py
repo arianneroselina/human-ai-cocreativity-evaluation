@@ -1,11 +1,12 @@
-"""Participant demographics and AI attitudes (figures 51-56).
+"""Participant demographics, writing confidence, and AI attitudes (figures 51-57).
 
 51  Age distribution (histogram)
 52  Gender distribution (pie)
-53  Education distribution (pie)
+53  Education distribution (bar)
 54  Native language distribution (bar)
-55  English level distribution (bar)
-56  AI attitude Likert means (bar)
+55  English level distribution (pie)
+56  Writing confidence mean (bar)
+57  AI attitude Likert means (bar)
 """
 
 import pandas as pd
@@ -310,15 +311,194 @@ def plot_participant_bar_distribution(participant_df, column, label, slug):
     )
 
 
-def plot_participant_likert_means(participant_df):
-    slug = "56_participant_ai_attitude_means"
+def plot_participant_writing_confidence(participant_df):
+    """Plot the distribution of writing-confidence ratings."""
+    slug = "56_participant_writing_confidence"
+
+    confidence_items = [
+        (column, label)
+        for column, label in PARTICIPANT_LIKERT_COLUMNS.items()
+        if "confidence" in label.lower()
+    ]
+
+    if not confidence_items:
+        return
+
+    column, _ = confidence_items[0]
+
+    if column not in participant_df.columns:
+        return
+
+    values = pd.to_numeric(
+        participant_df[column],
+        errors="coerce",
+    ).dropna()
+
+    # Retain only valid five-point scale responses.
+    values = values[
+        values.between(1, 5)
+    ].round().astype(int)
+
+    if values.empty:
+        return
+
+    counts = (
+        values.value_counts()
+        .reindex(range(1, 6), fill_value=0)
+        .sort_index()
+    )
+
+    percentages = counts / counts.sum() * 100
+
+    distribution_df = pd.DataFrame(
+        {
+            "rating": counts.index,
+            "count": counts.values,
+            "percentage": percentages.round(2).values,
+        }
+    )
+
+    distribution_df.to_csv(
+        TABLE_DIR / f"{slug}.csv",
+        index=False,
+        )
+
+    summary_df = pd.DataFrame(
+        {
+            "n": [len(values)],
+            "mean": [values.mean()],
+            "standard_deviation": [values.std()],
+            "median": [values.median()],
+        }
+    )
+
+    summary_df.to_csv(
+        TABLE_DIR / f"{slug}_summary.csv",
+        index=False,
+        )
+
+    fig, ax = plt.subplots(figsize=(7.0, 4.2))
+
+    bars = ax.bar(
+        counts.index,
+        percentages.values,
+    )
+
+    ax.bar_label(
+        bars,
+        labels=[
+            f"{percentage:.1f}%\n(n={count})"
+            if count > 0
+            else ""
+            for count, percentage in zip(
+                counts.values,
+                percentages.values,
+            )
+        ],
+        padding=3,
+        fontsize=9,
+    )
+
+    mean_rating = values.mean()
+
+    ax.axvline(
+        mean_rating,
+        linestyle="--",
+        linewidth=1,
+        label=f"Mean = {mean_rating:.2f}",
+    )
+
+    ax.set_title("Confidence in Writing Under Time Pressure")
+    ax.set_xlabel("Confidence rating (1 = low, 5 = high)")
+    ax.set_ylabel("Participants (%)")
+    ax.set_xticks(range(1, 6))
+
+    upper_limit = max(percentages.max() + 10, 40)
+    ax.set_ylim(0, min(100, upper_limit))
+
+    ax.legend(
+        title=f"n = {len(values)}",
+        loc="upper left",
+    )
+
+    save_figure(
+        fig,
+        slug,
+        "Confidence in Writing Under Time Pressure",
+        "Distribution of participants' pre-study confidence ratings for "
+        "writing under time pressure. The dashed line indicates the mean.",
+    )
+
+
+def plot_likert_mean_chart(
+        summary_df: pd.DataFrame,
+        slug: str,
+        title: str,
+        description: str,
+        figsize: tuple[float, float],
+) -> None:
+    """Plot and export mean ratings for a group of Likert-scale items."""
+    if summary_df.empty:
+        return
+
+    summary_df = summary_df.copy()
+    summary_df.to_csv(
+        TABLE_DIR / f"{slug}.csv",
+        index=False,
+        )
+
+    plot_df = summary_df.sort_values(
+        "mean",
+        ascending=True,
+    )
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    bars = ax.barh(
+        plot_df["measure"],
+        plot_df["mean"],
+    )
+
+    ax.set_title(title)
+    ax.set_xlabel("Mean rating (1–5)")
+    ax.set_ylabel("")
+    ax.set_xlim(1, 5)
+
+    ax.bar_label(
+        bars,
+        labels=[
+            f"{row['mean']:.2f} (n={int(row['n'])})"
+            for _, row in plot_df.iterrows()
+        ],
+        padding=4,
+        fontsize=9,
+    )
+
+    save_figure(
+        fig,
+        slug,
+        title,
+        description,
+    )
+
+
+def plot_participant_ai_attitude_means(participant_df):
+    slug = "57_participant_ai_attitude_means"
 
     rows = []
+
     for column, label in PARTICIPANT_LIKERT_COLUMNS.items():
+        # Writing confidence is shown separately.
+        if "confidence" in label.lower():
+            continue
+
         if column not in participant_df.columns:
             continue
 
-        values = pd.to_numeric(participant_df[column], errors="coerce").dropna()
+        values = pd.to_numeric(
+            participant_df[column],
+            errors="coerce",
+        ).dropna()
 
         if values.empty:
             continue
@@ -335,37 +515,16 @@ def plot_participant_likert_means(participant_df):
         return
 
     summary_df = pd.DataFrame(rows)
-    summary_df.to_csv(TABLE_DIR / f"{slug}.csv", index=False)
 
-    plot_df = summary_df.sort_values("mean", ascending=True)
-
-    fig, ax = plt.subplots(figsize=(8.8, 4.8))
-
-    bars = ax.barh(
-        plot_df["measure"],
-        plot_df["mean"],
-    )
-
-    ax.set_title("Participant Writing Confidence and AI Attitudes")
-    ax.set_xlabel("Mean rating (1-5)")
-    ax.set_ylabel("")
-    ax.set_xlim(1, 5)
-
-    ax.bar_label(
-        bars,
-        labels=[
-            f"{row['mean']:.2f}\n(n={int(row['n'])})" for _, row in plot_df.iterrows()
-        ],
-        padding=3,
-        fontsize=8,
-    )
-
-    save_figure(
-        fig,
-        slug,
-        "Participant Writing Confidence and AI Attitudes",
-        "Mean ratings for writing confidence and attitudes toward AI, shown "
-        "with participant counts.",
+    plot_likert_mean_chart(
+        summary_df=summary_df,
+        slug=slug,
+        title="Participant Attitudes Toward AI",
+        description=(
+            "Mean ratings for the four participant AI-attitude items, "
+            "shown with the number of responses."
+        ),
+        figsize=(8.4, 4.2),
     )
 
 
@@ -398,4 +557,5 @@ def plot_participant_info(participant_df):
         "55_participant_english_level_distribution",
     )
 
-    plot_participant_likert_means(participant_df)
+    plot_participant_writing_confidence(participant_df)
+    plot_participant_ai_attitude_means(participant_df)

@@ -336,10 +336,17 @@
     "pdfUrl": "/research-dashboard/figures/55_participant_english_level_distribution.pdf"
   },
   {
-    "slug": "56_participant_ai_attitude_means",
-    "title": "Participant Writing Confidence and AI Attitudes",
-    "description": "Mean ratings for writing confidence and attitudes toward AI, shown with participant counts.",
-    "pngUrl": "/research-dashboard/figures/56_participant_ai_attitude_means.png",
-    "pdfUrl": "/research-dashboard/figures/56_participant_ai_attitude_means.pdf"
+    "slug": "56_participant_writing_confidence",
+    "title": "Confidence in Writing Under Time Pressure",
+    "description": "Distribution of participants' pre-study confidence ratings for writing under time pressure. The dashed line indicates the mean.",
+    "pngUrl": "/research-dashboard/figures/56_participant_writing_confidence.png",
+    "pdfUrl": "/research-dashboard/figures/56_participant_writing_confidence.pdf"
+  },
+  {
+    "slug": "57_participant_ai_attitude_means",
+    "title": "Participant Attitudes Toward AI",
+    "description": "Mean ratings for the four participant AI-attitude items, shown with the number of responses.",
+    "pngUrl": "/research-dashboard/figures/57_participant_ai_attitude_means.png",
+    "pdfUrl": "/research-dashboard/figures/57_participant_ai_attitude_means.pdf"
   }
 ]
