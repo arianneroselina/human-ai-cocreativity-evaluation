@@ -323,8 +323,8 @@
   },
   {
     "slug": "54_participant_native_language_distribution",
-    "title": "Participant Native Language Distribution",
-    "description": "Participant distribution by participant native language distribution shown as percentages and counts.",
+    "title": "Participant Native Languages",
+    "description": "Distribution of participants' normalized native-language responses. Languages represented by one participant were grouped as 'Other languages': Chinese, English, French, Marathi, Urdu.",
     "pngUrl": "/research-dashboard/figures/54_participant_native_language_distribution.png",
     "pdfUrl": "/research-dashboard/figures/54_participant_native_language_distribution.pdf"
   },

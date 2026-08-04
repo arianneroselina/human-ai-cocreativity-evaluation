@@ -106,6 +106,122 @@ def plot_participant_age_distribution(participant_df):
     )
 
 
+def normalize_native_language(series: pd.Series) -> pd.Series:
+    """Normalize native-language labels to sentence capitalization."""
+    normalized = (
+        series.astype("string")
+        .str.strip()
+        .str.lower()
+        .str.capitalize()
+    )
+
+    return normalized.mask(normalized.eq("")).dropna()
+
+
+def plot_participant_native_language_distribution(participant_df):
+    slug = "54_participant_native_language_distribution"
+
+    if "nativeLanguage" not in participant_df.columns:
+        return
+
+    languages = normalize_native_language(
+        participant_df["nativeLanguage"]
+    )
+
+    if languages.empty:
+        return
+
+    # Count after normalization so, for example, KANNADA and Kannada
+    # are treated as the same language.
+    normalized_counts = languages.value_counts()
+
+    # Group only languages represented by one participant.
+    singleton_languages = normalized_counts[
+        normalized_counts == 1
+        ].index.tolist()
+
+    display_languages = languages.mask(
+        languages.isin(singleton_languages),
+        "Other languages",
+    )
+
+    counts = display_languages.value_counts()
+    percentages = export_category_distribution(counts, slug)
+
+    # Export the normalization and grouping details for transparency.
+    grouping_df = pd.DataFrame(
+        {
+            "language": normalized_counts.index,
+            "count": normalized_counts.values,
+            "display_category": [
+                (
+                    "Other languages"
+                    if language in singleton_languages
+                    else language
+                )
+                for language in normalized_counts.index
+            ],
+        }
+    )
+
+    grouping_df.to_csv(
+        TABLE_DIR / f"{slug}_grouping.csv",
+        index=False,
+        )
+
+    plot_df = pd.DataFrame(
+        {
+            "percentage": percentages,
+            "count": counts,
+        }
+    ).sort_values(
+        ["percentage", "count"],
+        ascending=True,
+    )
+
+    fig_height = max(4.0, 0.52 * len(plot_df) + 1.4)
+    fig, ax = plt.subplots(figsize=(7.6, fig_height))
+
+    bars = ax.barh(
+        plot_df.index,
+        plot_df["percentage"],
+    )
+
+    ax.set_title("Participant Native Languages")
+    ax.set_xlabel("Participants (%)")
+    ax.set_ylabel("")
+
+    # Avoid the large unused area produced by a fixed 0–100 axis.
+    max_percentage = plot_df["percentage"].max()
+    ax.set_xlim(0, min(100, max_percentage + 12))
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
+
+    ax.bar_label(
+        bars,
+        labels=[
+            f"{row['percentage']:.1f}% (n={int(row['count'])})"
+            for _, row in plot_df.iterrows()
+        ],
+        padding=4,
+        fontsize=9,
+    )
+
+    other_description = (
+        ", ".join(sorted(singleton_languages))
+        if singleton_languages
+        else "none"
+    )
+
+    save_figure(
+        fig,
+        slug,
+        "Participant Native Languages",
+        "Distribution of participants' normalized native-language responses. "
+        f"Languages represented by one participant were grouped as "
+        f"'Other languages': {other_description}.",
+    )
+
+
 def plot_participant_pie_distribution(participant_df, column, label, slug):
     if column not in participant_df.columns:
         return
@@ -273,12 +389,7 @@ def plot_participant_info(participant_df):
         "53_participant_education_distribution",
     )
 
-    plot_participant_bar_distribution(
-        participant_df,
-        "nativeLanguage",
-        "Participant Native Language Distribution",
-        "54_participant_native_language_distribution",
-    )
+    plot_participant_native_language_distribution(participant_df)
 
     plot_participant_pie_distribution(
         participant_df,
