@@ -109,12 +109,7 @@ def plot_participant_age_distribution(participant_df):
 
 def normalize_native_language(series: pd.Series) -> pd.Series:
     """Normalize native-language labels to sentence capitalization."""
-    normalized = (
-        series.astype("string")
-        .str.strip()
-        .str.lower()
-        .str.capitalize()
-    )
+    normalized = series.astype("string").str.strip().str.lower().str.capitalize()
 
     return normalized.mask(normalized.eq("")).dropna()
 
@@ -125,9 +120,7 @@ def plot_participant_native_language_distribution(participant_df):
     if "nativeLanguage" not in participant_df.columns:
         return
 
-    languages = normalize_native_language(
-        participant_df["nativeLanguage"]
-    )
+    languages = normalize_native_language(participant_df["nativeLanguage"])
 
     if languages.empty:
         return
@@ -137,9 +130,7 @@ def plot_participant_native_language_distribution(participant_df):
     normalized_counts = languages.value_counts()
 
     # Group only languages represented by one participant.
-    singleton_languages = normalized_counts[
-        normalized_counts == 1
-        ].index.tolist()
+    singleton_languages = normalized_counts[normalized_counts == 1].index.tolist()
 
     display_languages = languages.mask(
         languages.isin(singleton_languages),
@@ -155,11 +146,7 @@ def plot_participant_native_language_distribution(participant_df):
             "language": normalized_counts.index,
             "count": normalized_counts.values,
             "display_category": [
-                (
-                    "Other languages"
-                    if language in singleton_languages
-                    else language
-                )
+                ("Other languages" if language in singleton_languages else language)
                 for language in normalized_counts.index
             ],
         }
@@ -168,7 +155,7 @@ def plot_participant_native_language_distribution(participant_df):
     grouping_df.to_csv(
         TABLE_DIR / f"{slug}_grouping.csv",
         index=False,
-        )
+    )
 
     plot_df = pd.DataFrame(
         {
@@ -208,9 +195,7 @@ def plot_participant_native_language_distribution(participant_df):
     )
 
     other_description = (
-        ", ".join(sorted(singleton_languages))
-        if singleton_languages
-        else "none"
+        ", ".join(sorted(singleton_languages)) if singleton_languages else "none"
     )
 
     save_figure(
@@ -335,18 +320,12 @@ def plot_participant_writing_confidence(participant_df):
     ).dropna()
 
     # Retain only valid five-point scale responses.
-    values = values[
-        values.between(1, 5)
-    ].round().astype(int)
+    values = values[values.between(1, 5)].round().astype(int)
 
     if values.empty:
         return
 
-    counts = (
-        values.value_counts()
-        .reindex(range(1, 6), fill_value=0)
-        .sort_index()
-    )
+    counts = values.value_counts().reindex(range(1, 6), fill_value=0).sort_index()
 
     percentages = counts / counts.sum() * 100
 
@@ -361,7 +340,7 @@ def plot_participant_writing_confidence(participant_df):
     distribution_df.to_csv(
         TABLE_DIR / f"{slug}.csv",
         index=False,
-        )
+    )
 
     summary_df = pd.DataFrame(
         {
@@ -375,7 +354,7 @@ def plot_participant_writing_confidence(participant_df):
     summary_df.to_csv(
         TABLE_DIR / f"{slug}_summary.csv",
         index=False,
-        )
+    )
 
     fig, ax = plt.subplots(figsize=(7.0, 4.2))
 
@@ -387,9 +366,7 @@ def plot_participant_writing_confidence(participant_df):
     ax.bar_label(
         bars,
         labels=[
-            f"{percentage:.1f}%\n(n={count})"
-            if count > 0
-            else ""
+            f"{percentage:.1f}%\n(n={count})" if count > 0 else ""
             for count, percentage in zip(
                 counts.values,
                 percentages.values,
@@ -431,11 +408,11 @@ def plot_participant_writing_confidence(participant_df):
 
 
 def plot_likert_mean_chart(
-        summary_df: pd.DataFrame,
-        slug: str,
-        title: str,
-        description: str,
-        figsize: tuple[float, float],
+    summary_df: pd.DataFrame,
+    slug: str,
+    title: str,
+    description: str,
+    figsize: tuple[float, float],
 ) -> None:
     """Plot and export mean ratings for a group of Likert-scale items."""
     if summary_df.empty:
@@ -445,7 +422,7 @@ def plot_likert_mean_chart(
     summary_df.to_csv(
         TABLE_DIR / f"{slug}.csv",
         index=False,
-        )
+    )
 
     plot_df = summary_df.sort_values(
         "mean",
@@ -467,8 +444,7 @@ def plot_likert_mean_chart(
     ax.bar_label(
         bars,
         labels=[
-            f"{row['mean']:.2f} (n={int(row['n'])})"
-            for _, row in plot_df.iterrows()
+            f"{row['mean']:.2f} (n={int(row['n'])})" for _, row in plot_df.iterrows()
         ],
         padding=4,
         fontsize=9,

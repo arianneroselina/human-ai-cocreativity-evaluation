@@ -126,18 +126,11 @@
     "pdfUrl": "/research-dashboard/figures/14_mixed_vs_solo_quality_practice_rounds.pdf"
   },
   {
-    "slug": "15_highest_rated_poem_examples",
-    "title": "Highest-Rated Poem Examples",
-    "description": "Illustrative examples selected by the highest mean overall quality scores. They are individual cases and should not be interpreted as evidence that a workflow generally performs better.",
-    "pngUrl": "/research-dashboard/figures/15_highest_rated_poem_examples.png",
-    "pdfUrl": "/research-dashboard/figures/15_highest_rated_poem_examples.pdf"
-  },
-  {
-    "slug": "15b_lowest_rated_poem_examples",
-    "title": "Lowest-Rated Poem Examples",
-    "description": "Illustrative examples selected by the lowest mean overall quality scores. They are individual cases and should not be interpreted as evidence that a workflow generally performs worse.",
-    "pngUrl": "/research-dashboard/figures/15b_lowest_rated_poem_examples.png",
-    "pdfUrl": "/research-dashboard/figures/15b_lowest_rated_poem_examples.pdf"
+    "slug": "15_quality_extreme_poem_examples",
+    "title": "Highest- and Lowest-Rated Poem Examples",
+    "description": "Illustrative examples selected from the highest and lowest Mean Overall Quality scores. Individual examples should not be interpreted as general workflow effects.",
+    "pngUrl": "/research-dashboard/figures/15_quality_extreme_poem_examples.png",
+    "pdfUrl": "/research-dashboard/figures/15_quality_extreme_poem_examples.pdf"
   },
   {
     "slug": "16_completion_time_by_workflow_practice_rounds",
