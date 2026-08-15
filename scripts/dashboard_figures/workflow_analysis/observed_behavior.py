@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 
 from scripts.config import MAIN_ROUND_INDICES, WORKFLOW_ORDER
 from scripts.dashboard_figures.helpers import workflow_display_name
+from scripts.dashboard_figures.style import SUBTITLE_FONT_SIZE, VALUE_LABEL_FONT_SIZE
 from scripts.utils import save_figure, save_table
 
 from scripts.dashboard_figures.workflow_analysis.common import (
@@ -68,7 +69,7 @@ def _plot_row_percentage_crosstab(
                 f"{count}\n({percentage:.0f}%)",
                 ha="center",
                 va="center",
-                fontsize=8.5,
+                fontsize=VALUE_LABEL_FONT_SIZE,
                 color=text_color,
             )
 
@@ -330,33 +331,16 @@ def plot_stated_vs_observed_workflow_behaviour(
     first_image = _plot_row_percentage_crosstab(
         first_ax,
         first_matrix,
-        (
-            "First Voluntary Workflow Choice\n"
-            f"Exact match: {first_agreement}/{first_n} "
-            f"({first_agreement / first_n * 100:.0f}%)"
-        ),
+        "First Voluntary Workflow Choice",
         "Final Rank-1 preference",
         "First voluntary choice",
         [workflow_display_name(workflow) for workflow in WORKFLOW_ORDER],
     )
 
-    unique_agreement_text = (
-        (
-            f"{unique_modal_agreement}/{unique_modal_n} "
-            f"({unique_modal_agreement / unique_modal_n * 100:.0f}%)"
-        )
-        if unique_modal_n
-        else "not available"
-    )
-
     _plot_row_percentage_crosstab(
         modal_ax,
         modal_matrix,
-        (
-            "Most-Used Workflow Across Main Rounds\n"
-            f"Unique-mode agreement: {unique_agreement_text}; "
-            f"{modal_ties} ties"
-        ),
+        "Most-Used Workflow Across Main Rounds",
         "Final Rank-1 preference",
         "Observed most-used workflow",
         [
@@ -373,7 +357,6 @@ def plot_stated_vs_observed_workflow_behaviour(
 
     fig.suptitle(
         "Final Workflow Preference and Observed Main-Round Behaviour",
-        fontsize=13,
     )
 
     save_figure(

@@ -22,7 +22,8 @@ from scripts.dashboard_figures.helpers import (
     ordered_exposure_groups,
     workflow_display_name,
 )
-from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style
+from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style, VALUE_LABEL_FONT_SIZE, \
+    SUBTITLE_FONT_SIZE, INSIDE_LABEL_FONT_SIZE
 from scripts.dashboard_figures.summaries import grouped_metric_summary
 from scripts.utils import (
     require_columns,
@@ -183,7 +184,7 @@ def plot_main_round_satisfaction_by_exposure(
                     ),
                     fmt="none",
                     ecolor=WORKFLOW_COLORS[workflow],
-                    elinewidth=1.1,
+                    elinewidth=2,
                     capsize=3,
                     alpha=0.9,
                     zorder=3,
@@ -191,20 +192,36 @@ def plot_main_round_satisfaction_by_exposure(
 
             valid_rows = workflow_summary.loc[workflow_summary["mean"].notna()]
 
+            # Show the observation count for every cell.
             for x_value, y_value, count in zip(
-                x_values[valid],
-                means[valid],
-                valid_rows["count"].to_numpy(dtype=int),
+                    x_values[valid],
+                    means[valid],
+                    valid_rows["count"].to_numpy(dtype=int),
             ):
+                # Put labels below points close to the upper boundary.
+                if y_value >= 4.4:
+                    text_offset = (0, -10)
+                    vertical_alignment = "top"
+                else:
+                    text_offset = (0, 9)
+                    vertical_alignment = "bottom"
+
                 axis.annotate(
                     f"n={count}",
                     (x_value, y_value),
-                    xytext=(0, 7),
+                    xytext=text_offset,
                     textcoords="offset points",
                     ha="center",
-                    va="bottom",
-                    fontsize=7,
-                    color=WORKFLOW_COLORS[workflow],
+                    va=vertical_alignment,
+                    fontsize=INSIDE_LABEL_FONT_SIZE,
+                    color="0.25",
+                    zorder=5,
+                    bbox={
+                        "boxstyle": "round,pad=0.15",
+                        "facecolor": "white",
+                        "edgecolor": "none",
+                        "alpha": 0.80,
+                    },
                 )
 
         if _is_exposed(group):
@@ -241,7 +258,6 @@ def plot_main_round_satisfaction_by_exposure(
 
     fig.suptitle(
         "Participant Satisfaction by Main Round, Workflow, and Error Exposure",
-        fontsize=13,
         y=0.99,
     )
 

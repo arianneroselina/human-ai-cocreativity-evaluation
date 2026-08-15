@@ -13,7 +13,7 @@ from scripts.config import (
     QUALITY_SCALE_MIN,
     SATISFACTION_COLUMN,
 )
-from scripts.dashboard_figures.style import apply_standard_axes_style
+from scripts.dashboard_figures.style import apply_standard_axes_style, SUBTITLE_FONT_SIZE
 from scripts.utils import require_columns, save_figure, save_table
 
 from scripts.dashboard_figures.experience_analysis.common import _spearman_summary
@@ -201,7 +201,7 @@ def plot_satisfaction_vs_external_quality(prepared) -> None:
             transform=axis.transAxes,
             ha="left",
             va="top",
-            fontsize=9,
+            fontsize=SUBTITLE_FONT_SIZE,
             bbox={
                 "boxstyle": "round,pad=0.35",
                 "facecolor": "white",

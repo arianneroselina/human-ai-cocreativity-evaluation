@@ -12,6 +12,7 @@ from scripts.dashboard_figures.constraint_analysis.common import (
     _explode_requirement_results,
 )
 from scripts.dashboard_figures.helpers import workflow_display_name
+from scripts.dashboard_figures.style import VALUE_LABEL_FONT_SIZE
 from scripts.utils import save_figure, save_table
 
 
@@ -70,7 +71,7 @@ def plot_practice_failure_breakdown_by_constraint_type(practice_df) -> None:
                 label,
                 ha="center",
                 va="center",
-                fontsize=8.5,
+                fontsize=VALUE_LABEL_FONT_SIZE,
                 color=text_color,
             )
 

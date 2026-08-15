@@ -14,7 +14,7 @@ from scripts.dashboard_figures.helpers import (
 from scripts.dashboard_figures.loaders import load_participant_interview_notes
 from scripts.dashboard_figures.style import (
     BAR_EDGE_COLOR,
-    apply_standard_axes_style,
+    apply_standard_axes_style, VALUE_LABEL_FONT_SIZE,
 )
 from scripts.utils import (
     save_figure,
@@ -176,8 +176,8 @@ def plot_final_workflow_preference_by_reported_ai_errors(
         zip(
             observed_groups,
             np.linspace(
-                -0.20,
-                0.20,
+                -0.26,
+                0.26,
                 len(observed_groups),
             ),
         )
@@ -249,7 +249,7 @@ def plot_final_workflow_preference_by_reported_ai_errors(
 
     fig, (ax_mean, ax_first) = plt.subplots(
         ncols=2,
-        figsize=(12.4, 5.5),
+        figsize=(12.4, 6.3),
         sharey=True,
         gridspec_kw={
             "width_ratios": [1.15, 1.35],
@@ -273,10 +273,10 @@ def plot_final_workflow_preference_by_reported_ai_errors(
         valid = np.isfinite(mean_ranks)
         y_values = positions + offset
 
-        # Subtle lollipop stems, without implying a trajectory.
+        # Subtle lollipop stems.
         for y_value, mean_rank in zip(
-            y_values[valid],
-            mean_ranks[valid],
+                y_values[valid],
+                mean_ranks[valid],
         ):
             ax_mean.hlines(
                 y=y_value,
@@ -284,7 +284,7 @@ def plot_final_workflow_preference_by_reported_ai_errors(
                 xmax=mean_rank,
                 color=color,
                 linewidth=1.2,
-                alpha=0.35,
+                alpha=0.30,
                 zorder=1,
             )
 
@@ -300,24 +300,25 @@ def plot_final_workflow_preference_by_reported_ai_errors(
         )
 
         for mean_rank, y_value in zip(
-            mean_ranks[valid],
-            y_values[valid],
+                mean_ranks[valid],
+                y_values[valid],
         ):
             ax_mean.annotate(
                 f"{mean_rank:.2f}",
                 (mean_rank, y_value),
-                xytext=(6, 0),
+                xytext=(7, 0),
                 textcoords="offset points",
                 ha="left",
                 va="center",
-                fontsize=8,
+                fontsize=VALUE_LABEL_FONT_SIZE,
                 color=color,
+                zorder=4,
             )
 
     ax_mean.set_yticks(positions)
     ax_mean.set_yticklabels(
         [
-            (f"{index + 1}. {workflow_display_name(workflow)}")
+            f"{index + 1}. {workflow_display_name(workflow)}"
             for index, workflow in enumerate(workflow_order)
         ]
     )
@@ -335,17 +336,21 @@ def plot_final_workflow_preference_by_reported_ai_errors(
     )
 
     ax_mean.set_xlabel("Average assigned rank")
-    ax_mean.set_title("Average preference rank")
+    ax_mean.set_title(
+        "Average preference rank",
+        pad=8,
+    )
 
     apply_standard_axes_style(
         ax_mean,
         grid_axis="x",
     )
 
+
     # ------------------------------------------------------------
     # Right panel: first-choice percentage
     # ------------------------------------------------------------
-    bar_height = 0.16
+    bar_height = 0.2
 
     for group in observed_groups:
         summary = group_summaries[group]
@@ -371,15 +376,24 @@ def plot_final_workflow_preference_by_reported_ai_errors(
         )
 
         for bar, percentage in zip(
-            bars,
-            percentages[valid],
+                bars,
+                percentages[valid],
         ):
             y_center = bar.get_y() + bar.get_height() / 2
 
+            # Put sufficiently large values inside the bar.
             if percentage >= 14:
                 x_position = percentage - 2
                 horizontal_alignment = "right"
                 text_color = "white"
+
+            # Make zero values visually secondary.
+            elif percentage == 0:
+                x_position = 2
+                horizontal_alignment = "left"
+                text_color = "0.35"
+
+            # Small non-zero values sit just outside the bar.
             else:
                 x_position = percentage + 2
                 horizontal_alignment = "left"
@@ -391,7 +405,7 @@ def plot_final_workflow_preference_by_reported_ai_errors(
                 f"{percentage:.0f}%",
                 ha=horizontal_alignment,
                 va="center",
-                fontsize=8,
+                fontsize=VALUE_LABEL_FONT_SIZE,
                 fontweight="semibold",
                 color=text_color,
                 zorder=3,
@@ -399,8 +413,13 @@ def plot_final_workflow_preference_by_reported_ai_errors(
 
     ax_first.set_xlim(0, 105)
     ax_first.set_xticks([0, 25, 50, 75, 100])
-    ax_first.set_xlabel("Participants ranking the workflow first (%)")
-    ax_first.set_title("First-choice share")
+    ax_first.set_xlabel(
+        "Participants ranking the workflow first (%)"
+    )
+    ax_first.set_title(
+        "First-choice share",
+        pad=8,
+    )
 
     # Y labels are already displayed in the left panel.
     ax_first.tick_params(
@@ -414,6 +433,10 @@ def plot_final_workflow_preference_by_reported_ai_errors(
         grid_axis="x",
     )
 
+
+    # ------------------------------------------------------------
+    # Shared legend
+    # ------------------------------------------------------------
     legend_handles = [
         Line2D(
             [0],
@@ -423,7 +446,7 @@ def plot_final_workflow_preference_by_reported_ai_errors(
             markersize=8,
             markerfacecolor=group_colors[group],
             markeredgecolor="white",
-            label=(f"{group} (n={group_sizes[group]})"),
+            label=f"{group} (n={group_sizes[group]})",
         )
         for group in observed_groups
     ]
@@ -431,19 +454,28 @@ def plot_final_workflow_preference_by_reported_ai_errors(
     fig.legend(
         handles=legend_handles,
         title="Reported AI errors",
-        bbox_to_anchor=(0.85, 0.5),
+        bbox_to_anchor=(0.825, 0.50),
         loc="center left",
     )
 
-    total_participants = ranking_df["sessionId"].nunique()
 
+    # ------------------------------------------------------------
+    # Overall title and layout
+    # ------------------------------------------------------------
     fig.suptitle(
-        (f"Final Workflow Preference by Reported AI Errors (N={total_participants})"),
-        fontsize=14,
-        y=0.99,
+        "Final Workflow Preference by Reported AI Errors",
+        y=0.955,
     )
 
-    fig.tight_layout(rect=(0, 0.08, 0.82, 0.94))
+    # Explicit spacing is more predictable here than tight_layout because
+    # the figure has an external legend and an overall title.
+    fig.subplots_adjust(
+        left=0.10,
+        right=0.80,
+        bottom=0.14,
+        top=0.84,
+        wspace=0.07,
+    )
 
     save_figure(
         fig,

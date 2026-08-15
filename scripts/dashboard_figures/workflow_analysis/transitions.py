@@ -19,7 +19,7 @@ from scripts.dashboard_figures.helpers import (
 from scripts.dashboard_figures.style import (
     WORKFLOW_COLORS,
     BAR_EDGE_COLOR,
-    apply_standard_axes_style,
+    apply_standard_axes_style, VALUE_LABEL_FONT_SIZE,
 )
 from scripts.utils import save_figure, save_table
 
@@ -137,12 +137,17 @@ def plot_main_workflow_transitions(main_df) -> None:
     fig, axes = plt.subplots(
         1,
         len(transition_data),
-        figsize=(7.2 * len(transition_data), 5.8),
-        sharey=False,  # Important: n differs per transition
+        figsize=(7.2 * len(transition_data), 6.2),
+        sharey=False,
         squeeze=False,
         constrained_layout=True,
     )
     axes = axes.flatten()
+
+    # Reserve the upper part of the figure for the overall title.
+    fig.get_layout_engine().set(
+        rect=(0.0, 0.0, 1.0, 0.90)
+    )
 
     for index, (ax, data) in enumerate(zip(axes, transition_data)):
         from_label, to_label, counts, percentages, totals = data
@@ -166,7 +171,7 @@ def plot_main_workflow_transitions(main_df) -> None:
 
     fig.suptitle(
         "Workflow Transitions Across Main Rounds",
-        y=0.985,
+        y=0.97,
     )
 
     save_figure(
@@ -266,7 +271,7 @@ def plot_workflow_retention(main_df):
             label,
             ha="center",
             va="bottom",
-            fontsize=9,
+            fontsize=VALUE_LABEL_FONT_SIZE,
         )
 
     ax.set_ylim(0, 112)

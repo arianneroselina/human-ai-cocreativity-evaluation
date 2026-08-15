@@ -19,7 +19,11 @@ from scripts.dashboard_figures.helpers import (
     ordered_exposure_groups,
     workflow_display_name,
 )
-from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style
+from scripts.dashboard_figures.style import (
+    WORKFLOW_COLORS,
+    apply_standard_axes_style,
+    SUBTITLE_FONT_SIZE, INSIDE_LABEL_FONT_SIZE,
+)
 from scripts.dashboard_figures.summaries import grouped_metric_summary
 from scripts.utils import (
     require_columns,
@@ -211,28 +215,42 @@ def plot_main_round_tlx_by_exposure_and_workflow(
                     ),
                     fmt="none",
                     ecolor=WORKFLOW_COLORS[workflow],
-                    elinewidth=1.1,
+                    elinewidth=2,
                     capsize=3,
                     alpha=0.9,
                     zorder=3,
                 )
 
+            # Show the observation count for every cell.
             for x_value, mean, count in zip(
-                x_values[valid],
-                means[valid],
-                counts[valid],
+                    x_values[valid],
+                    means[valid],
+                    counts[valid],
             ):
-                count_label = f"n={count}"
+                # Put labels below points close to the upper boundary.
+                if mean >= 17.5:
+                    text_offset = (0, -10)
+                    vertical_alignment = "top"
+                else:
+                    text_offset = (0, 9)
+                    vertical_alignment = "bottom"
 
                 axis.annotate(
-                    count_label,
+                    f"n={count}",
                     (x_value, mean),
-                    xytext=(0, 8),
+                    xytext=text_offset,
                     textcoords="offset points",
                     ha="center",
-                    va="bottom",
-                    fontsize=7,
-                    color=WORKFLOW_COLORS[workflow],
+                    va=vertical_alignment,
+                    fontsize=INSIDE_LABEL_FONT_SIZE,
+                    color="0.25",
+                    zorder=5,
+                    bbox={
+                        "boxstyle": "round,pad=0.15",
+                        "facecolor": "white",
+                        "edgecolor": "none",
+                        "alpha": 0.80,
+                    },
                 )
 
         round_labels = [
@@ -280,7 +298,6 @@ def plot_main_round_tlx_by_exposure_and_workflow(
 
     fig.suptitle(
         "Raw NASA-TLX Workload in Main Rounds by Error Exposure",
-        fontsize=13,
         y=0.99,
     )
 

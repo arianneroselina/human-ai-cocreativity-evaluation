@@ -14,7 +14,7 @@ from scripts.config import (
 )
 from scripts.dashboard_figures.helpers import workflow_display_name
 from scripts.dashboard_figures.series import plot_workflow_round_series
-from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style
+from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style, VALUE_LABEL_FONT_SIZE
 from scripts.dashboard_figures.summaries import grouped_metric_summary
 from scripts.utils import require_columns, save_figure, save_table
 
@@ -77,7 +77,7 @@ def plot_satisfaction_by_practice_round_and_workflow(
     ax.set_xlabel("Practice round")
     ax.set_ylabel("Satisfaction rating (1-5)")
     ax.set_xticks(rounds)
-    ax.set_xticklabels([f"Practice {index + 1}" for index in range(len(rounds))])
+    ax.set_xticklabels([index + 1 for index in range(len(rounds))])
     ax.set_ylim(0.7, 5.42)
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     ax.legend(
@@ -170,7 +170,7 @@ def plot_ai_experience_by_practice_round_and_workflow(
         axis.set_title(AI_EXPERIENCE_METRICS[metric])
         axis.set_xticks(rounds)
 
-        axis.set_xticklabels([f"Practice {int(round_index)}" for round_index in rounds])
+        axis.set_xticklabels([int(round_index) for round_index in rounds])
 
         axis.set_ylim(0.7, 5.42)
         axis.yaxis.set_major_locator(MaxNLocator(integer=True))
@@ -197,7 +197,6 @@ def plot_ai_experience_by_practice_round_and_workflow(
     )
     fig.suptitle(
         "AI Interaction Ratings by Practice Round and Workflow",
-        fontsize=13,
         y=0.995,
     )
     fig.tight_layout(rect=(0, 0.02, 0.81, 0.97))
@@ -292,13 +291,13 @@ def plot_tlx_score_by_workflow_in_practice_rounds(
             zorder=3,
         )
         ax.annotate(
-            f"{row['mean']:.1f} (n={int(row['count'])})",
+            f"{row['mean']:.1f}",
             (row["upperCI"], position),
             xytext=(7, 0),
             textcoords="offset points",
             ha="left",
             va="center",
-            fontsize=8.5,
+            fontsize=VALUE_LABEL_FONT_SIZE,
             color="#333333",
         )
 

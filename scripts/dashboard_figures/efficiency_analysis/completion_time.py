@@ -15,7 +15,7 @@ from scripts.dashboard_figures.helpers import workflow_display_name
 from scripts.dashboard_figures.style import (
     WORKFLOW_COLORS,
     BAR_EDGE_COLOR,
-    apply_standard_axes_style,
+    apply_standard_axes_style, SUBTITLE_FONT_SIZE,
 )
 from scripts.utils import save_figure, save_table
 
@@ -117,7 +117,7 @@ def plot_completion_time_by_workflow_practice_rounds(
             transform=ax.get_xaxis_transform(),
             ha="center",
             va="bottom",
-            fontsize=8,
+            fontsize=SUBTITLE_FONT_SIZE,
         )
 
     mean_handle = Line2D(

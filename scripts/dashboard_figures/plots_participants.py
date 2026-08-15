@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
 from scripts.config import PARTICIPANT_LIKERT_COLUMNS, TABLE_DIR
+from scripts.dashboard_figures.style import PIE_LABEL_FONT_SIZE, VALUE_LABEL_FONT_SIZE
 from scripts.utils import save_figure
 
 
@@ -71,7 +72,7 @@ def plot_participant_age_distribution(participant_df):
         age,
         bins=bins,
         edgecolor="white",
-        linewidth=1,
+        linewidth=2,
     )
 
     mean_age = age.mean()
@@ -81,7 +82,7 @@ def plot_participant_age_distribution(participant_df):
         mean_age,
         color="darkred",
         linestyle="--",
-        linewidth=1,
+        linewidth=2,
         label=f"Mean = {mean_age:.1f}",
     )
 
@@ -89,7 +90,7 @@ def plot_participant_age_distribution(participant_df):
         median_age,
         color="darkgreen",
         linestyle=":",
-        linewidth=1,
+        linewidth=2,
         label=f"Median = {median_age:.1f}",
     )
 
@@ -191,7 +192,7 @@ def plot_participant_native_language_distribution(participant_df):
             for _, row in plot_df.iterrows()
         ],
         padding=4,
-        fontsize=9,
+        fontsize=VALUE_LABEL_FONT_SIZE,
     )
 
     other_description = (
@@ -229,10 +230,10 @@ def plot_participant_pie_distribution(participant_df, column, label, slug):
         pctdistance=0.72,
         wedgeprops={
             "edgecolor": "white",
-            "linewidth": 1,
+            "linewidth": 2,
         },
         textprops={
-            "fontsize": 9,
+            "fontsize": PIE_LABEL_FONT_SIZE,
         },
     )
 
@@ -285,7 +286,7 @@ def plot_participant_bar_distribution(participant_df, column, label, slug):
             for label_value in plot_df.index
         ],
         padding=3,
-        fontsize=9,
+        fontsize=VALUE_LABEL_FONT_SIZE,
     )
 
     save_figure(
@@ -373,15 +374,16 @@ def plot_participant_writing_confidence(participant_df):
             )
         ],
         padding=3,
-        fontsize=9,
+        fontsize=VALUE_LABEL_FONT_SIZE,
     )
 
     mean_rating = values.mean()
 
     ax.axvline(
         mean_rating,
+        color="darkred",
         linestyle="--",
-        linewidth=1,
+        linewidth=2,
         label=f"Mean = {mean_rating:.2f}",
     )
 
@@ -447,7 +449,7 @@ def plot_likert_mean_chart(
             f"{row['mean']:.2f} (n={int(row['n'])})" for _, row in plot_df.iterrows()
         ],
         padding=4,
-        fontsize=9,
+        fontsize=VALUE_LABEL_FONT_SIZE,
     )
 
     save_figure(

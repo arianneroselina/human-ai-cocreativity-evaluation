@@ -212,7 +212,7 @@
   {
     "slug": "107_main_constraint_fulfillment_by_error_exposure_round_and_workflow",
     "title": "Complete Constraint Fulfillment by Main Round, Workflow, and Error Exposure",
-    "description": "Complete constraint-fulfillment rates for each Main round and selected workflow, shown separately by actual Main 1 error exposure. Points show pass-rate estimates, whiskers show 95% Wilson confidence intervals, and labels report successful rounds divided by observed rounds.",
+    "description": "Complete constraint-fulfillment rates for each Main round and selected workflow, shown separately by actual Main 1 error exposure. Points show pass-rate estimates and whiskers show 95% Wilson confidence intervals.",
     "pngUrl": "/research-dashboard/figures/107_main_constraint_fulfillment_by_error_exposure_round_and_workflow.png",
     "pdfUrl": "/research-dashboard/figures/107_main_constraint_fulfillment_by_error_exposure_round_and_workflow.pdf"
   },

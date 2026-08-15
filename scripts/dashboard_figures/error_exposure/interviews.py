@@ -14,7 +14,7 @@ from scripts.dashboard_figures.loaders import load_participant_interview_notes
 from scripts.dashboard_figures.style import (
     BAR_EDGE_COLOR,
     FOOTNOTE_TEXT_COLOR,
-    apply_standard_axes_style,
+    apply_standard_axes_style, VALUE_LABEL_FONT_SIZE, SUBTITLE_FONT_SIZE,
 )
 from scripts.utils import (
     require_columns,
@@ -76,7 +76,7 @@ def plot_injected_error_awareness(
             bar.get_y() + bar.get_height() / 2,
             f"{int(row['participantCount'])}/{denominator} ({row['percentage']:.1f}%)",
             va="center",
-            fontsize=9,
+            fontsize=VALUE_LABEL_FONT_SIZE,
         )
     ax.set_xlim(0, 112)
     ax.set_xlabel("Exposed interview respondents (%)")
@@ -170,7 +170,7 @@ def plot_other_ai_error_types(
             bar.get_y() + bar.get_height() / 2,
             f"{int(row['participantCount'])} ({row['percentage']:.1f}%)",
             va="center",
-            fontsize=8.5,
+            fontsize=VALUE_LABEL_FONT_SIZE,
         )
     ax.set_xlim(0, max(1, summary["participantCount"].max() + 1.8))
     ax.set_xlabel("Interview respondents reporting the issue")
@@ -183,13 +183,13 @@ def plot_other_ai_error_types(
         0.01,
         (
             f"{unique_reporters} of {total_respondents} interview respondents "
-            f"reported at least one other AI issue. "
+            f"reported at least one other AI issue.\n"
             f"There were {total_issue_reports} issue-type reports in total; "
             "participants could report multiple issue types."
         ),
         ha="left",
         va="bottom",
-        fontsize=8.3,
+        fontsize=SUBTITLE_FONT_SIZE,
         color=FOOTNOTE_TEXT_COLOR,
     )
     fig.tight_layout(rect=(0, 0.045, 1, 1))

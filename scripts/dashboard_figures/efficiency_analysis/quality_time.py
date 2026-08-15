@@ -13,7 +13,8 @@ from scripts.dashboard_figures.efficiency_analysis.common import (
     _workflow_efficiency_summary,
 )
 from scripts.dashboard_figures.helpers import workflow_display_name
-from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style
+from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style, SUBTITLE_FONT_SIZE, \
+    VALUE_LABEL_FONT_SIZE
 from scripts.utils import save_figure, save_table
 
 
@@ -31,11 +32,12 @@ def plot_quality_time_efficiency_profile_practice_rounds(
 
     fig, ax = plt.subplots(figsize=(8.6, 5.6))
 
-    annotation_offsets = {
-        "human": (-72, -22),
-        "ai": (-20, 20),
-        "human_ai": (12, -24),
-        "ai_human": (12, 20),
+    annotation_positions = {
+        # workflow: (x offset, y offset, horizontal alignment, vertical alignment)
+        "human": (-18, -14, "right", "top"),
+        "ai": (-18, 12, "right", "bottom"),
+        "human_ai": (14, -12, "left", "top"),
+        "ai_human": (14, 12, "left", "bottom"),
     }
 
     for _, row in summary.iterrows():
@@ -71,16 +73,22 @@ def plot_quality_time_efficiency_profile_practice_rounds(
             zorder=3,
         )
 
+        x_offset, y_offset, ha, va = annotation_positions.get(
+            workflow,
+            (10, 10, "left", "bottom"),
+        )
+
         ax.annotate(
             (
                 f"{workflow_display_name(workflow)}\n"
                 f"{mean_time:.2f} min · {mean_quality:.2f}/5"
             ),
             xy=(mean_time, mean_quality),
-            xytext=annotation_offsets.get(workflow, (8, 8)),
+            xytext=(x_offset, y_offset),
             textcoords="offset points",
-            fontsize=8.5,
-            va="center",
+            fontsize=VALUE_LABEL_FONT_SIZE,
+            ha=ha,
+            va=va,
         )
 
     ax.annotate(
@@ -95,7 +103,7 @@ def plot_quality_time_efficiency_profile_practice_rounds(
             "color": "0.35",
         },
         ha="center",
-        fontsize=8.5,
+        fontsize=SUBTITLE_FONT_SIZE,
         color="0.30",
     )
 

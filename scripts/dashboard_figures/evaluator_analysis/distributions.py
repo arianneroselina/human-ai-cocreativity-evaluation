@@ -12,7 +12,7 @@ from scripts.dashboard_figures.helpers import (
     evaluator_color,
     evaluator_display_name,
 )
-from scripts.dashboard_figures.style import apply_standard_axes_style
+from scripts.dashboard_figures.style import apply_standard_axes_style, VALUE_LABEL_FONT_SIZE
 from scripts.utils import (
     save_figure,
     save_table,
@@ -66,7 +66,7 @@ def plot_overall_quality_rating_distribution(
                     str(count),
                     ha="center",
                     va="bottom",
-                    fontsize=8,
+                    fontsize=VALUE_LABEL_FONT_SIZE,
                 )
 
     ax.set_xticks(positions)
@@ -147,7 +147,7 @@ def plot_overall_quality_ordinal_agreement(
         xytext=(12, 0),
         textcoords="offset points",
         va="center",
-        fontsize=10,
+        fontsize=VALUE_LABEL_FONT_SIZE,
     )
 
     ax.set_xlim(-0.05, 1.02)

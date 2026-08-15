@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from scripts.dashboard_figures.helpers import evaluator_color
-from scripts.dashboard_figures.style import apply_standard_axes_style
+from scripts.dashboard_figures.style import apply_standard_axes_style, VALUE_LABEL_FONT_SIZE, SUBTITLE_FONT_SIZE
 from scripts.utils import (
     save_figure,
     save_table,
@@ -60,7 +60,7 @@ def plot_evaluator_disagreement_magnitude(
             f"{int(row['poemCount'])}\n({row['percentage']:.1f}%)",
             ha="center",
             va="bottom",
-            fontsize=8.5,
+            fontsize=VALUE_LABEL_FONT_SIZE,
         )
 
     ax.set_ylim(0, max(5, float(range_df["percentage"].max()) + 12))
@@ -72,13 +72,10 @@ def plot_evaluator_disagreement_magnitude(
     fig.text(
         0.01,
         0.01,
-        (
-            "Rating range = highest minus lowest raw 1-5 rating for the same poem. "
-            "A range of 0 indicates exact agreement."
-        ),
+        "Rating range = highest minus lowest raw 1-5 rating for the same poem.",
         ha="left",
         va="bottom",
-        fontsize=8.4,
+        fontsize=SUBTITLE_FONT_SIZE,
         color="#4a4a4a",
     )
     fig.tight_layout(rect=(0, 0.07, 1, 1))
@@ -149,7 +146,7 @@ def plot_evaluator_rating_tendency(
             xytext=(9, 0),
             textcoords="offset points",
             va="center",
-            fontsize=8.5,
+            fontsize=VALUE_LABEL_FONT_SIZE,
         )
 
     max_abs = max(
@@ -174,7 +171,7 @@ def plot_evaluator_rating_tendency(
         ),
         ha="left",
         va="bottom",
-        fontsize=8.4,
+        fontsize=SUBTITLE_FONT_SIZE,
         color="#4a4a4a",
     )
     fig.tight_layout(rect=(0, 0.07, 1, 1))

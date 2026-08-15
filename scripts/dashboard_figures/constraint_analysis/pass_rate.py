@@ -10,7 +10,7 @@ from scripts.dashboard_figures.helpers import (
     pass_summary,
     workflow_display_name,
 )
-from scripts.dashboard_figures.style import WORKFLOW_COLORS
+from scripts.dashboard_figures.style import WORKFLOW_COLORS, VALUE_LABEL_FONT_SIZE
 from scripts.utils import save_figure, save_table
 
 
@@ -99,12 +99,12 @@ def plot_practice_constraint_pass_rate_by_workflow(practice_df) -> None:
             textcoords="offset points",
             ha="left",
             va="center",
-            fontsize=8.5,
+            fontsize=VALUE_LABEL_FONT_SIZE,
             color="#333333",
         )
 
     ax.set_yticks(y_positions)
-    ax.set_yticklabels(summary["workflowLabel"], fontsize=10)
+    ax.set_yticklabels(summary["workflowLabel"])
     ax.invert_yaxis()
 
     ax.set_xticks([0, 25, 50, 75, 100])

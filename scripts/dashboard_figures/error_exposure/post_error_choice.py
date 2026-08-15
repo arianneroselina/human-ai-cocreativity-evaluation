@@ -18,7 +18,7 @@ from scripts.dashboard_figures.helpers import (
 from scripts.dashboard_figures.style import (
     WORKFLOW_COLORS,
     BAR_EDGE_COLOR,
-    apply_standard_axes_style,
+    apply_standard_axes_style, VALUE_LABEL_FONT_SIZE,
 )
 from scripts.utils import (
     save_figure,
@@ -97,24 +97,26 @@ def plot_post_error_workflow_choices_by_exposure(prepared) -> None:
                         f"{count}\n{percent:.0f}%",
                         ha="center",
                         va="center",
-                        fontsize=7.5,
+                        fontsize=VALUE_LABEL_FONT_SIZE,
                         color="black",
                     )
             bottoms += percentages
 
-        totals = (
-            group_summary.drop_duplicates("roundIndex")
-            .set_index("roundIndex")
-            .reindex(rounds)["roundTotal"]
-            .to_numpy(dtype=int)
-        )
-        ax.set_xticks(np.arange(len(rounds)))
-        ax.set_xticklabels(
-            [f"{round_display_name(r)}\nn={n}" for r, n in zip(rounds, totals)]
-        )
-        ax.set_ylim(0, 100)
-        ax.set_xlabel("Post-error in main rounds")
-        ax.set_title(exposure_display_name(group))
+            group_n = post.loc[
+                post["errorExposed"].eq(group),
+                "sessionId",
+            ].nunique()
+
+            ax.set_xticks(np.arange(len(rounds)))
+            ax.set_xticklabels(
+                [round_display_name(r) for r in rounds]
+            )
+
+            ax.set_ylim(0, 100)
+            ax.set_xlabel("Post-error main round")
+            ax.set_title(
+                f"{exposure_display_name(group)} (n={group_n})"
+            )
         apply_standard_axes_style(ax, grid_axis="y")
 
     axes[0, 0].set_ylabel("Workflow choices (%)")
@@ -127,7 +129,7 @@ def plot_post_error_workflow_choices_by_exposure(prepared) -> None:
         loc="center left",
     )
     fig.suptitle(
-        "Post-Error Workflow Choices by Main Round 1 Exposure", fontsize=13, y=0.99
+        "Post-Error Workflow Choices by Main Round 1 Exposure", y=0.99
     )
 
     fig.tight_layout(rect=(0, 0.045, 0.84, 0.96))

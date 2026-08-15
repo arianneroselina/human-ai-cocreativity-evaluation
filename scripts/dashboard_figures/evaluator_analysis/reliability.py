@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from scripts.dashboard_figures.style import apply_standard_axes_style
+from scripts.dashboard_figures.style import apply_standard_axes_style, VALUE_LABEL_FONT_SIZE
 from scripts.utils import (
     save_figure,
     save_table,
@@ -74,7 +74,7 @@ def plot_overall_quality_icc_reliability(
             xytext=(10, 0),
             textcoords="offset points",
             va="center",
-            fontsize=9,
+            fontsize=VALUE_LABEL_FONT_SIZE,
         )
 
     ax.set_xlim(-0.05, 1.02)
@@ -169,7 +169,7 @@ def plot_pairwise_overall_quality_agreement(
                 f"±1 {row['withinOnePointPercentage']:.1f}%"
             ),
             va="center",
-            fontsize=8.4,
+            fontsize=VALUE_LABEL_FONT_SIZE,
         )
 
     ax.set_xlim(-0.03, 1.0)

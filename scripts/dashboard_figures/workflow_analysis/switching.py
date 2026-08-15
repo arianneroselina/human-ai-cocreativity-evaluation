@@ -9,7 +9,7 @@ from scripts.config import MAIN_ROUND_INDICES
 from scripts.dashboard_figures.helpers import round_display_name
 from scripts.dashboard_figures.style import (
     BAR_EDGE_COLOR,
-    apply_standard_axes_style,
+    apply_standard_axes_style, VALUE_LABEL_FONT_SIZE,
 )
 from scripts.utils import save_figure, save_table
 
@@ -152,7 +152,7 @@ def plot_workflow_switching_behaviour(main_df):
             f"{count} ({count / total * 100:.0f}%)",
             ha="center",
             va="bottom",
-            fontsize=9,
+            fontsize=VALUE_LABEL_FONT_SIZE,
         )
 
     pattern_bars = ax_pattern.barh(
@@ -171,7 +171,7 @@ def plot_workflow_switching_behaviour(main_df):
             bar.get_y() + bar.get_height() / 2,
             f"{count} ({count / total * 100:.0f}%)",
             va="center",
-            fontsize=9,
+            fontsize=VALUE_LABEL_FONT_SIZE,
         )
 
     save_figure(

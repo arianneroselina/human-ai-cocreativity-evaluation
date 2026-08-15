@@ -21,7 +21,7 @@ from scripts.dashboard_figures.helpers import (
 from scripts.dashboard_figures.style import (
     WORKFLOW_COLORS,
     BAR_EDGE_COLOR,
-    apply_standard_axes_style,
+    apply_standard_axes_style, VALUE_LABEL_FONT_SIZE, SUBTITLE_FONT_SIZE,
 )
 from scripts.utils import save_figure, save_table
 
@@ -73,7 +73,7 @@ def plot_total_workflow_usage_counts(main_df):
             f"{count} ({percentage:.1f}%)",
             ha="center",
             va="bottom",
-            fontsize=9,
+            fontsize=VALUE_LABEL_FONT_SIZE,
         )
 
     ax.set_title("Total Workflow Usage in Main Rounds")
@@ -91,7 +91,7 @@ def plot_total_workflow_usage_counts(main_df):
         ),
         transform=ax.transAxes,
         ha="center",
-        fontsize=9,
+        fontsize=SUBTITLE_FONT_SIZE,
     )
 
     save_figure(
@@ -154,7 +154,7 @@ def plot_first_voluntary_workflow_choice(main_df):
             f"{count} ({percentage:.1f}%)",
             ha="center",
             va="bottom",
-            fontsize=9,
+            fontsize=VALUE_LABEL_FONT_SIZE,
         )
 
     ax.set_title("First Voluntary Workflow Choice After Practice")
@@ -168,7 +168,7 @@ def plot_first_voluntary_workflow_choice(main_df):
         (f"AI-involving workflows: {ai_count}/{total} ({ai_count / total * 100:.1f}%)"),
         transform=ax.transAxes,
         ha="center",
-        fontsize=9,
+        fontsize=SUBTITLE_FONT_SIZE,
     )
 
     save_figure(
@@ -247,7 +247,7 @@ def plot_workflow_distribution(main_df):
             f"AI-involving\n{ai_percentages.loc[round_index]:.1f}%",
             ha="center",
             va="bottom",
-            fontsize=8,
+            fontsize=SUBTITLE_FONT_SIZE,
         )
 
     ax.legend(

@@ -23,7 +23,7 @@ from scripts.dashboard_figures.style import (
     WORKFLOW_COLORS,
     INJECTED_ERROR_SPAN_COLOR,
     apply_standard_axes_style,
-    INJECTED_ERROR_LABEL_COLOR,
+    INJECTED_ERROR_LABEL_COLOR, SUBTITLE_FONT_SIZE, INSIDE_LABEL_FONT_SIZE,
 )
 from scripts.utils import save_figure, save_table
 
@@ -180,7 +180,7 @@ def plot_exposure_workflow_rate(
                     ),
                     fmt="none",
                     ecolor=WORKFLOW_COLORS[workflow],
-                    elinewidth=1.25,
+                    elinewidth=2,
                     capsize=4,
                     capthick=1.1,
                     alpha=0.9,
@@ -198,17 +198,18 @@ def plot_exposure_workflow_rate(
                 zorder=3,
             )
 
+            # Show successful / observed rounds for every cell.
             for x_value, rate, events, total in zip(
-                x_values[valid],
-                rates[valid],
-                event_counts[valid],
-                total_counts[valid],
+                    x_values[valid],
+                    rates[valid],
+                    event_counts[valid],
+                    total_counts[valid],
             ):
                 if rate >= 82:
-                    text_offset = (0, -11)
+                    text_offset = (0, -10)
                     vertical_alignment = "top"
                 else:
-                    text_offset = (0, 8)
+                    text_offset = (0, 9)
                     vertical_alignment = "bottom"
 
                 axis.annotate(
@@ -218,14 +219,20 @@ def plot_exposure_workflow_rate(
                     textcoords="offset points",
                     ha="center",
                     va=vertical_alignment,
-                    fontsize=7,
-                    color=WORKFLOW_COLORS[workflow],
-                    zorder=4,
+                    fontsize=INSIDE_LABEL_FONT_SIZE,
+                    color="0.25",
+                    zorder=5,
+                    bbox={
+                        "boxstyle": "round,pad=0.15",
+                        "facecolor": "white",
+                        "edgecolor": "none",
+                        "alpha": 0.80,
+                    },
                 )
 
         axis.set_title(
             exposure_display_name(group),
-            fontsize=11.5,
+            fontsize=SUBTITLE_FONT_SIZE,
             pad=34,
         )
         axis.set_xticks(main_rounds)
@@ -253,7 +260,7 @@ def plot_exposure_workflow_rate(
             loc="center left",
         )
 
-    fig.suptitle(config.title, fontsize=13, y=0.99)
+    fig.suptitle(config.title, y=0.99)
     fig.tight_layout(rect=(0, config.layout_bottom, 0.84, 0.94))
 
     save_figure(
@@ -292,7 +299,7 @@ def add_injected_error_round_marker(
         transform=axis.get_xaxis_transform(),
         ha="center",
         va="top",
-        fontsize=8,
+        fontsize=SUBTITLE_FONT_SIZE,
         color=INJECTED_ERROR_LABEL_COLOR,
         fontstyle="italic",
         zorder=5,

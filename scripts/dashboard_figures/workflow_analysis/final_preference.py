@@ -18,7 +18,7 @@ from scripts.dashboard_figures.style import (
     WORKFLOW_COLORS,
     BAR_EDGE_COLOR,
     RANK_COLORS,
-    apply_standard_axes_style,
+    apply_standard_axes_style, VALUE_LABEL_FONT_SIZE, SUBTITLE_FONT_SIZE,
 )
 from scripts.utils import save_figure, save_table
 
@@ -92,21 +92,25 @@ def plot_final_workflow_preference(
             zorder=2,
         )
 
-        ax_mean.text(
-            mean_rank + 0.08,
-            index,
+        ax_mean.annotate(
             f"{mean_rank:.2f}",
+            xy=(mean_rank, index),
+            xytext=(7, 8),
+            textcoords="offset points",
+            ha="left",
             va="center",
-            fontsize=10,
+            fontsize=VALUE_LABEL_FONT_SIZE,
             fontweight="bold",
         )
 
-        ax_mean.text(
-            mean_rank + 0.08,
-            index + 0.16,
+        ax_mean.annotate(
             f"{first_choice_count} first-choice votes",
+            xy=(mean_rank, index),
+            xytext=(7, -10),
+            textcoords="offset points",
+            ha="left",
             va="center",
-            fontsize=8,
+            fontsize=SUBTITLE_FONT_SIZE,
             color="0.35",
         )
 
@@ -153,7 +157,7 @@ def plot_final_workflow_preference(
                     f"{percentage:.0f}%",
                     ha="center",
                     va="center",
-                    fontsize=8,
+                    fontsize=VALUE_LABEL_FONT_SIZE,
                 )
 
         left += percentages
@@ -171,8 +175,7 @@ def plot_final_workflow_preference(
     )
 
     fig.suptitle(
-        f"Final Workflow Preference (N={valid_participants})",
-        fontsize=14,
+        f"Final Workflow Preference"
     )
 
     fig.tight_layout()

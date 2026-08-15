@@ -80,9 +80,8 @@ def plot_main_constraint_fulfillment_by_exposure(
             description=(
                 "Complete constraint-fulfillment rates for each Main round and "
                 "selected workflow, shown separately by actual Main 1 error "
-                "exposure. Points show pass-rate estimates, whiskers show 95% "
-                "Wilson confidence intervals, and labels report successful "
-                "rounds divided by observed rounds."
+                "exposure. Points show pass-rate estimates and whiskers show 95% "
+                "Wilson confidence intervals."
             ),
             figure_height=5.5,
             layout_bottom=0.09,

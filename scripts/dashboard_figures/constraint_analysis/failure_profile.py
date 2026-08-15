@@ -13,7 +13,7 @@ from scripts.dashboard_figures.constraint_analysis.common import (
     _constraint_failure_profile,
 )
 from scripts.dashboard_figures.helpers import workflow_display_name
-from scripts.dashboard_figures.style import apply_standard_axes_style
+from scripts.dashboard_figures.style import apply_standard_axes_style, VALUE_LABEL_FONT_SIZE
 from scripts.utils import save_figure, save_table
 
 
@@ -112,26 +112,13 @@ def plot_practice_constraint_failure_profile_by_workflow(practice_df) -> None:
                     f"{count}\n{value:.0f}%",
                     ha="center",
                     va="center",
-                    fontsize=8,
+                    fontsize=VALUE_LABEL_FONT_SIZE,
                 )
 
         left += values
 
-    for position, total in enumerate(counts.sum(axis=1)):
-        ax.text(
-            102,
-            position,
-            f"n={int(total)}",
-            ha="left",
-            va="center",
-            fontsize=8.5,
-        )
-
     ax.set_yticks(positions)
-    ax.set_yticklabels(
-        [workflow_display_name(workflow) for workflow in counts.index],
-        fontsize=10,
-    )
+    ax.set_yticklabels([workflow_display_name(workflow) for workflow in counts.index])
     ax.invert_yaxis()
 
     ax.set_xlim(0, 112)
@@ -144,8 +131,7 @@ def plot_practice_constraint_failure_profile_by_workflow(practice_df) -> None:
         loc="upper center",
         bbox_to_anchor=(0.5, -0.19),
         ncol=2,
-        frameon=False,
-        fontsize=8.5,
+        frameon=False
     )
 
     apply_standard_axes_style(ax, grid_axis="x")

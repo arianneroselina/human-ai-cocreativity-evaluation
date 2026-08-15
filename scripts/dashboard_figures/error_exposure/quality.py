@@ -24,7 +24,8 @@ from scripts.dashboard_figures.helpers import (
     quality_summary,
     workflow_display_name,
 )
-from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style
+from scripts.dashboard_figures.style import WORKFLOW_COLORS, apply_standard_axes_style, VALUE_LABEL_FONT_SIZE, \
+    SUBTITLE_FONT_SIZE, INSIDE_LABEL_FONT_SIZE
 from scripts.utils import (
     require_columns,
     save_figure,
@@ -234,29 +235,43 @@ def plot_main_round_quality_by_error_exposure(
                     ),
                     fmt="none",
                     ecolor=WORKFLOW_COLORS[workflow],
-                    elinewidth=1.1,
+                    elinewidth=2,
                     capsize=3,
                     capthick=1.0,
                     alpha=0.9,
                     zorder=3,
                 )
 
-            # Add the sample size above each point.
+            # Show the observation count for every cell.
             for x_value, mean, count in zip(
-                x_values[valid],
-                means[valid],
-                counts[valid],
+                    x_values[valid],
+                    means[valid],
+                    counts[valid],
             ):
+                # Put labels below points close to the upper boundary.
+                if mean >= 4.4:
+                    text_offset = (0, -10)
+                    vertical_alignment = "top"
+                else:
+                    text_offset = (0, 9)
+                    vertical_alignment = "bottom"
+
                 axis.annotate(
                     f"n={count}",
                     (x_value, mean),
-                    xytext=(0, 8),
+                    xytext=text_offset,
                     textcoords="offset points",
                     ha="center",
-                    va="bottom",
-                    fontsize=7,
-                    color=WORKFLOW_COLORS[workflow],
+                    va=vertical_alignment,
+                    fontsize=INSIDE_LABEL_FONT_SIZE,
+                    color="0.25",
                     zorder=5,
+                    bbox={
+                        "boxstyle": "round,pad=0.15",
+                        "facecolor": "white",
+                        "edgecolor": "none",
+                        "alpha": 0.80,
+                    },
                 )
 
         if _is_exposed(group):
@@ -305,7 +320,6 @@ def plot_main_round_quality_by_error_exposure(
 
     fig.suptitle(
         "Mean Overall Quality by Main Round, Workflow, and Error Exposure",
-        fontsize=13,
         y=0.99,
     )
 

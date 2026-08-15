@@ -23,7 +23,7 @@ from scripts.dashboard_figures.helpers import (
 )
 from scripts.dashboard_figures.style import (
     WORKFLOW_COLORS,
-    apply_standard_axes_style,
+    apply_standard_axes_style, VALUE_LABEL_FONT_SIZE, SUBTITLE_FONT_SIZE, INSIDE_LABEL_FONT_SIZE,
 )
 from scripts.dashboard_figures.summaries import grouped_metric_summary
 from scripts.utils import (
@@ -218,29 +218,42 @@ def plot_main_round_ai_experience_by_exposure(
                         ),
                         fmt="none",
                         ecolor=WORKFLOW_COLORS[workflow],
-                        elinewidth=1.05,
+                        elinewidth=2,
                         capsize=3,
                         alpha=0.9,
                         zorder=3,
                     )
 
-                # Display the sample size for every observed cell.
+                # Show the observation count for every cell.
                 for x_value, mean, count in zip(
-                    x_values[valid],
-                    means[valid],
-                    counts[valid],
+                        x_values[valid],
+                        means[valid],
+                        counts[valid],
                 ):
-                    count_label = f"n={count}"
+                    # Put labels below points close to the upper boundary.
+                    if mean >= 4.4:
+                        text_offset = (0, -10)
+                        vertical_alignment = "top"
+                    else:
+                        text_offset = (0, 9)
+                        vertical_alignment = "bottom"
 
                     axis.annotate(
-                        count_label,
+                        f"n={count}",
                         (x_value, mean),
-                        xytext=(0, 7),
+                        xytext=text_offset,
                         textcoords="offset points",
                         ha="center",
-                        va="bottom",
-                        fontsize=6.7,
-                        color=WORKFLOW_COLORS[workflow],
+                        va=vertical_alignment,
+                        fontsize=INSIDE_LABEL_FONT_SIZE,
+                        color="0.25",
+                        zorder=5,
+                        bbox={
+                            "boxstyle": "round,pad=0.15",
+                            "facecolor": "white",
+                            "edgecolor": "none",
+                            "alpha": 0.80,
+                        },
                     )
 
             if _is_exposed(group):
@@ -283,7 +296,6 @@ def plot_main_round_ai_experience_by_exposure(
 
     fig.suptitle(
         "AI Interaction Ratings by Main Round, Workflow, and Error Exposure",
-        fontsize=13,
         y=0.995,
     )
 
