@@ -18,6 +18,7 @@ from scripts.dashboard_figures.error_exposure.line_count import (
 )
 from scripts.dashboard_figures.error_exposure.post_error_choice import (
     plot_post_error_workflow_choices_by_exposure,
+    plot_post_error_workflow_choices_by_awareness
 )
 from scripts.dashboard_figures.error_exposure.preference import (
     plot_final_workflow_preference_by_reported_ai_errors,
@@ -44,4 +45,5 @@ __all__ = [
     "plot_main_round_tlx_by_exposure_and_workflow",
     "plot_other_ai_error_types",
     "plot_post_error_workflow_choices_by_exposure",
+    "plot_post_error_workflow_choices_by_awareness",
 ]

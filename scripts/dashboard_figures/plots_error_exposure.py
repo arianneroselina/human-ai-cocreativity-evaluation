@@ -20,6 +20,7 @@ from scripts.dashboard_figures.error_exposure import (
     plot_main_round_tlx_by_exposure_and_workflow,
     plot_other_ai_error_types,
     plot_post_error_workflow_choices_by_exposure,
+    plot_post_error_workflow_choices_by_awareness,
 )
 from scripts.dashboard_figures.loaders import load_participant_interview_notes
 from scripts.dashboard_figures.helpers import (
@@ -62,6 +63,7 @@ def plot_error_exposure(
     plot_main_round_ai_experience_by_exposure(main_df)
     plot_main_round_tlx_by_exposure_and_workflow(main_df)
     plot_post_error_workflow_choices_by_exposure(prepared)
+    plot_post_error_workflow_choices_by_awareness(prepared, interview_notes)
     plot_main_round_quality_by_error_exposure(main_df)
     plot_main_constraint_fulfillment_by_exposure(main_df)
     plot_main_line_count_error_by_exposure(main_df)

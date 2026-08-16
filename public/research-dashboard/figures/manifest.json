@@ -203,6 +203,13 @@
     "pdfUrl": "/research-dashboard/figures/105_post_error_workflow_choices_by_exposure.pdf"
   },
   {
+    "slug": "112_post_error_workflow_choices_by_awareness",
+    "title": "Post-Error Workflow Choices by Error Awareness",
+    "description": "Distribution of voluntary workflow choices in Main Rounds 2-3 among participants exposed to the injected error, separated by whether they reported noticing the error.",
+    "pngUrl": "/research-dashboard/figures/112_post_error_workflow_choices_by_awareness.png",
+    "pdfUrl": "/research-dashboard/figures/112_post_error_workflow_choices_by_awareness.pdf"
+  },
+  {
     "slug": "106_main_round_quality_by_error_exposure",
     "title": "Mean Overall Quality by Main Round, Workflow, and Error Exposure",
     "description": "Separate mean overall-quality estimates for each Main round, selected workflow, and actual error-exposure group. Points are not connected because workflow membership could change between rounds. Whiskers show approximate 95% confidence intervals and labels show observation counts.",
