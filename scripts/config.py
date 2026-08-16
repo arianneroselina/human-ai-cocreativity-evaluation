@@ -158,7 +158,7 @@ EVALUATOR_ORDER = [
 SATISFACTION_COLUMN = "satisfactionResult"
 
 AI_EXPERIENCE_METRICS = {
-    "aiUnderstanding": "AI understanding",
+    "aiUnderstanding": "AI interaction clarity",
     "aiCollaboration": "AI collaboration",
     "aiCreativitySupport": "AI creativity support",
     "aiPerformanceOverall": "Overall AI performance",
