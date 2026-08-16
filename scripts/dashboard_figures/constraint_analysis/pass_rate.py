@@ -15,15 +15,23 @@ from scripts.utils import save_figure, save_table
 
 
 def plot_practice_constraint_pass_rate_by_workflow(practice_df) -> None:
-    """Compare complete constraint-fulfillment rates across practice workflows.
+    """Compare complete constraint-fulfilment rates across practice workflows.
 
-    Each point is the observed proportion of practice rounds in which every
-    task constraint was fulfilled. Horizontal whiskers show 95% Wilson
-    confidence intervals.
+    Only non-empty submitted poems are included. Each point is the observed
+    proportion of submitted poems in which every applicable task constraint
+    was fulfilled. Horizontal whiskers show 95% Wilson confidence intervals.
     """
     slug = "21_practice_constraint_pass_rate_by_workflow"
 
-    summary = pass_summary(practice_df, ["workflow"])
+    # Constraint fulfilment is evaluated only for non-empty submitted poems.
+    evaluated = practice_df[
+        practice_df["wordCount"].fillna(0).gt(0)
+    ].copy()
+
+    if evaluated.empty:
+        return
+
+    summary = pass_summary(evaluated, ["workflow"])
     if summary.empty:
         return
 
@@ -38,6 +46,15 @@ def plot_practice_constraint_pass_rate_by_workflow(practice_df) -> None:
         return
 
     summary["workflowLabel"] = summary["workflow"].map(workflow_display_name)
+
+    # Rename output columns so the saved table also reflects that
+    # the denominator is submitted poems rather than all rounds.
+    summary = summary.rename(
+        columns={
+            "passedRounds": "passedPoems",
+            "totalRounds": "totalPoems",
+        }
+    )
 
     save_table(summary, slug, index=False)
 
@@ -88,7 +105,7 @@ def plot_practice_constraint_pass_rate_by_workflow(practice_df) -> None:
         )
 
         label = (
-            f"{int(row['passedRounds'])}/{int(row['totalRounds'])} "
+            f"{int(row['passedPoems'])}/{int(row['totalPoems'])} "
             f"({row['passRatePercent']:.1f}%)"
         )
 
@@ -110,9 +127,11 @@ def plot_practice_constraint_pass_rate_by_workflow(practice_df) -> None:
     ax.set_xticks([0, 25, 50, 75, 100])
     ax.set_xticklabels(["0%", "25%", "50%", "75%", "100%"])
 
-    ax.set_xlabel("Rounds fully meeting every constraint", labelpad=10)
+    ax.set_xlabel("Submitted poems fully meeting every constraint", labelpad=10)
 
-    ax.set_title("Complete Constraint Fulfillment Rate by Workflow in Practice Rounds")
+    ax.set_title(
+        "Complete Constraint Fulfilment Rate by Workflow in Practice Rounds"
+    )
 
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -139,9 +158,9 @@ def plot_practice_constraint_pass_rate_by_workflow(practice_df) -> None:
     save_figure(
         fig,
         slug,
-        "Complete Constraint Fulfillment Rate by Workflow in Practice Rounds",
-        "Points show the observed percentage of practice-round poems that fulfilled "
-        "every task constraint. Horizontal whiskers show 95% Wilson confidence "
-        "intervals. Labels show the number of fully successful rounds out of all "
-        "evaluated rounds for each workflow.",
+        "Complete Constraint Fulfilment Rate by Workflow in Practice Rounds",
+        "Points show the observed percentage of non-empty submitted practice-round "
+        "poems that fulfilled every applicable task constraint. Horizontal whiskers "
+        "show 95% Wilson confidence intervals. Labels show the number of fully "
+        "successful poems out of all non-empty submitted poems for each workflow.",
     )

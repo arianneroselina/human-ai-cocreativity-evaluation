@@ -17,22 +17,55 @@ from scripts.utils import save_figure, save_table
 
 
 def plot_practice_failure_breakdown_by_constraint_type(practice_df) -> None:
-    """Identify requirement types that produce failures under each workflow."""
+    """Identify requirement types that produce failures under each workflow.
+
+    Only non-empty submitted poems are included in the analysis.
+    """
     slug = "23_practice_failure_breakdown_by_constraint_type"
 
-    exploded = _explode_requirement_results(practice_df)
+    # Exclude empty submissions from the constraint analysis.
+    if "wordCount" not in practice_df.columns:
+        print(
+            "Skipping constraint failure breakdown; "
+            "required column 'wordCount' is missing."
+        )
+        return
+
+    evaluated = practice_df.copy()
+    evaluated["wordCount"] = pd.to_numeric(
+        evaluated["wordCount"],
+        errors="coerce",
+    )
+
+    evaluated = evaluated[
+        evaluated["wordCount"].fillna(0).gt(0)
+    ].copy()
+
+    if evaluated.empty:
+        return
+
+    # Explode individual requirement checks only for submitted poems.
+    exploded = _explode_requirement_results(evaluated)
     if exploded.empty:
         return
 
     summary = (
         exploded.groupby(["workflow", "constraintType"])["passed"]
-        .agg(totalChecks="count", passedChecks="sum")
+        .agg(
+            totalChecks="count",
+            passedChecks="sum",
+        )
         .reset_index()
     )
+
     summary["failureRatePercent"] = (
-        1 - summary["passedChecks"] / summary["totalChecks"]
-    ) * 100
-    summary["workflowLabel"] = summary["workflow"].map(workflow_display_name)
+                                            1 - summary["passedChecks"] / summary["totalChecks"]
+                                    ) * 100
+
+    summary["workflowLabel"] = summary["workflow"].map(
+        workflow_display_name
+    )
+
     save_table(summary, slug, index=False)
 
     observed_types = [
@@ -40,31 +73,64 @@ def plot_practice_failure_breakdown_by_constraint_type(practice_df) -> None:
         for constraint_type in CONSTRAINT_TYPE_ORDER
         if constraint_type in set(summary["constraintType"])
     ]
+
     workflow_order = [
-        workflow for workflow in WORKFLOW_ORDER if workflow in set(summary["workflow"])
+        workflow
+        for workflow in WORKFLOW_ORDER
+        if workflow in set(summary["workflow"])
     ]
 
     failure_matrix = summary.pivot(
         index="workflow",
         columns="constraintType",
         values="failureRatePercent",
-    ).reindex(index=workflow_order, columns=observed_types)
+    ).reindex(
+        index=workflow_order,
+        columns=observed_types,
+    )
+
     check_matrix = summary.pivot(
         index="workflow",
         columns="constraintType",
         values="totalChecks",
-    ).reindex(index=workflow_order, columns=observed_types)
+    ).reindex(
+        index=workflow_order,
+        columns=observed_types,
+    )
 
-    fig, ax = plt.subplots(figsize=(max(8.0, 1.55 * len(observed_types) + 2.8), 4.7))
-    masked = np.ma.masked_invalid(failure_matrix.to_numpy(dtype=float))
-    image = ax.imshow(masked, vmin=0, vmax=100, cmap="Reds", aspect="auto")
+    fig, ax = plt.subplots(
+        figsize=(max(8.0, 1.55 * len(observed_types) + 2.8), 4.7)
+    )
+
+    masked = np.ma.masked_invalid(
+        failure_matrix.to_numpy(dtype=float)
+    )
+
+    image = ax.imshow(
+        masked,
+        vmin=0,
+        vmax=100,
+        cmap="Reds",
+        aspect="auto",
+    )
 
     for row_index, workflow in enumerate(workflow_order):
         for col_index, constraint_type in enumerate(observed_types):
             rate = failure_matrix.iloc[row_index, col_index]
             checks = check_matrix.iloc[row_index, col_index]
-            label = "–" if pd.isna(rate) else f"{rate:.0f}%\nn={int(checks)}"
-            text_color = "white" if not pd.isna(rate) and rate >= 55 else "black"
+
+            label = (
+                "–"
+                if pd.isna(rate)
+                else f"{rate:.0f}%\nn={int(checks)}"
+            )
+
+            text_color = (
+                "white"
+                if not pd.isna(rate) and rate >= 55
+                else "black"
+            )
+
             ax.text(
                 col_index,
                 row_index,
@@ -76,18 +142,37 @@ def plot_practice_failure_breakdown_by_constraint_type(practice_df) -> None:
             )
 
     ax.set_xticks(range(len(observed_types)))
-    ax.set_xticklabels(observed_types, rotation=20, ha="right")
+    ax.set_xticklabels(
+        observed_types,
+        rotation=20,
+        ha="right",
+    )
+
     ax.set_yticks(range(len(workflow_order)))
-    ax.set_yticklabels([workflow_display_name(workflow) for workflow in workflow_order])
+    ax.set_yticklabels(
+        [
+            workflow_display_name(workflow)
+            for workflow in workflow_order
+        ]
+    )
+
     ax.set_xlabel("Constraint type")
     ax.set_ylabel("Assigned workflow")
-    ax.set_title("Constraint Failure Breakdown by Type in Practice Rounds")
-    fig.colorbar(image, ax=ax, label="Failure rate (%)")
+    ax.set_title(
+        "Constraint Failure Breakdown by Type in Practice Rounds"
+    )
+
+    fig.colorbar(
+        image,
+        ax=ax,
+        label="Failure rate (%)",
+    )
 
     save_figure(
         fig,
         slug,
         "Constraint Failure Breakdown by Type in Practice Rounds",
-        "Failure rates by requirement type and assigned workflow. Each cell also "
-        "shows the number of individual requirement checks supporting the rate.",
+        "Failure rates by requirement type and assigned workflow among "
+        "non-empty submitted practice-round poems. Each cell also shows "
+        "the number of individual requirement checks supporting the rate.",
     )
