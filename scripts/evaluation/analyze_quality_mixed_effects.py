@@ -279,6 +279,18 @@ def fixed_effects_table(fitted_model: FittedModel) -> pd.DataFrame:
     return output
 
 
+def final_random_effects_singular(result, tol: float = 1e-10) -> bool:
+    """Check whether the final estimated random-effects covariance is singular."""
+    cov_re = getattr(result, "cov_re", None)
+
+    if cov_re is None or cov_re.empty:
+        return False
+
+    matrix = cov_re.to_numpy(dtype=float)
+
+    return np.linalg.matrix_rank(matrix, tol=tol) < matrix.shape[0]
+
+
 def model_overview_row(fitted_model: FittedModel) -> dict:
     """Return one compact overview row for a fitted mixed-effects model."""
     result = fitted_model.result
@@ -305,6 +317,7 @@ def model_overview_row(fitted_model: FittedModel) -> dict:
         "bic": float(fitted_model.result.bic),
         "residualVariance": float(fitted_model.result.scale),
         "randomInterceptVariance": random_intercept_variance,
+        "finalRandomEffectsSingular": final_random_effects_singular(result),
         "fitWarnings": " | ".join(fitted_model.warnings),
     }
 
